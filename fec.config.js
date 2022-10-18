@@ -1,5 +1,5 @@
 module.exports = {
-  appUrl: '/staging/starter',
+  appUrl: '/settings/learning-resources',
   debug: true,
   useProxy: true,
   proxyVerbose: true,
