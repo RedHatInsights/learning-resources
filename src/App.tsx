@@ -204,7 +204,7 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <QuickStartCatalogHeader title="Resources" />
+      <QuickStartCatalogHeader title="Learning Resources" />
       <Divider component="div" />
       <QuickStartCatalogToolbar>
         <ToolbarContent>
