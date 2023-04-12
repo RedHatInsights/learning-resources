@@ -7,7 +7,6 @@ import {
   QuickStartCatalog,
   QuickStartCatalogEmptyState,
   QuickStartCatalogFilterCountWrapper,
-  QuickStartCatalogFilterSearchWrapper,
   QuickStartCatalogFilterStatusWrapper,
   QuickStartCatalogHeader,
   QuickStartCatalogSection,
@@ -23,9 +22,11 @@ import {
   Divider,
   Gallery,
   GalleryItem,
+  SearchInput,
   Text,
   TextContent,
   ToolbarContent,
+  ToolbarItem,
 } from '@patternfly/react-core';
 
 export const App: React.FC = () => {
@@ -208,9 +209,12 @@ export const App: React.FC = () => {
       <Divider component="div" />
       <QuickStartCatalogToolbar>
         <ToolbarContent>
-          <QuickStartCatalogFilterSearchWrapper
-            onSearchInputChange={onSearchInputChange}
-          />
+          <ToolbarItem className="pfext-quick-start-catalog-filter__input">
+            <SearchInput
+              placeholder={'Filter by keyword...'}
+              onChange={(_ev, str) => onSearchInputChange(str)}
+            />
+          </ToolbarItem>
           <QuickStartCatalogFilterStatusWrapper
             onStatusChange={onStatusChange}
           />
