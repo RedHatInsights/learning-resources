@@ -6,14 +6,14 @@ import { App } from './App';
 import { getBaseName } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 import logger from 'redux-logger';
 
-const AppEntry = () => (
+const AppEntry = (props: any) => (
   <Provider
     store={init(
       ...(process.env.NODE_ENV !== 'production' ? [logger] : [])
     ).getStore()}
   >
     <Router basename={getBaseName(window.location.pathname)}>
-      <App />
+      <App {...props} />
     </Router>
   </Provider>
 );
