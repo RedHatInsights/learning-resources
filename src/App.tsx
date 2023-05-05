@@ -29,7 +29,7 @@ import {
   ToolbarItem,
 } from '@patternfly/react-core';
 
-export const App: React.FC = () => {
+export const App: React.FC = (props: any) => {
   const {
     activeQuickStartID,
     allQuickStartStates,
@@ -42,15 +42,18 @@ export const App: React.FC = () => {
   const chrome = useChrome();
 
   const { quickStarts } = chrome;
+  const targetBundle = props?.bundle || 'settings';
+
+  chrome?.updateDocumentTitle?.('Learning Resources');
 
   useEffect(() => {
-    fetch(`/api/quickstarts/v1/quickstarts?bundle=settings`)
+    fetch(`/api/quickstarts/v1/quickstarts?bundle=${targetBundle}`)
       .then<{ data: { content: QuickStart }[] }>((response) => response.json())
       .then(({ data }) =>
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         quickStarts.set(
-          'settings',
+          `${targetBundle}`,
           data.map(({ content }) => content)
         )
       )
