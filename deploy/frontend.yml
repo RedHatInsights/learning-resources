@@ -6,36 +6,59 @@ objects:
   - apiVersion: cloud.redhat.com/v1alpha1
     kind: Frontend
     metadata:
-      name: learning-resources
+      name: learningResources
     spec:
       envName: ${ENV_NAME}
-      title: learning-resources
-      routePrefix: settings
-      deploymentRepo: https://github.com/RedHatInsights/learning-resources
+      title: Learning resources
       API:
         versions:
           - v1
-      frontend:
-        paths:
-          - /settings/learning-resources
       image: ${IMAGE}:${IMAGE_TAG}
       navItems:
-        - title: Remote Host Configuration
-          expandable: true
-          routes:
-            - appId: learning-resources
-              title: Manage configuration
-              href: /settings/learning-resources
-            - appId: learning-resources
-              title: Activation Keys
-              href: /settings/learning-resources/activation-keys
+        - id: learningResources
+          appId: learningResources
+          title: Learning Resources
+          href: "/openshift/learning-resources"
+        - id: learningResources
+          appId: learningResources
+          title: Learning Resources
+          href: "/ansible/learning-resources"
+        - id: learningResources
+          appId: learningResources
+          title: Learning Resources
+          href: "/insights/learning-resources"
+        - id: learningResources
+          appId: learningResources
+          title: Learning Resources
+          href: "/edge/learning-resources"
+        - id: learningResources
+          appId: learningResources
+          title: Learning Resources
+          href: "/iam/learning-resources"
       module:
-        manifestLocation: /apps/learning-resources/fed-mods.json
+        manifestLocation: /apps/learningResources/fed-mods.json
         modules:
-          - id: learning-resources
+          - id: learningResources
             module: ./RootApp
             routes:
-              - pathname: /settings/learning-resources
+              - pathname: "/openshift/learning-resources"
+                props:
+                  bundle: openshift
+              - pathname: "/ansible/learning-resources"
+                props:
+                  bundle: ansible
+              - pathname: "/insights/learning-resources"
+                props:
+                  bundle: insights
+              - pathname: "/edge/learning-resources"
+                props:
+                  bundle: edge
+              - pathname: "/settings/learning-resources"
+                props:
+                  bundle: settings
+              - pathname: "/iam/learning-resources"
+                props:
+                  bundle: iam
         moduleID: learning-resources
 parameters:
   - name: ENV_NAME
