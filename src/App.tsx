@@ -1,239 +1,150 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './App.scss';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import {
   LoadingBox,
   QuickStart,
-  QuickStartCatalog,
-  QuickStartCatalogEmptyState,
-  QuickStartCatalogFilterCountWrapper,
-  QuickStartCatalogFilterStatusWrapper,
-  QuickStartCatalogHeader,
-  QuickStartCatalogSection,
-  QuickStartCatalogToolbar,
   QuickStartContext,
   QuickStartContextValues,
-  QuickStartTile,
-  clearFilterParams,
   filterQuickStarts,
-  getQuickStartStatus,
 } from '@patternfly/quickstarts';
-import {
-  Divider,
-  Gallery,
-  GalleryItem,
-  SearchInput,
-  Text,
-  TextContent,
-  ToolbarContent,
-  ToolbarItem,
-} from '@patternfly/react-core';
+import { Divider, Stack, StackItem } from '@patternfly/react-core';
+import CatalogHeader from './components/CatalogHeader';
+import CatalogFilter from './components/CatalogFilter';
+import CatalogSection from './components/CatalogSection';
 
-export const App: React.FC = (props: any) => {
+const sortFnc = (q1: QuickStart, q2: QuickStart) =>
+  q1.spec.displayName.localeCompare(q2.spec.displayName);
+
+export const App = ({ bundle }: { bundle: string }) => {
   const {
     activeQuickStartID,
     allQuickStartStates,
-    allQuickStarts,
+    allQuickStarts = [],
     filter,
     setFilter,
     loading,
   } = React.useContext<QuickStartContextValues>(QuickStartContext);
+  const [contentReady, setContentReady] = useState(false);
+
+  const { documentation, learningPaths, other, quickStarts } = useMemo(() => {
+    const filteredQuickStarts = filterQuickStarts(
+      allQuickStarts || [],
+      filter?.keyword || '',
+      filter?.status?.statusFilters,
+      allQuickStartStates || {}
+    ).sort(sortFnc);
+    return filteredQuickStarts.reduce<{
+      documentation: QuickStart[];
+      quickStarts: QuickStart[];
+      other: QuickStart[];
+      learningPaths: QuickStart[];
+    }>(
+      (acc, curr) => {
+        if (curr.metadata.externalDocumentation) {
+          acc.documentation.push(curr);
+        } else if (curr.metadata.otherResource) {
+          other.push(curr);
+        } else if (curr.metadata.learningPath) {
+          learningPaths.push(curr);
+        } else {
+          acc.quickStarts.push(curr);
+        }
+
+        return acc;
+      },
+      { documentation: [], quickStarts: [], other: [], learningPaths: [] }
+    );
+  }, [allQuickStarts, filter]);
+
+  const quickStartsCount =
+    quickStarts.length +
+    documentation.length +
+    learningPaths.length +
+    other.length;
 
   const chrome = useChrome();
 
-  const { quickStarts } = chrome;
-  const targetBundle = props?.bundle || 'settings';
+  const { quickStarts: quickStartsApi } = chrome;
+  const targetBundle = bundle || 'settings';
 
   chrome?.updateDocumentTitle?.('Learning Resources');
 
   useEffect(() => {
     fetch(`/api/quickstarts/v1/quickstarts?bundle=${targetBundle}`)
       .then<{ data: { content: QuickStart }[] }>((response) => response.json())
-      .then(({ data }) =>
+      .then(({ data }) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        quickStarts.set(
+        quickStartsApi.set(
           `${targetBundle}`,
           data.map(({ content }) => content)
-        )
-      )
+        );
+        setContentReady(true);
+      })
       .catch((err) => {
         console.log(err.message);
       });
   }, []);
 
-  const sortFnc = (q1: QuickStart, q2: QuickStart) =>
-    q1.spec.displayName.localeCompare(q2.spec.displayName);
-
-  const [filteredQuickStarts, setFilteredQuickStarts] = React.useState<
-    QuickStart[]
-  >(
-    filterQuickStarts(
-      allQuickStarts || [],
-      filter?.keyword || '',
-      filter?.status?.statusFilters,
-      allQuickStartStates || {}
-    ).sort(sortFnc)
-  );
-
-  React.useEffect(() => {
-    // callback on state change
-    setFilteredQuickStarts(
-      filterQuickStarts(
-        allQuickStarts || [],
-        filter?.keyword || '',
-        filter?.status?.statusFilters,
-        allQuickStartStates || {}
-      ).sort(sortFnc)
-    );
-  }, [
-    allQuickStartStates,
-    allQuickStarts,
-    filter?.keyword,
-    filter?.status?.statusFilters,
-  ]);
-
   const onSearchInputChange = (searchValue: string) => {
-    const result = filterQuickStarts(
-      allQuickStarts || [],
-      searchValue,
-      filter?.status?.statusFilters,
-      allQuickStartStates || {}
-    ).sort((q1: QuickStart, q2: QuickStart) =>
-      q1.spec.displayName.localeCompare(q2.spec.displayName)
-    );
     setFilter('keyword', searchValue);
-    setFilteredQuickStarts(result);
   };
 
-  const onStatusChange = (statusList: string[]) => {
-    const result = filterQuickStarts(
-      allQuickStarts || [],
-      filter?.keyword || '',
-      statusList,
-      allQuickStartStates || {}
-    ).sort((q1: QuickStart, q2: QuickStart) =>
-      q1.spec.displayName.localeCompare(q2.spec.displayName)
-    );
-    setFilter('status', statusList);
-    setFilteredQuickStarts(result);
-  };
-
-  const CatalogWithSections = (
-    <>
-      <QuickStartCatalogSection>
-        <TextContent className="pf-u-mb-sm">
-          <Text component="h2">Quick starts</Text>
-          <Text component="p" className="catalog-sub">
-            Quick starts for using the Red Hat Hybrid Cloud Console
-          </Text>
-        </TextContent>
-        <Gallery className="pfext-quick-start-catalog__gallery" hasGutter>
-          {allQuickStarts
-            ?.filter(
-              (quickStart: QuickStart) =>
-                !quickStart.metadata.externalDocumentation
-            )
-            .map((quickStart: QuickStart) => {
-              const {
-                metadata: { name: id },
-              } = quickStart;
-
-              return (
-                <GalleryItem
-                  key={id}
-                  className="pfext-quick-start-catalog__gallery-item"
-                >
-                  <QuickStartTile
-                    quickStart={quickStart}
-                    isActive={id === activeQuickStartID}
-                    status={getQuickStartStatus(allQuickStartStates || {}, id)}
-                  />
-                </GalleryItem>
-              );
-            })}
-        </Gallery>
-      </QuickStartCatalogSection>
-      <Divider />
-      <QuickStartCatalogSection>
-        <TextContent className="pf-u-mb-sm">
-          <Text component="h2">Documentation</Text>
-          <Text component="p" className="catalog-sub">
-            Technical information for using the Red Hat Hybrid Cloud Console
-          </Text>
-        </TextContent>
-        <Gallery className="pfext-quick-start-catalog__gallery" hasGutter>
-          {allQuickStarts
-            ?.filter(
-              (quickStart: QuickStart) =>
-                quickStart.metadata.externalDocumentation
-            )
-            .map((quickStart: QuickStart) => {
-              const {
-                metadata: { name: id },
-              } = quickStart;
-
-              return (
-                <GalleryItem
-                  key={id}
-                  className="pfext-quick-start-catalog__gallery-item"
-                >
-                  <QuickStartTile
-                    quickStart={quickStart}
-                    isActive={id === activeQuickStartID}
-                    status={getQuickStartStatus(allQuickStartStates || {}, id)}
-                  />
-                </GalleryItem>
-              );
-            })}
-        </Gallery>
-      </QuickStartCatalogSection>
-    </>
-  );
-
-  const clearFilters = () => {
-    setFilter('keyword', '');
-    setFilter('status', []);
-    clearFilterParams();
-    setFilteredQuickStarts(
-      allQuickStarts?.sort((q1: QuickStart, q2: QuickStart) =>
-        q1.spec.displayName.localeCompare(q2.spec.displayName)
-      ) || []
-    );
-  };
-
-  if (loading) {
+  if (!contentReady || loading) {
     return <LoadingBox />;
   }
 
   return (
     <>
-      <QuickStartCatalogHeader title="Learning Resources" />
-      <Divider component="div" />
-      <QuickStartCatalogToolbar>
-        <ToolbarContent>
-          <ToolbarItem className="pfext-quick-start-catalog-filter__input">
-            <SearchInput
-              placeholder={'Filter by keyword...'}
-              onChange={(_ev, str) => onSearchInputChange(str)}
-            />
-          </ToolbarItem>
-          <QuickStartCatalogFilterStatusWrapper
-            onStatusChange={onStatusChange}
+      <div className="pf-u-p-lg lr-c-catalog__header">
+        <StackItem className="pf-u-mb-md">
+          <CatalogHeader />
+        </StackItem>
+        <StackItem>
+          <CatalogFilter
+            quickStartsCount={quickStartsCount}
+            onSearchInputChange={onSearchInputChange}
           />
-          <QuickStartCatalogFilterCountWrapper
-            quickStartsCount={filteredQuickStarts.length}
-          />
-        </ToolbarContent>
-      </QuickStartCatalogToolbar>
-      <Divider component="div" />
-      {filteredQuickStarts.length === 0 ? (
-        <QuickStartCatalogEmptyState clearFilters={clearFilters} />
-      ) : filteredQuickStarts.length !== allQuickStarts?.length ? (
-        <QuickStartCatalog quickStarts={filteredQuickStarts} />
-      ) : (
-        CatalogWithSections
-      )}
+        </StackItem>
+      </div>
+      <Stack className="pf-u-p-lg">
+        <CatalogSection
+          sectionCount={documentation.length}
+          sectionTitle="Documentation"
+          sectionDescription="Technical information for using the service"
+          sectionQuickStarts={documentation}
+          activeQuickStartID={activeQuickStartID}
+          allQuickStartStates={allQuickStartStates}
+        />
+        <Divider className="pf-u-mt-lg pf-u-mb-lg" />
+        <CatalogSection
+          sectionCount={quickStarts.length}
+          sectionTitle="Quick starts"
+          sectionDescription="Step-by-step instructions and tasks"
+          sectionQuickStarts={quickStarts}
+          activeQuickStartID={activeQuickStartID}
+          allQuickStartStates={allQuickStartStates}
+        />
+        <Divider className="pf-u-mt-lg pf-u-mb-lg" />
+        <CatalogSection
+          sectionCount={learningPaths.length}
+          sectionTitle="Learning paths"
+          sectionDescription="Collections of learning materials contributing to a common use case"
+          sectionQuickStarts={learningPaths}
+          activeQuickStartID={activeQuickStartID}
+          allQuickStartStates={allQuickStartStates}
+        />
+        <Divider className="pf-u-mt-lg pf-u-mb-lg" />
+        <CatalogSection
+          sectionCount={other.length}
+          sectionTitle="Other content types"
+          sectionDescription="Tutorials, videos, e-books, and more to help you build your skills"
+          sectionQuickStarts={other}
+          activeQuickStartID={activeQuickStartID}
+          allQuickStartStates={allQuickStartStates}
+        />
+      </Stack>
     </>
   );
 };

@@ -1,0 +1,13 @@
+.lr-c-catalog-section {
+  .pf-c-expandable-section__toggle {
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+  }
+  .pf-c-expandable-section__content {
+    margin-top: 0;
+  }
+  h3 {
+    color: var(--pf-global--palette--black-900);
+  }
+}

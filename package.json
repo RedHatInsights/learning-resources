@@ -14,8 +14,8 @@
     "lint:js:fix": "eslint config src --fix",
     "lint:sass": "stylelint 'src/**/*.scss' --config .stylelintrc.json",
     "patch:hosts": "fec patch-etc-hosts",
-    "start": "fec dev",
-    "test": "jest",
+    "start": "HOT=true fec dev",
+    "test": "TZ=UTC jest --verbose --no-cache --passWithNoTests",
     "verify": "npm-run-all build lint test"
   },
   "dependencies": {
@@ -27,12 +27,7 @@
     "@redhat-cloud-services/frontend-components-utilities": "^3.3.4",
     "classnames": "^2.3.1",
     "react": "17.0.2",
-    "react-dom": "17.0.2",
-    "react-redux": "7.2.9",
-    "react-router-dom": "5.2.0",
-    "redux": "4.2.0",
-    "redux-logger": "3.0.6",
-    "redux-promise-middleware": "6.1.2"
+    "react-dom": "17.0.2"
   },
   "devDependencies": {
     "@babel/core": "7.14.0",
@@ -42,14 +37,12 @@
     "@babel/preset-react": "7.14.5",
     "@babel/preset-typescript": "^7.17.12",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^1.2.6",
-    "@redhat-cloud-services/frontend-components-config": "^4.6.25",
-    "@redhat-cloud-services/types": "^0.0.13",
+    "@redhat-cloud-services/frontend-components-config": "^5.0.0",
+    "@redhat-cloud-services/types": "^0.0.24",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
     "@types/react": "17.0.39",
     "@types/react-dom": "^18.0.5",
-    "@types/react-router-dom": "^5.3.3",
-    "@types/redux-logger": "^3.0.9",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
     "babel-jest": "27.0.5",
@@ -66,6 +59,6 @@
     "webpack-bundle-analyzer": "4.4.2"
   },
   "insights": {
-    "appname": "learningResources"
+    "appname": "learning-resources"
   }
 }
