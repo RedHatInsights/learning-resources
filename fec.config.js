@@ -3,6 +3,7 @@ module.exports = {
   debug: true,
   useProxy: true,
   proxyVerbose: true,
+  sassPrefix: '.learning-resources, .learningResources',
   /**
    * Change to false after your app is registered in configuration files
    */
