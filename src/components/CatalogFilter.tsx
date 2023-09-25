@@ -1,13 +1,8 @@
-import {
-  QuickStartCatalogFilterCountWrapper,
-  QuickStartCatalogToolbar,
-} from '@patternfly/quickstarts';
-import {
-  SearchInput,
-  ToolbarContent,
-  ToolbarItem,
-} from '@patternfly/react-core';
+import { QuickStartCatalogFilterCountWrapper } from '@patternfly/quickstarts';
+import { Level, LevelItem, SearchInput } from '@patternfly/react-core';
 import React from 'react';
+
+import './CatalogFilter.scss';
 
 const CatalogFilter = ({
   quickStartsCount,
@@ -17,20 +12,19 @@ const CatalogFilter = ({
   quickStartsCount: number;
 }) => {
   return (
-    <QuickStartCatalogToolbar>
-      <ToolbarContent className="pf-u-p-0">
-        <ToolbarItem className="pfext-quick-start-catalog-filter__input">
-          <SearchInput
-            placeholder="Filter by keywords..."
-            onChange={(_ev, str) => onSearchInputChange(str)}
-          />
-        </ToolbarItem>
+    <Level className="pf-v5-u-pt-sm pf-v5-u-pb-sm lr-c-catalog__filter">
+      <LevelItem className="pfext-quick-start-catalog-filter__input">
+        <SearchInput
+          placeholder="Filter by keywords..."
+          onChange={(_ev, str) => onSearchInputChange(str)}
+        />
+      </LevelItem>
+      <LevelItem className="pf-v5-u-mr-md">
         <QuickStartCatalogFilterCountWrapper
           quickStartsCount={quickStartsCount}
         />
-        <ToolbarItem></ToolbarItem>
-      </ToolbarContent>
-    </QuickStartCatalogToolbar>
+      </LevelItem>
+    </Level>
   );
 };
 

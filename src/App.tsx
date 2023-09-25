@@ -8,7 +8,7 @@ import {
   QuickStartContextValues,
   filterQuickStarts,
 } from '@patternfly/quickstarts';
-import { Divider, Stack, StackItem } from '@patternfly/react-core';
+import { Divider, PageSection, StackItem } from '@patternfly/react-core';
 import CatalogHeader from './components/CatalogHeader';
 import CatalogFilter from './components/CatalogFilter';
 import CatalogSection from './components/CatalogSection';
@@ -96,7 +96,7 @@ export const App = ({ bundle }: { bundle: string }) => {
   }
 
   return (
-    <>
+    <PageSection variant="default" className="pf-u-p-0">
       <div className="pf-u-p-lg lr-c-catalog__header">
         <StackItem className="pf-u-mb-md">
           <CatalogHeader />
@@ -108,7 +108,7 @@ export const App = ({ bundle }: { bundle: string }) => {
           />
         </StackItem>
       </div>
-      <Stack className="pf-u-p-lg">
+      <div className="pf-u-p-lg">
         <CatalogSection
           sectionCount={documentation.length}
           sectionTitle="Documentation"
@@ -144,7 +144,7 @@ export const App = ({ bundle }: { bundle: string }) => {
           activeQuickStartID={activeQuickStartID}
           allQuickStartStates={allQuickStartStates}
         />
-      </Stack>
-    </>
+      </div>
+    </PageSection>
   );
 };
