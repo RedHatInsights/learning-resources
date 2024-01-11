@@ -1,29 +1,26 @@
 {
   "compilerOptions": {
-    "jsx": "react",
-    "sourceMap": true,
-    "moduleResolution": "node",
-    "target": "es5",
-    "allowSyntheticDefaultImports": true,
-    "noErrorTruncation": true,
-    "strict": true,
-    "rootDir": ".",
-    "skipLibCheck": true,
-    "lib": [
-      "dom",
-      "esnext"
-    ],
-    "module": "esnext",
-    "esModuleInterop": true,
-    "resolveJsonModule": true
+      "outDir": "./dist/",
+      "sourceMap": true,
+      "noImplicitAny": true,
+      "module": "esnext",
+      "target": "esnext",
+      "jsx": "react",
+      "allowJs": true,
+      "moduleResolution": "node",
+      "removeComments": false,
+      "strict": true,
+      "skipLibCheck": true,
+      "allowSyntheticDefaultImports": true,
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "resolveJsonModule": true,
+      "types": ["node", "jest", "@testing-library/jest-dom"],
   },
   "include": [
-    "./src/index.ts",
-    "./src/**/*.ts",
-    "./src/**/*.tsx"
-  ],
-  "exclude": [
-    "./*.js",
-    "./*.d.ts"
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "src/**/*.js",
+      "src/**/*.jsx"
   ]
 }
