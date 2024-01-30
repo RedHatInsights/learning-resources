@@ -17,7 +17,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import React, { PropsWithChildren, useState } from 'react';
-import AngleRightIcon from '@patternfly/react-icons/dist/esm/icons/angle-right-icon';
+import { AngleRightIcon } from '@patternfly/react-icons';
 
 import './CatalogSection.scss';
 
