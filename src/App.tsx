@@ -69,7 +69,9 @@ export const App = ({ bundle }: { bundle: string }) => {
   const targetBundle = bundle || 'settings';
 
   chrome?.updateDocumentTitle?.('Learning Resources');
-  chrome?.hideGlobalFilter?.(true);
+  useEffect(() => {
+    chrome?.hideGlobalFilter?.(true);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/quickstarts/v1/quickstarts?bundle=${targetBundle}`)
