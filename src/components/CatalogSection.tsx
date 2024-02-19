@@ -28,11 +28,13 @@ const CatalogSection = ({
   sectionQuickStarts,
   activeQuickStartID,
   allQuickStartStates,
+  sectionName,
 }: PropsWithChildren<{
   sectionTitle: React.ReactNode;
   sectionDescription: React.ReactNode;
   sectionCount: number;
   sectionQuickStarts: QuickStart[];
+  sectionName: string;
   activeQuickStartID?: string;
   allQuickStartStates?: AllQuickStartStates;
 }>) => {
@@ -41,7 +43,7 @@ const CatalogSection = ({
   // Expandable section does not support disabled sections
   if (sectionCount === 0) {
     return (
-      <Flex alignItems={{ default: 'alignItemsCenter' }}>
+      <Flex alignItems={{ default: 'alignItemsCenter' }} id={sectionName}>
         <FlexItem>
           <Button
             className="pf-c-expandable-section__toggle"
@@ -65,6 +67,7 @@ const CatalogSection = ({
       isIndented
       onToggle={() => setIsExpanded((prev) => !prev)}
       className="lr-c-catalog-section"
+      id={sectionName}
       toggleContent={
         <Title headingLevel="h3" size="lg">
           {sectionTitle}
