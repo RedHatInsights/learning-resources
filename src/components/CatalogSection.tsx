@@ -43,7 +43,11 @@ const CatalogSection = ({
   // Expandable section does not support disabled sections
   if (sectionCount === 0) {
     return (
-      <Flex alignItems={{ default: 'alignItemsCenter' }} id={sectionName}>
+      <Flex
+        alignItems={{ default: 'alignItemsCenter' }}
+        id={sectionName}
+        className="lr-c-catalog-section"
+      >
         <FlexItem>
           <Button
             className="pf-c-expandable-section__toggle"
