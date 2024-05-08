@@ -12,6 +12,8 @@ import LearningResourcesEmptyState from './EmptyState';
 import useQuickStarts from '../../hooks/useQuickStarts';
 import { Flex, FlexItem } from '@patternfly/react-core';
 
+import './LearningResourcesWidget.scss';
+
 export const API_BASE = '/api/quickstarts/v1';
 export const QUICKSTARTS = '/quickstarts';
 export const FAVORITES = '/favorites';
