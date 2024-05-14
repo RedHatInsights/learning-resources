@@ -39,7 +39,7 @@ const LinkWrapper = ({
 };
 
 const LearningResourcesWidget: React.FunctionComponent = () => {
-  const { bookmarks } = useQuickStarts();
+  const { bookmarks } = useQuickStarts('settings');
 
   const getPathName = (url: string) => {
     return new URL(url).host;
