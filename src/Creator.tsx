@@ -42,13 +42,12 @@ type ItemFormProps = PropsWithChildren<{
 
 const INVALID_BUNDLE = 'invalid-bundle';
 
-const BundleInput = ({
-  value,
-  onChange,
-}: {
+type StringInputProps = {
   value: string;
   onChange: (newValue: string) => void;
-}) => {
+};
+
+const BundleInput = ({ value, onChange }: StringInputProps) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
 
@@ -69,13 +68,7 @@ const BundleInput = ({
   );
 };
 
-const TitleInput = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (newValue: string) => void;
-}) => {
+const TitleInput = ({ value, onChange }: StringInputProps) => {
   return (
     <FormGroup label="Title">
       <TextInput
@@ -89,13 +82,7 @@ const TitleInput = ({
   );
 };
 
-const DescriptionInput = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (newValue: string) => void;
-}) => {
+const DescriptionInput = ({ value, onChange }: StringInputProps) => {
   return (
     <FormGroup label="Description">
       <TextArea
