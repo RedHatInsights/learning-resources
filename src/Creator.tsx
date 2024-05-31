@@ -107,34 +107,27 @@ const ItemForm = ({
   onChangeCommonState,
   children,
 }: ItemFormProps) => {
+  const commonInputs: [
+    keyof CommonItemState,
+    (props: StringInputProps) => ReactNode
+  ][] = [
+    ['bundle', BundleInput],
+    ['title', TitleInput],
+    ['description', DescriptionInput],
+  ];
+
   return (
     <Grid>
-      <ItemFormElement>
-        <BundleInput
-          value={commonState.bundle}
-          onChange={(newBundle) =>
-            onChangeCommonState({ ...commonState, bundle: newBundle })
-          }
-        />
-      </ItemFormElement>
-
-      <ItemFormElement>
-        <TitleInput
-          value={commonState.title}
-          onChange={(newTitle) =>
-            onChangeCommonState({ ...commonState, title: newTitle })
-          }
-        />
-      </ItemFormElement>
-
-      <ItemFormElement>
-        <DescriptionInput
-          value={commonState.description}
-          onChange={(newDescription) =>
-            onChangeCommonState({ ...commonState, description: newDescription })
-          }
-        />
-      </ItemFormElement>
+      {...commonInputs.map(([key, ComponentType]) => (
+        <ItemFormElement key={key}>
+          <ComponentType
+            value={commonState[key]}
+            onChange={(newValue) =>
+              onChangeCommonState({ ...commonState, [key]: newValue })
+            }
+          />
+        </ItemFormElement>
+      ))}
 
       {children}
     </Grid>
