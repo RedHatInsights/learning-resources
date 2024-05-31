@@ -8,6 +8,7 @@ import {
   PageGroup,
   PageSection,
   Radio,
+  TextArea,
   TextInput,
   Title,
 } from '@patternfly/react-core';
@@ -88,6 +89,28 @@ const TitleInput = ({
   );
 };
 
+const DescriptionInput = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (newValue: string) => void;
+}) => {
+  return (
+    <FormGroup label="Description">
+      <TextArea
+        isRequired
+        type="text"
+        value={value}
+        onChange={(_, value) => onChange(value)}
+        aria-label="Resource title"
+        rows={3}
+        resizeOrientation="vertical"
+      ></TextArea>
+    </FormGroup>
+  );
+};
+
 const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
@@ -113,6 +136,15 @@ const ItemForm = ({
           value={commonState.title}
           onChange={(newTitle) =>
             onChangeCommonState({ ...commonState, title: newTitle })
+          }
+        />
+      </ItemFormElement>
+
+      <ItemFormElement>
+        <DescriptionInput
+          value={commonState.description}
+          onChange={(newDescription) =>
+            onChangeCommonState({ ...commonState, description: newDescription })
           }
         />
       </ItemFormElement>
