@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, ReactNode, useMemo, useState } from 'react';
+import React, { ReactNode, useMemo, useState } from 'react';
 import {
   FormGroup,
   FormSelect,
@@ -35,10 +35,10 @@ type CommonItemState = {
   description: string;
 };
 
-type ItemFormProps = PropsWithChildren<{
+type CommonItemFormProps = {
   commonState: CommonItemState;
   onChangeCommonState: (newState: CommonItemState) => void;
-}>;
+};
 
 type DocumentationState = {
   url: string;
@@ -128,11 +128,14 @@ const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
 
-const ItemForm = ({
+const ItemFormContainer = ({ children }: { children: ReactNode }) => {
+  return <Grid>{children}</Grid>;
+};
+
+const CommonItemForm = ({
   commonState,
   onChangeCommonState,
-  children,
-}: ItemFormProps) => {
+}: CommonItemFormProps) => {
   const commonInputs: [
     keyof CommonItemState,
     (props: StringInputProps) => ReactNode
@@ -143,7 +146,7 @@ const ItemForm = ({
   ];
 
   return (
-    <Grid>
+    <>
       {...commonInputs.map(([key, ComponentType]) => (
         <ItemFormElement key={key}>
           <ComponentType
@@ -154,9 +157,7 @@ const ItemForm = ({
           />
         </ItemFormElement>
       ))}
-
-      {children}
-    </Grid>
+    </>
   );
 };
 
@@ -233,10 +234,12 @@ const Creator = () => {
       <PageSection>
         <h2>Resource Details</h2>
 
-        <ItemForm
-          commonState={commonState}
-          onChangeCommonState={(state) => setCommonState(state)}
-        >
+        <ItemFormContainer>
+          <CommonItemForm
+            commonState={commonState}
+            onChangeCommonState={(state) => setCommonState(state)}
+          />
+
           {selectedType === 'documentation' ? (
             <DocumentationForm
               documentationState={documentationState}
@@ -245,7 +248,7 @@ const Creator = () => {
               }
             />
           ) : null}
-        </ItemForm>
+        </ItemFormContainer>
       </PageSection>
     </PageGroup>
   );
