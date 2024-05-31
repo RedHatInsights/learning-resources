@@ -8,6 +8,7 @@ import {
   PageGroup,
   PageSection,
   Radio,
+  TextInput,
   Title,
 } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
@@ -67,6 +68,26 @@ const BundleInput = ({
   );
 };
 
+const TitleInput = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (newValue: string) => void;
+}) => {
+  return (
+    <FormGroup label="Title">
+      <TextInput
+        isRequired
+        type="text"
+        value={value}
+        onChange={(_, value) => onChange(value)}
+        aria-label="Resource title"
+      ></TextInput>
+    </FormGroup>
+  );
+};
+
 const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
@@ -83,6 +104,15 @@ const ItemForm = ({
           value={commonState.bundle}
           onChange={(newBundle) =>
             onChangeCommonState({ ...commonState, bundle: newBundle })
+          }
+        />
+      </ItemFormElement>
+
+      <ItemFormElement>
+        <TitleInput
+          value={commonState.title}
+          onChange={(newTitle) =>
+            onChangeCommonState({ ...commonState, title: newTitle })
           }
         />
       </ItemFormElement>
