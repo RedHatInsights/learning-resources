@@ -1,6 +1,6 @@
 import React from 'react';
 import { App } from './App';
 
-const AppEntry = (props: { bundle: string }) => <App {...props} />;
+const AppEntry = () => <App />;
 
 export default AppEntry;
