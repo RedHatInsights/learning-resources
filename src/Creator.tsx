@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { PageGroup, PageSection, Radio, Title } from '@patternfly/react-core';
 
-const Creator = () => {
-  const itemTypes = {
-    documentation: {
-      label: 'Documentation',
-    },
-    quickstart: {
-      label: 'Quickstart',
-    },
-    learningPath: {
-      label: 'Learning path',
-    },
-    other: {
-      label: 'Other',
-    },
-  };
+type ItemKind = 'documentation' | 'quickstart';
 
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+type ItemKindMeta = {
+  label: string;
+};
+
+const itemKindMeta: Record<ItemKind, ItemKindMeta> = {
+  documentation: {
+    label: 'Documentation',
+  },
+  quickstart: {
+    label: 'Quickstart',
+  },
+};
+
+const Creator = () => {
+  const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
 
   return (
     <PageGroup>
@@ -31,7 +31,9 @@ const Creator = () => {
       <PageSection>
         <div>
           <h2>Content Type</h2>
-          {Object.entries(itemTypes).map(([name, value]) => {
+          {Object.entries(itemKindMeta).map(([rawName, value]) => {
+            const name = rawName as keyof typeof itemKindMeta;
+
             return (
               <Radio
                 key={name}
