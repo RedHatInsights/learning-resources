@@ -77,6 +77,7 @@ const TitleInput = ({ value, onChange }: StringInputProps) => {
         value={value}
         onChange={(_, value) => onChange(value)}
         aria-label="Resource title"
+        placeholder="Title to display on card"
       ></TextInput>
     </FormGroup>
   );
@@ -91,6 +92,7 @@ const DescriptionInput = ({ value, onChange }: StringInputProps) => {
         value={value}
         onChange={(_, value) => onChange(value)}
         aria-label="Resource title"
+        placeholder="Short description of resource and will auto-truncate with '...' after 3 lines"
         rows={3}
         resizeOrientation="vertical"
       ></TextArea>
