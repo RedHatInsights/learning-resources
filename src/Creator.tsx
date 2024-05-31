@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { PageGroup, PageSection, Radio, Title } from '@patternfly/react-core';
+import {
+  FormGroup,
+  PageGroup,
+  PageSection,
+  Radio,
+  Title,
+} from '@patternfly/react-core';
 
 type ItemKind = 'documentation' | 'quickstart';
 
@@ -29,8 +35,9 @@ const Creator = () => {
       </PageSection>
 
       <PageSection>
-        <div>
-          <h2>Content Type</h2>
+        <h2>Content Type</h2>
+
+        <FormGroup role="radiogroup">
           {Object.entries(itemKindMeta).map(([rawName, value]) => {
             const name = rawName as keyof typeof itemKindMeta;
 
@@ -53,7 +60,7 @@ const Creator = () => {
               ></Radio>
             );
           })}
-        </div>
+        </FormGroup>
       </PageSection>
     </PageGroup>
   );
