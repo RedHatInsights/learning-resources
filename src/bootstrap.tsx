@@ -8,7 +8,7 @@ function RenderApp() {
     container?.setAttribute('data-ouia-safe', 'true');
   });
 
-  return <AppEntry bundle="settings" />;
+  return <AppEntry />;
 }
 if (container) {
   const root = createRoot(container);
