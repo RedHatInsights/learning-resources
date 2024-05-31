@@ -40,6 +40,15 @@ type ItemFormProps = PropsWithChildren<{
   onChangeCommonState: (newState: CommonItemState) => void;
 }>;
 
+type DocumentationState = {
+  url: string;
+};
+
+type DocumentationFormProps = {
+  documentationState: DocumentationState;
+  onChangeDocumentationState: (newState: DocumentationState) => void;
+};
+
 const INVALID_BUNDLE = 'invalid-bundle';
 
 type StringInputProps = {
@@ -100,6 +109,21 @@ const DescriptionInput = ({ value, onChange }: StringInputProps) => {
   );
 };
 
+const UrlInput = ({ value, onChange }: StringInputProps) => {
+  return (
+    <FormGroup label="Resource URL">
+      <TextInput
+        isRequired
+        type="url"
+        value={value}
+        onChange={(_, value) => onChange(value)}
+        aria-label="Resource URL"
+        placeholder="https://url.redhat.com/docs-n-things"
+      ></TextInput>
+    </FormGroup>
+  );
+};
+
 const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
@@ -136,6 +160,24 @@ const ItemForm = ({
   );
 };
 
+const DocumentationForm = ({
+  documentationState,
+  onChangeDocumentationState,
+}: DocumentationFormProps) => {
+  return (
+    <>
+      <ItemFormElement>
+        <UrlInput
+          value={documentationState.url}
+          onChange={(newUrl) =>
+            onChangeDocumentationState({ ...documentationState, url: newUrl })
+          }
+        />
+      </ItemFormElement>
+    </>
+  );
+};
+
 const Creator = () => {
   const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
 
@@ -144,6 +186,11 @@ const Creator = () => {
     title: '',
     description: '',
   });
+
+  const [documentationState, setDocumentationState] =
+    useState<DocumentationState>({
+      url: '',
+    });
 
   return (
     <PageGroup>
@@ -189,7 +236,16 @@ const Creator = () => {
         <ItemForm
           commonState={commonState}
           onChangeCommonState={(state) => setCommonState(state)}
-        ></ItemForm>
+        >
+          {selectedType === 'documentation' ? (
+            <DocumentationForm
+              documentationState={documentationState}
+              onChangeDocumentationState={(state) =>
+                setDocumentationState(state)
+              }
+            />
+          ) : null}
+        </ItemForm>
       </PageSection>
     </PageGroup>
   );
