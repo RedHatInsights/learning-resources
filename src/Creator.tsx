@@ -13,6 +13,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import './Creator.scss';
 
 type ItemKind = 'documentation' | 'quickstart';
 
@@ -239,6 +240,23 @@ const QuickstartForm = ({
   );
 };
 
+const StepHeader = ({
+  stepNumber,
+  label,
+}: {
+  stepNumber: string;
+  label: string;
+}) => {
+  return (
+    <Title headingLevel="h2" size="xl" className="rc-step-header">
+      <span className="rc-step-index" aria-label="Step 1: ">
+        {stepNumber}
+      </span>
+      {label}
+    </Title>
+  );
+};
+
 const Creator = () => {
   const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
 
@@ -269,7 +287,7 @@ const Creator = () => {
           </section>
 
           <section>
-            <h2>Content Type</h2>
+            <StepHeader stepNumber="1" label="Content type" />
 
             <TypeInput
               value={selectedType}
@@ -278,7 +296,7 @@ const Creator = () => {
           </section>
 
           <section>
-            <h2>Resource Details</h2>
+            <StepHeader stepNumber="2" label="Resource details" />
 
             <ItemFormContainer>
               <CommonItemForm
