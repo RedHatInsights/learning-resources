@@ -7,7 +7,10 @@ import {
   GridItem,
   NumberInput,
   PageGroup,
+  PageSection,
   Radio,
+  Stack,
+  StackItem,
   TextArea,
   TextInput,
   Title,
@@ -185,7 +188,7 @@ const ItemFormElement = ({ children }: { children: ReactNode }) => {
 };
 
 const ItemFormContainer = ({ children }: { children: ReactNode }) => {
-  return <Grid>{children}</Grid>;
+  return <Grid hasGutter>{children}</Grid>;
 };
 
 const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
@@ -286,94 +289,108 @@ const Creator = () => {
 
   return (
     <PageGroup>
-      <Grid>
-        <GridItem span={12} lg={6}>
-          <Title headingLevel="h1" size="2xl">
-            Add new learning resources
-          </Title>
+      <PageSection>
+        <Grid hasGutter>
+          <GridItem span={12} lg={6}>
+            <Stack hasGutter>
+              <StackItem>
+                <section>
+                  <Title headingLevel="h1" size="2xl">
+                    Add new learning resources
+                  </Title>
 
-          <p>Description</p>
+                  <p>Description</p>
+                </section>
+              </StackItem>
 
-          <section>
-            <StepHeader stepNumber="1" label="Content type" />
+              <StackItem>
+                <section>
+                  <StepHeader stepNumber="1" label="Content type" />
 
-            <TypeInput
-              value={selectedType}
-              onChange={(newType) => setSelectedType(newType)}
-            />
-          </section>
+                  <TypeInput
+                    value={selectedType}
+                    onChange={(newType) => setSelectedType(newType)}
+                  />
+                </section>
+              </StackItem>
 
-          <section>
-            <StepHeader stepNumber="2" label="Resource details" />
+              <StackItem>
+                <section>
+                  <StepHeader stepNumber="2" label="Resource details" />
 
-            <ItemFormContainer>
-              <CommonItemForm
-                value={commonState}
-                onChange={(state) => setCommonState(state)}
+                  <ItemFormContainer>
+                    <CommonItemForm
+                      value={commonState}
+                      onChange={(state) => setCommonState(state)}
+                    />
+
+                    {selectedType !== null
+                      ? {
+                          documentation: (
+                            <DocumentationForm
+                              value={documentationState}
+                              onChange={(newState) =>
+                                setDocumentationState(newState)
+                              }
+                            />
+                          ),
+                          quickstart: (
+                            <QuickstartForm
+                              quickstartState={quickstartState}
+                              onChangeQuickstartState={(newState) =>
+                                setQuickstartState(newState)
+                              }
+                            />
+                          ),
+                        }[selectedType]
+                      : null}
+                  </ItemFormContainer>
+                </section>
+              </StackItem>
+            </Stack>
+          </GridItem>
+
+          <GridItem span={12} lg={6}>
+            <div className="rc-tile-preview-wrapper">
+              <WrappedQuickStartTile
+                quickStart={{
+                  metadata: {
+                    name: 'test-quickstart',
+                    kind: 'QuickStarts',
+                  },
+                  spec: {
+                    displayName: commonState.title,
+                    icon: null,
+                    description: commonState.description,
+                    link:
+                      selectedType === 'documentation'
+                        ? {
+                            href: documentationState.url,
+                            text: 'View documentation',
+                          }
+                        : undefined,
+                    type:
+                      selectedType !== null
+                        ? {
+                            text: itemKindMeta[selectedType].displayName,
+                            color: itemKindMeta[selectedType].tagColor,
+                          }
+                        : undefined,
+                    durationMinutes:
+                      selectedType === 'quickstart' &&
+                      quickstartState.duration > 0
+                        ? quickstartState.duration
+                        : undefined,
+                  },
+                }}
+                bookmarks={null}
+                isActive={false}
+                status={QuickStartStatus.NOT_STARTED}
               />
-
-              {selectedType !== null
-                ? {
-                    documentation: (
-                      <DocumentationForm
-                        value={documentationState}
-                        onChange={(newState) => setDocumentationState(newState)}
-                      />
-                    ),
-                    quickstart: (
-                      <QuickstartForm
-                        quickstartState={quickstartState}
-                        onChangeQuickstartState={(newState) =>
-                          setQuickstartState(newState)
-                        }
-                      />
-                    ),
-                  }[selectedType]
-                : null}
-            </ItemFormContainer>
-          </section>
-        </GridItem>
-
-        <GridItem span={12} lg={6}>
-          <div className="rc-tile-preview-wrapper">
-            <WrappedQuickStartTile
-              quickStart={{
-                metadata: {
-                  name: 'test-quickstart',
-                  kind: 'QuickStarts',
-                },
-                spec: {
-                  displayName: commonState.title,
-                  icon: null,
-                  description: commonState.description,
-                  link:
-                    selectedType === 'documentation'
-                      ? {
-                          href: documentationState.url,
-                          text: 'View documentation',
-                        }
-                      : undefined,
-                  type:
-                    selectedType !== null
-                      ? {
-                          text: itemKindMeta[selectedType].displayName,
-                          color: itemKindMeta[selectedType].tagColor,
-                        }
-                      : undefined,
-                  durationMinutes:
-                    selectedType === 'quickstart' &&
-                    quickstartState.duration > 0
-                      ? quickstartState.duration
-                      : undefined,
-                },
-              }}
-              bookmarks={null}
-              isActive={false}
-              status={QuickStartStatus.NOT_STARTED}
-            />
-          </div>
-        </GridItem>
-      </Grid>
+            </div>
+          </GridItem>
+        </Grid>
+      </PageSection>
     </PageGroup>
   );
 };
