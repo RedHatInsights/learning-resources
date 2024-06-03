@@ -7,7 +7,6 @@ import {
   GridItem,
   NumberInput,
   PageGroup,
-  PageSection,
   Radio,
   TextArea,
   TextInput,
@@ -260,51 +259,59 @@ const Creator = () => {
 
   return (
     <PageGroup>
-      <PageSection>
-        <Title headingLevel="h1" size="2xl">
-          Add new learning resources
-        </Title>
-        Description
-      </PageSection>
+      <Grid>
+        <GridItem span={12} lg={6}>
+          <section>
+            <Title headingLevel="h1" size="2xl">
+              Add new learning resources
+            </Title>
+            Description
+          </section>
 
-      <PageSection>
-        <h2>Content Type</h2>
+          <section>
+            <h2>Content Type</h2>
 
-        <TypeInput
-          value={selectedType}
-          onChange={(newType) => setSelectedType(newType)}
-        />
-      </PageSection>
+            <TypeInput
+              value={selectedType}
+              onChange={(newType) => setSelectedType(newType)}
+            />
+          </section>
 
-      <PageSection>
-        <h2>Resource Details</h2>
+          <section>
+            <h2>Resource Details</h2>
 
-        <ItemFormContainer>
-          <CommonItemForm
-            value={commonState}
-            onChange={(state) => setCommonState(state)}
-          />
+            <ItemFormContainer>
+              <CommonItemForm
+                value={commonState}
+                onChange={(state) => setCommonState(state)}
+              />
 
-          {selectedType !== null
-            ? {
-                documentation: (
-                  <DocumentationForm
-                    value={documentationState}
-                    onChange={(newState) => setDocumentationState(newState)}
-                  />
-                ),
-                quickstart: (
-                  <QuickstartForm
-                    quickstartState={quickstartState}
-                    onChangeQuickstartState={(newState) =>
-                      setQuickstartState(newState)
-                    }
-                  />
-                ),
-              }[selectedType]
-            : null}
-        </ItemFormContainer>
-      </PageSection>
+              {selectedType !== null
+                ? {
+                    documentation: (
+                      <DocumentationForm
+                        value={documentationState}
+                        onChange={(newState) => setDocumentationState(newState)}
+                      />
+                    ),
+                    quickstart: (
+                      <QuickstartForm
+                        quickstartState={quickstartState}
+                        onChangeQuickstartState={(newState) =>
+                          setQuickstartState(newState)
+                        }
+                      />
+                    ),
+                  }[selectedType]
+                : null}
+            </ItemFormContainer>
+          </section>
+        </GridItem>
+
+        <GridItem span={12} lg={6}>
+          Right-side content
+        </GridItem>
+      </Grid>
     </PageGroup>
   );
 };
