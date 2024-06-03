@@ -68,6 +68,33 @@ type InputProps<T> = {
 
 type StringInputProps = InputProps<string>;
 
+const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
+  return (
+    <FormGroup role="radiogroup">
+      {Object.entries(itemKindMeta).map(([rawName, meta]) => {
+        const name = rawName as keyof typeof itemKindMeta;
+
+        return (
+          <Radio
+            key={name}
+            id={`cr-input-type-${name}`}
+            name={`cr-input-type`}
+            isChecked={value === name}
+            onChange={(_, isChecked) => {
+              if (isChecked) {
+                onChange(name);
+              } else if (value === name) {
+                onChange(null);
+              }
+            }}
+            label={meta.label}
+          ></Radio>
+        );
+      })}
+    </FormGroup>
+  );
+};
+
 const BundleInput = ({ value, onChange }: StringInputProps) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
@@ -257,30 +284,10 @@ const Creator = () => {
       <PageSection>
         <h2>Content Type</h2>
 
-        <FormGroup role="radiogroup">
-          {Object.entries(itemKindMeta).map(([rawName, value]) => {
-            const name = rawName as keyof typeof itemKindMeta;
-
-            return (
-              <Radio
-                key={name}
-                id={`cr-input-type-${name}`}
-                name={`cr-input-type`}
-                isChecked={name === selectedType}
-                onChange={(_, isChecked) =>
-                  setSelectedType((old) => {
-                    if (isChecked) {
-                      return name;
-                    } else {
-                      return old === name ? null : old;
-                    }
-                  })
-                }
-                label={value.label}
-              ></Radio>
-            );
-          })}
-        </FormGroup>
+        <TypeInput
+          value={selectedType}
+          onChange={(newType) => setSelectedType(newType)}
+        />
       </PageSection>
 
       <PageSection>
