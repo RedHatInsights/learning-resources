@@ -30,6 +30,14 @@ const itemKindMeta = {
     displayName: 'Quickstart',
     tagColor: 'green',
   },
+  learningPath: {
+    displayName: 'Learning path',
+    tagColor: 'cyan',
+  },
+  other: {
+    displayName: 'Other',
+    tagColor: 'purple',
+  },
 } as const;
 
 type ItemKind = keyof typeof itemKindMeta;
@@ -40,7 +48,7 @@ type CommonItemState = {
   description: string;
 };
 
-type DocumentationState = {
+type SimpleItemState = {
   url: string;
 };
 
@@ -213,7 +221,7 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
 const DocumentationForm = ({
   value,
   onChange,
-}: InputProps<DocumentationState>) => {
+}: InputProps<SimpleItemState>) => {
   return (
     <>
       <ItemFormElement>
@@ -256,9 +264,9 @@ const StepHeader = ({
 }) => {
   return (
     <Title headingLevel="h2" size="xl" className="rc-step-header">
-      <span className="rc-step-index" aria-label="Step 1: ">
+      <span className="rc-step-index" aria-label={`Step ${stepNumber}: `}>
         {stepNumber}
-      </span>
+      </span>{' '}
       {label}
     </Title>
   );
@@ -273,10 +281,9 @@ const Creator = () => {
     description: '',
   });
 
-  const [documentationState, setDocumentationState] =
-    useState<DocumentationState>({
-      url: '',
-    });
+  const [simpleItemState, setSimpleItemState] = useState<SimpleItemState>({
+    url: '',
+  });
 
   const [quickstartState, setQuickstartState] = useState<QuickstartState>({
     duration: 0,
@@ -317,26 +324,34 @@ const Creator = () => {
                       onChange={(state) => setCommonState(state)}
                     />
 
-                    {selectedType !== null
-                      ? {
-                          documentation: (
+                    {(() => {
+                      switch (selectedType) {
+                        case null:
+                          return null;
+
+                        case 'documentation':
+                        case 'learningPath':
+                        case 'other':
+                          return (
                             <DocumentationForm
-                              value={documentationState}
+                              value={simpleItemState}
                               onChange={(newState) =>
-                                setDocumentationState(newState)
+                                setSimpleItemState(newState)
                               }
                             />
-                          ),
-                          quickstart: (
+                          );
+
+                        case 'quickstart':
+                          return (
                             <QuickstartForm
                               quickstartState={quickstartState}
                               onChangeQuickstartState={(newState) =>
                                 setQuickstartState(newState)
                               }
                             />
-                          ),
-                        }[selectedType]
-                      : null}
+                          );
+                      }
+                    })()}
                   </ItemFormContainer>
                 </section>
               </StackItem>
@@ -363,7 +378,7 @@ const Creator = () => {
                       link:
                         selectedType === 'documentation'
                           ? {
-                              href: documentationState.url,
+                              href: simpleItemState.url,
                               text: 'View documentation',
                             }
                           : undefined,
