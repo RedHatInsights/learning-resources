@@ -73,7 +73,7 @@ const BundleInput = ({ value, onChange }: StringInputProps) => {
   const bundles = useMemo(() => getAvailableBundles(), []);
 
   return (
-    <FormGroup label="Bundle">
+    <FormGroup label="Bundle" isRequired>
       <FormSelect
         value={value}
         onChange={(_, value) => onChange(value)}
@@ -91,7 +91,7 @@ const BundleInput = ({ value, onChange }: StringInputProps) => {
 
 const TitleInput = ({ value, onChange }: StringInputProps) => {
   return (
-    <FormGroup label="Title">
+    <FormGroup label="Title" isRequired>
       <TextInput
         isRequired
         type="text"
@@ -106,7 +106,7 @@ const TitleInput = ({ value, onChange }: StringInputProps) => {
 
 const DescriptionInput = ({ value, onChange }: StringInputProps) => {
   return (
-    <FormGroup label="Description">
+    <FormGroup label="Description" isRequired>
       <TextArea
         isRequired
         type="text"
@@ -123,7 +123,7 @@ const DescriptionInput = ({ value, onChange }: StringInputProps) => {
 
 const UrlInput = ({ value, onChange }: StringInputProps) => {
   return (
-    <FormGroup label="Resource URL">
+    <FormGroup label="Resource URL" isRequired>
       <TextInput
         isRequired
         type="url"
@@ -138,7 +138,7 @@ const UrlInput = ({ value, onChange }: StringInputProps) => {
 
 const DurationInput = ({ value, onChange }: InputProps<number>) => {
   return (
-    <FormGroup label="Approximate completion time">
+    <FormGroup label="Approximate completion time" isRequired>
       <NumberInput
         type="number"
         value={value}
