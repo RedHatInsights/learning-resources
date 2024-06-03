@@ -18,17 +18,10 @@ import {
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
-import { QuickStartStatus, QuickStartType } from '@patternfly/quickstarts';
+import { QuickStartStatus } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
-type ItemKind = 'documentation' | 'quickstart';
-
-type ItemKindMeta = {
-  displayName: string;
-  tagColor: QuickStartType['color'];
-};
-
-const itemKindMeta: Record<ItemKind, ItemKindMeta> = {
+const itemKindMeta = {
   documentation: {
     displayName: 'Documentation',
     tagColor: 'orange',
@@ -37,7 +30,9 @@ const itemKindMeta: Record<ItemKind, ItemKindMeta> = {
     displayName: 'Quickstart',
     tagColor: 'green',
   },
-};
+} as const;
+
+type ItemKind = keyof typeof itemKindMeta;
 
 type CommonItemState = {
   bundle: string;
