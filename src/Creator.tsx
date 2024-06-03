@@ -15,7 +15,8 @@ import {
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
-import { QuickStartCatalog } from '@patternfly/quickstarts';
+import { QuickStartStatus } from '@patternfly/quickstarts';
+import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
 type ItemKind = 'documentation' | 'quickstart';
 
@@ -331,9 +332,9 @@ const Creator = () => {
         </GridItem>
 
         <GridItem span={12} lg={6}>
-          <QuickStartCatalog
-            quickStarts={[
-              {
+          <div className="rc-tile-preview-wrapper">
+            <WrappedQuickStartTile
+              quickStart={{
                 metadata: {
                   name: 'test-quickstart',
                   kind: 'QuickStarts',
@@ -368,9 +369,12 @@ const Creator = () => {
                       ? quickstartState.duration
                       : undefined,
                 },
-              },
-            ]}
-          />
+              }}
+              bookmarks={null}
+              isActive={false}
+              status={QuickStartStatus.NOT_STARTED}
+            />
+          </div>
         </GridItem>
       </Grid>
     </PageGroup>
