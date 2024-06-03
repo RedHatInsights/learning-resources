@@ -15,21 +15,24 @@ import {
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
-import { QuickStartStatus } from '@patternfly/quickstarts';
+import { QuickStartStatus, QuickStartType } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
 type ItemKind = 'documentation' | 'quickstart';
 
 type ItemKindMeta = {
-  label: string;
+  displayName: string;
+  tagColor: QuickStartType['color'];
 };
 
 const itemKindMeta: Record<ItemKind, ItemKindMeta> = {
   documentation: {
-    label: 'Documentation',
+    displayName: 'Documentation',
+    tagColor: 'orange',
   },
   quickstart: {
-    label: 'Quickstart',
+    displayName: 'Quickstart',
+    tagColor: 'green',
   },
 };
 
@@ -79,7 +82,7 @@ const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
                   onChange(null);
                 }
               }}
-              label={meta.label}
+              label={meta.displayName}
             ></Radio>
           );
         })}
@@ -353,15 +356,9 @@ const Creator = () => {
                   type:
                     selectedType !== null
                       ? {
-                          quickstart: {
-                            text: 'Quick start',
-                            color: 'green',
-                          } as const,
-                          documentation: {
-                            text: 'Documentation',
-                            color: 'orange',
-                          } as const,
-                        }[selectedType]
+                          text: itemKindMeta[selectedType].displayName,
+                          color: itemKindMeta[selectedType].tagColor,
+                        }
                       : undefined,
                   durationMinutes:
                     selectedType === 'quickstart' &&
