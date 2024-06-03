@@ -36,22 +36,12 @@ type CommonItemState = {
   description: string;
 };
 
-type CommonItemFormProps = {
-  commonState: CommonItemState;
-  onChangeCommonState: (newState: CommonItemState) => void;
-};
-
 type DocumentationState = {
   url: string;
 };
 
 type QuickstartState = {
   duration: number;
-};
-
-type DocumentationFormProps = {
-  documentationState: DocumentationState;
-  onChangeDocumentationState: (newState: DocumentationState) => void;
 };
 
 type QuickstartFormProps = {
@@ -65,8 +55,6 @@ type InputProps<T> = {
   value: T;
   onChange: (newValue: T) => void;
 };
-
-type StringInputProps = InputProps<string>;
 
 const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
   return (
@@ -97,7 +85,7 @@ const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
   );
 };
 
-const BundleInput = ({ value, onChange }: StringInputProps) => {
+const BundleInput = ({ value, onChange }: InputProps<string>) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
 
@@ -118,7 +106,7 @@ const BundleInput = ({ value, onChange }: StringInputProps) => {
   );
 };
 
-const TitleInput = ({ value, onChange }: StringInputProps) => {
+const TitleInput = ({ value, onChange }: InputProps<string>) => {
   return (
     <FormGroup label="Title" isRequired>
       <TextInput
@@ -133,7 +121,7 @@ const TitleInput = ({ value, onChange }: StringInputProps) => {
   );
 };
 
-const DescriptionInput = ({ value, onChange }: StringInputProps) => {
+const DescriptionInput = ({ value, onChange }: InputProps<string>) => {
   return (
     <FormGroup label="Description" isRequired>
       <TextArea
@@ -150,7 +138,7 @@ const DescriptionInput = ({ value, onChange }: StringInputProps) => {
   );
 };
 
-const UrlInput = ({ value, onChange }: StringInputProps) => {
+const UrlInput = ({ value, onChange }: InputProps<string>) => {
   return (
     <FormGroup label="Resource URL" isRequired>
       <TextInput
@@ -191,13 +179,10 @@ const ItemFormContainer = ({ children }: { children: ReactNode }) => {
   return <Grid>{children}</Grid>;
 };
 
-const CommonItemForm = ({
-  commonState,
-  onChangeCommonState,
-}: CommonItemFormProps) => {
+const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
   const commonInputs: [
     keyof CommonItemState,
-    (props: StringInputProps) => ReactNode
+    (props: InputProps<string>) => ReactNode
   ][] = [
     ['bundle', BundleInput],
     ['title', TitleInput],
@@ -209,10 +194,8 @@ const CommonItemForm = ({
       {...commonInputs.map(([key, ComponentType]) => (
         <ItemFormElement key={key}>
           <ComponentType
-            value={commonState[key]}
-            onChange={(newValue) =>
-              onChangeCommonState({ ...commonState, [key]: newValue })
-            }
+            value={value[key]}
+            onChange={(newValue) => onChange({ ...value, [key]: newValue })}
           />
         </ItemFormElement>
       ))}
@@ -221,17 +204,15 @@ const CommonItemForm = ({
 };
 
 const DocumentationForm = ({
-  documentationState,
-  onChangeDocumentationState,
-}: DocumentationFormProps) => {
+  value,
+  onChange,
+}: InputProps<DocumentationState>) => {
   return (
     <>
       <ItemFormElement>
         <UrlInput
-          value={documentationState.url}
-          onChange={(newUrl) =>
-            onChangeDocumentationState({ ...documentationState, url: newUrl })
-          }
+          value={value.url}
+          onChange={(newUrl) => onChange({ ...value, url: newUrl })}
         />
       </ItemFormElement>
     </>
@@ -300,18 +281,16 @@ const Creator = () => {
 
         <ItemFormContainer>
           <CommonItemForm
-            commonState={commonState}
-            onChangeCommonState={(state) => setCommonState(state)}
+            value={commonState}
+            onChange={(state) => setCommonState(state)}
           />
 
           {selectedType !== null
             ? {
                 documentation: (
                   <DocumentationForm
-                    documentationState={documentationState}
-                    onChangeDocumentationState={(newState) =>
-                      setDocumentationState(newState)
-                    }
+                    value={documentationState}
+                    onChange={(newState) => setDocumentationState(newState)}
                   />
                 ),
                 quickstart: (
