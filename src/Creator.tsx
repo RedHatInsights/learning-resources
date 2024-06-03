@@ -160,12 +160,15 @@ const DurationInput = ({ value, onChange }: InputProps<number>) => {
         type="number"
         value={value}
         unit="minutes"
-        onChange={(event) => onChange(parseInt(event.currentTarget.value, 10))}
-        onPlus={() => onChange(value + 1)}
-        onMinus={() => onChange(value - 1)}
+        onChange={(event) =>
+          onChange(Math.max(0, parseInt(event.currentTarget.value, 10)))
+        }
+        onPlus={() => onChange(Math.max(0, value + 1))}
+        onMinus={() => onChange(Math.max(0, value - 1))}
         inputAriaLabel="Approximate completion time"
         minusBtnAriaLabel="Decrease approximate completion time"
         plusBtnAriaLabel="Increase approximate completion time"
+        min={0}
       />
     </FormGroup>
   );
