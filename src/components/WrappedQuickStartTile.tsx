@@ -7,6 +7,7 @@ import {
 
 import { BookmarkIcon, OutlinedBookmarkIcon } from '@patternfly/react-icons';
 import { Icon } from '@patternfly/react-core';
+import './WrappedQuickStartTile.scss';
 
 const OutlinedBookmarkedIcon = () => (
   <Icon className="lr-c-bookmark__icon">
@@ -37,35 +38,37 @@ const WrappedQuickStartTile = ({
   status: QuickStartStatus;
 }) => {
   return (
-    <QuickStartTile
-      action={
-        bookmarks !== null
-          ? {
-              'aria-label': bookmarks.isFavorite
-                ? `Remove quickstart ${quickStart.spec.displayName} from bookmarks.`
-                : `Bookmark quickstart ${quickStart.spec.displayName}.`,
-              icon: bookmarks.isFavorite
-                ? BookmarkedIcon
-                : OutlinedBookmarkedIcon,
-              onClick: (e: SyntheticEvent<Element, Event>): void => {
-                e.preventDefault();
-                e.stopPropagation();
-                bookmarks.setFavorite(!bookmarks.isFavorite);
-              },
-            }
-          : undefined
-      }
-      quickStart={{
-        ...quickStart,
-        spec: {
-          ...quickStart.spec,
-          // remove any lingering icons
-          icon: null,
-        },
-      }}
-      isActive={isActive}
-      status={status}
-    />
+    <div className="lr-c-quickstart_tile">
+      <QuickStartTile
+        action={
+          bookmarks !== null
+            ? {
+                'aria-label': bookmarks.isFavorite
+                  ? `Remove quickstart ${quickStart.spec.displayName} from bookmarks.`
+                  : `Bookmark quickstart ${quickStart.spec.displayName}.`,
+                icon: bookmarks.isFavorite
+                  ? BookmarkedIcon
+                  : OutlinedBookmarkedIcon,
+                onClick: (e: SyntheticEvent<Element, Event>): void => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  bookmarks.setFavorite(!bookmarks.isFavorite);
+                },
+              }
+            : undefined
+        }
+        quickStart={{
+          ...quickStart,
+          spec: {
+            ...quickStart.spec,
+            // remove any lingering icons
+            icon: null,
+          },
+        }}
+        isActive={isActive}
+        status={status}
+      />
+    </div>
   );
 };
 

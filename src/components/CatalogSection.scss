@@ -22,18 +22,3 @@
     margin-bottom: var(--pf-global--spacer--md);
   }
 }
-
-.lr-c-quickstart_tile {
-  .pf-v5-c-card__header {
-    height: 0;
-  }
-  .pf-v5-c-title {
-    flex: 1;
-  }
-  >div {
-    height: 100%;
-    >a {
-      color: var(--pf-v5-global--palette--black-1000);
-    }
-  }
-}

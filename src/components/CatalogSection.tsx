@@ -161,10 +161,7 @@ const CatalogSection = ({
       {sectionCount ? (
         <Gallery hasGutter>
           {sectionQuickStarts.map((quickStart) => (
-            <GalleryItem
-              className="lr-c-quickstart_tile"
-              key={quickStart.metadata.name}
-            >
+            <GalleryItem key={quickStart.metadata.name}>
               <WrappedQuickStartTile
                 quickStart={quickStart}
                 bookmarks={
