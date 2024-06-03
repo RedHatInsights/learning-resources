@@ -279,12 +279,11 @@ const Creator = () => {
     <PageGroup>
       <Grid>
         <GridItem span={12} lg={6}>
-          <section>
-            <Title headingLevel="h1" size="2xl">
-              Add new learning resources
-            </Title>
-            Description
-          </section>
+          <Title headingLevel="h1" size="2xl">
+            Add new learning resources
+          </Title>
+
+          <p>Description</p>
 
           <section>
             <StepHeader stepNumber="1" label="Content type" />
