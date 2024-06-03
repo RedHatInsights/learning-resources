@@ -14,6 +14,8 @@ import {
 } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
+import './components/CatalogSection.scss';
+import { QuickStartCatalog } from '@patternfly/quickstarts';
 
 type ItemKind = 'documentation' | 'quickstart';
 
@@ -329,7 +331,46 @@ const Creator = () => {
         </GridItem>
 
         <GridItem span={12} lg={6}>
-          Right-side content
+          <QuickStartCatalog
+            quickStarts={[
+              {
+                metadata: {
+                  name: 'test-quickstart',
+                  kind: 'QuickStarts',
+                },
+                spec: {
+                  displayName: commonState.title,
+                  icon: null,
+                  description: commonState.description,
+                  link:
+                    selectedType === 'documentation'
+                      ? {
+                          href: documentationState.url,
+                          text: 'View documentation',
+                        }
+                      : undefined,
+                  type:
+                    selectedType !== null
+                      ? {
+                          quickstart: {
+                            text: 'Quick start',
+                            color: 'green',
+                          } as const,
+                          documentation: {
+                            text: 'Documentation',
+                            color: 'orange',
+                          } as const,
+                        }[selectedType]
+                      : undefined,
+                  durationMinutes:
+                    selectedType === 'quickstart' &&
+                    quickstartState.duration > 0
+                      ? quickstartState.duration
+                      : undefined,
+                },
+              },
+            ]}
+          />
         </GridItem>
       </Grid>
     </PageGroup>
