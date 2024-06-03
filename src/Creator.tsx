@@ -5,6 +5,7 @@ import {
   FormSelectOption,
   Grid,
   GridItem,
+  NumberInput,
   PageGroup,
   PageSection,
   Radio,
@@ -44,17 +45,28 @@ type DocumentationState = {
   url: string;
 };
 
+type QuickstartState = {
+  duration: number;
+};
+
 type DocumentationFormProps = {
   documentationState: DocumentationState;
   onChangeDocumentationState: (newState: DocumentationState) => void;
 };
 
+type QuickstartFormProps = {
+  quickstartState: QuickstartState;
+  onChangeQuickstartState: (newState: QuickstartState) => void;
+};
+
 const INVALID_BUNDLE = 'invalid-bundle';
 
-type StringInputProps = {
-  value: string;
-  onChange: (newValue: string) => void;
+type InputProps<T> = {
+  value: T;
+  onChange: (newValue: T) => void;
 };
+
+type StringInputProps = InputProps<string>;
 
 const BundleInput = ({ value, onChange }: StringInputProps) => {
   const { getAvailableBundles } = useChrome();
@@ -124,6 +136,21 @@ const UrlInput = ({ value, onChange }: StringInputProps) => {
   );
 };
 
+const DurationInput = ({ value, onChange }: InputProps<number>) => {
+  return (
+    <FormGroup label="Approximate completion time">
+      <NumberInput
+        type="number"
+        value={value}
+        unit="minutes"
+        onChange={(event) => onChange(parseInt(event.currentTarget.value, 10))}
+        onPlus={() => onChange(value + 1)}
+        onMinus={() => onChange(value - 1)}
+      />
+    </FormGroup>
+  );
+};
+
 const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
@@ -179,6 +206,27 @@ const DocumentationForm = ({
   );
 };
 
+const QuickstartForm = ({
+  quickstartState,
+  onChangeQuickstartState,
+}: QuickstartFormProps) => {
+  return (
+    <>
+      <ItemFormElement>
+        <DurationInput
+          value={quickstartState.duration}
+          onChange={(newDuration) =>
+            onChangeQuickstartState({
+              ...quickstartState,
+              duration: newDuration,
+            })
+          }
+        />
+      </ItemFormElement>
+    </>
+  );
+};
+
 const Creator = () => {
   const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
 
@@ -192,6 +240,10 @@ const Creator = () => {
     useState<DocumentationState>({
       url: '',
     });
+
+  const [quickstartState, setQuickstartState] = useState<QuickstartState>({
+    duration: 0,
+  });
 
   return (
     <PageGroup>
@@ -240,14 +292,26 @@ const Creator = () => {
             onChangeCommonState={(state) => setCommonState(state)}
           />
 
-          {selectedType === 'documentation' ? (
-            <DocumentationForm
-              documentationState={documentationState}
-              onChangeDocumentationState={(state) =>
-                setDocumentationState(state)
-              }
-            />
-          ) : null}
+          {selectedType !== null
+            ? {
+                documentation: (
+                  <DocumentationForm
+                    documentationState={documentationState}
+                    onChangeDocumentationState={(newState) =>
+                      setDocumentationState(newState)
+                    }
+                  />
+                ),
+                quickstart: (
+                  <QuickstartForm
+                    quickstartState={quickstartState}
+                    onChangeQuickstartState={(newState) =>
+                      setQuickstartState(newState)
+                    }
+                  />
+                ),
+              }[selectedType]
+            : null}
         </ItemFormContainer>
       </PageSection>
     </PageGroup>
