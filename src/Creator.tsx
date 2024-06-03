@@ -349,43 +349,49 @@ const Creator = () => {
           </GridItem>
 
           <GridItem span={12} lg={6}>
-            <div className="rc-tile-preview-wrapper">
-              <WrappedQuickStartTile
-                quickStart={{
-                  metadata: {
-                    name: 'test-quickstart',
-                    kind: 'QuickStarts',
-                  },
-                  spec: {
-                    displayName: commonState.title,
-                    icon: null,
-                    description: commonState.description,
-                    link:
-                      selectedType === 'documentation'
-                        ? {
-                            href: documentationState.url,
-                            text: 'View documentation',
-                          }
-                        : undefined,
-                    type:
-                      selectedType !== null
-                        ? {
-                            text: itemKindMeta[selectedType].displayName,
-                            color: itemKindMeta[selectedType].tagColor,
-                          }
-                        : undefined,
-                    durationMinutes:
-                      selectedType === 'quickstart' &&
-                      quickstartState.duration > 0
-                        ? quickstartState.duration
-                        : undefined,
-                  },
-                }}
-                bookmarks={null}
-                isActive={false}
-                status={QuickStartStatus.NOT_STARTED}
-              />
-            </div>
+            <section>
+              <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
+                Live card preview
+              </Title>
+
+              <div className="rc-tile-preview-wrapper">
+                <WrappedQuickStartTile
+                  quickStart={{
+                    metadata: {
+                      name: 'test-quickstart',
+                      kind: 'QuickStarts',
+                    },
+                    spec: {
+                      displayName: commonState.title,
+                      icon: null,
+                      description: commonState.description,
+                      link:
+                        selectedType === 'documentation'
+                          ? {
+                              href: documentationState.url,
+                              text: 'View documentation',
+                            }
+                          : undefined,
+                      type:
+                        selectedType !== null
+                          ? {
+                              text: itemKindMeta[selectedType].displayName,
+                              color: itemKindMeta[selectedType].tagColor,
+                            }
+                          : undefined,
+                      durationMinutes:
+                        selectedType === 'quickstart' &&
+                        quickstartState.duration > 0
+                          ? quickstartState.duration
+                          : undefined,
+                    },
+                  }}
+                  bookmarks={null}
+                  isActive={false}
+                  status={QuickStartStatus.NOT_STARTED}
+                />
+              </div>
+            </section>
           </GridItem>
         </Grid>
       </PageSection>
