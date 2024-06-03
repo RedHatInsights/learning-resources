@@ -18,27 +18,53 @@ import {
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
-import { QuickStartStatus } from '@patternfly/quickstarts';
+import { QuickStartStatus, QuickStartType } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
-const itemKindMeta = {
+const rawItemKindMeta = {
   documentation: {
     displayName: 'Documentation',
     tagColor: 'orange',
+    fields: {
+      url: true,
+    },
   },
   quickstart: {
     displayName: 'Quickstart',
     tagColor: 'green',
+    hasDuration: true,
+    fields: {
+      duration: true,
+    },
   },
   learningPath: {
     displayName: 'Learning path',
     tagColor: 'cyan',
+    fields: {
+      url: true,
+    },
   },
   other: {
     displayName: 'Other',
     tagColor: 'purple',
+    fields: {
+      url: true,
+    },
   },
 } as const;
+
+type ItemMeta = {
+  displayName: string;
+  tagColor: QuickStartType['color'];
+  fields: {
+    url?: boolean;
+    duration?: boolean;
+  };
+};
+
+const itemKindMeta: {
+  [k in keyof typeof rawItemKindMeta]: ItemMeta;
+} = rawItemKindMeta;
 
 type ItemKind = keyof typeof itemKindMeta;
 
@@ -46,19 +72,6 @@ type CommonItemState = {
   bundle: string;
   title: string;
   description: string;
-};
-
-type SimpleItemState = {
-  url: string;
-};
-
-type QuickstartState = {
-  duration: number;
-};
-
-type QuickstartFormProps = {
-  quickstartState: QuickstartState;
-  onChangeQuickstartState: (newState: QuickstartState) => void;
 };
 
 const INVALID_BUNDLE = 'invalid-bundle';
@@ -218,43 +231,6 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
   );
 };
 
-const DocumentationForm = ({
-  value,
-  onChange,
-}: InputProps<SimpleItemState>) => {
-  return (
-    <>
-      <ItemFormElement>
-        <UrlInput
-          value={value.url}
-          onChange={(newUrl) => onChange({ ...value, url: newUrl })}
-        />
-      </ItemFormElement>
-    </>
-  );
-};
-
-const QuickstartForm = ({
-  quickstartState,
-  onChangeQuickstartState,
-}: QuickstartFormProps) => {
-  return (
-    <>
-      <ItemFormElement>
-        <DurationInput
-          value={quickstartState.duration}
-          onChange={(newDuration) =>
-            onChangeQuickstartState({
-              ...quickstartState,
-              duration: newDuration,
-            })
-          }
-        />
-      </ItemFormElement>
-    </>
-  );
-};
-
 const StepHeader = ({
   stepNumber,
   label,
@@ -274,6 +250,7 @@ const StepHeader = ({
 
 const Creator = () => {
   const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
+  const typeMeta = selectedType !== null ? itemKindMeta[selectedType] : null;
 
   const [commonState, setCommonState] = useState<CommonItemState>({
     bundle: INVALID_BUNDLE,
@@ -281,13 +258,8 @@ const Creator = () => {
     description: '',
   });
 
-  const [simpleItemState, setSimpleItemState] = useState<SimpleItemState>({
-    url: '',
-  });
-
-  const [quickstartState, setQuickstartState] = useState<QuickstartState>({
-    duration: 0,
-  });
+  const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [currentDuration, setCurrentDuration] = useState<number>(0);
 
   return (
     <PageGroup>
@@ -324,34 +296,25 @@ const Creator = () => {
                       onChange={(state) => setCommonState(state)}
                     />
 
-                    {(() => {
-                      switch (selectedType) {
-                        case null:
-                          return null;
+                    {typeMeta?.fields?.url === true ? (
+                      <ItemFormElement>
+                        <UrlInput
+                          value={currentUrl}
+                          onChange={(newUrl) => setCurrentUrl(newUrl)}
+                        />
+                      </ItemFormElement>
+                    ) : null}
 
-                        case 'documentation':
-                        case 'learningPath':
-                        case 'other':
-                          return (
-                            <DocumentationForm
-                              value={simpleItemState}
-                              onChange={(newState) =>
-                                setSimpleItemState(newState)
-                              }
-                            />
-                          );
-
-                        case 'quickstart':
-                          return (
-                            <QuickstartForm
-                              quickstartState={quickstartState}
-                              onChangeQuickstartState={(newState) =>
-                                setQuickstartState(newState)
-                              }
-                            />
-                          );
-                      }
-                    })()}
+                    {typeMeta?.fields?.duration === true ? (
+                      <ItemFormElement>
+                        <DurationInput
+                          value={currentDuration}
+                          onChange={(newDuration) =>
+                            setCurrentDuration(newDuration)
+                          }
+                        />
+                      </ItemFormElement>
+                    ) : null}
                   </ItemFormContainer>
                 </section>
               </StackItem>
@@ -376,9 +339,9 @@ const Creator = () => {
                       icon: null,
                       description: commonState.description,
                       link:
-                        selectedType === 'documentation'
+                        typeMeta?.fields?.url === true
                           ? {
-                              href: simpleItemState.url,
+                              href: currentUrl,
                               text: 'View documentation',
                             }
                           : undefined,
@@ -390,9 +353,9 @@ const Creator = () => {
                             }
                           : undefined,
                       durationMinutes:
-                        selectedType === 'quickstart' &&
-                        quickstartState.duration > 0
-                          ? quickstartState.duration
+                        typeMeta?.fields?.duration === true &&
+                        currentDuration > 0
+                          ? currentDuration
                           : undefined,
                     },
                   }}
