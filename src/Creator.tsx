@@ -70,27 +70,29 @@ type StringInputProps = InputProps<string>;
 
 const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
   return (
-    <FormGroup role="radiogroup">
-      {Object.entries(itemKindMeta).map(([rawName, meta]) => {
-        const name = rawName as keyof typeof itemKindMeta;
+    <FormGroup label="Select content type" isRequired>
+      <FormGroup role="radiogroup" aria-label="Select content type">
+        {Object.entries(itemKindMeta).map(([rawName, meta]) => {
+          const name = rawName as keyof typeof itemKindMeta;
 
-        return (
-          <Radio
-            key={name}
-            id={`cr-input-type-${name}`}
-            name={`cr-input-type`}
-            isChecked={value === name}
-            onChange={(_, isChecked) => {
-              if (isChecked) {
-                onChange(name);
-              } else if (value === name) {
-                onChange(null);
-              }
-            }}
-            label={meta.label}
-          ></Radio>
-        );
-      })}
+          return (
+            <Radio
+              key={name}
+              id={`cr-input-type-${name}`}
+              name={`cr-input-type`}
+              isChecked={value === name}
+              onChange={(_, isChecked) => {
+                if (isChecked) {
+                  onChange(name);
+                } else if (value === name) {
+                  onChange(null);
+                }
+              }}
+              label={meta.label}
+            ></Radio>
+          );
+        })}
+      </FormGroup>
     </FormGroup>
   );
 };
