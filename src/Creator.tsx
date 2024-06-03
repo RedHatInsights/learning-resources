@@ -289,20 +289,18 @@ const Creator = () => {
 
   return (
     <PageGroup>
+      <PageSection variant="darker">
+        <Title headingLevel="h1" size="2xl">
+          Add new learning resources
+        </Title>
+
+        <p>Description</p>
+      </PageSection>
+
       <PageSection>
         <Grid hasGutter>
           <GridItem span={12} lg={6}>
             <Stack hasGutter>
-              <StackItem>
-                <section>
-                  <Title headingLevel="h1" size="2xl">
-                    Add new learning resources
-                  </Title>
-
-                  <p>Description</p>
-                </section>
-              </StackItem>
-
               <StackItem>
                 <section>
                   <StepHeader stepNumber="1" label="Content type" />
