@@ -18,7 +18,11 @@ import {
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
-import { QuickStartStatus, QuickStartType } from '@patternfly/quickstarts';
+import {
+  QuickStart,
+  QuickStartStatus,
+  QuickStartType,
+} from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
 const rawItemKindMeta = {
@@ -261,6 +265,39 @@ const Creator = () => {
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [currentDuration, setCurrentDuration] = useState<number>(0);
 
+  const quickStart = useMemo<QuickStart>(
+    () => ({
+      metadata: {
+        name: 'test-quickstart',
+        kind: 'QuickStarts',
+      },
+      spec: {
+        displayName: commonState.title,
+        icon: null,
+        description: commonState.description,
+        link:
+          typeMeta?.fields?.url === true
+            ? {
+                href: currentUrl,
+                text: 'View documentation',
+              }
+            : undefined,
+        type:
+          typeMeta !== null
+            ? {
+                text: typeMeta.displayName,
+                color: typeMeta.tagColor,
+              }
+            : undefined,
+        durationMinutes:
+          typeMeta?.fields?.duration === true && currentDuration > 0
+            ? currentDuration
+            : undefined,
+      },
+    }),
+    [commonState, typeMeta, currentUrl, currentDuration]
+  );
+
   return (
     <PageGroup>
       <PageSection variant="darker">
@@ -329,36 +366,7 @@ const Creator = () => {
 
               <div className="rc-tile-preview-wrapper">
                 <WrappedQuickStartTile
-                  quickStart={{
-                    metadata: {
-                      name: 'test-quickstart',
-                      kind: 'QuickStarts',
-                    },
-                    spec: {
-                      displayName: commonState.title,
-                      icon: null,
-                      description: commonState.description,
-                      link:
-                        typeMeta?.fields?.url === true
-                          ? {
-                              href: currentUrl,
-                              text: 'View documentation',
-                            }
-                          : undefined,
-                      type:
-                        selectedType !== null
-                          ? {
-                              text: itemKindMeta[selectedType].displayName,
-                              color: itemKindMeta[selectedType].tagColor,
-                            }
-                          : undefined,
-                      durationMinutes:
-                        typeMeta?.fields?.duration === true &&
-                        currentDuration > 0
-                          ? currentDuration
-                          : undefined,
-                    },
-                  }}
+                  quickStart={quickStart}
                   bookmarks={null}
                   isActive={false}
                   status={QuickStartStatus.NOT_STARTED}
