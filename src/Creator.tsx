@@ -19,7 +19,9 @@ import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
 import './components/CatalogSection.scss';
 import {
+  AllQuickStartStates,
   QuickStart,
+  QuickStartContainer,
   QuickStartStatus,
   QuickStartType,
 } from '@patternfly/quickstarts';
@@ -40,6 +42,7 @@ const rawItemKindMeta = {
     fields: {
       duration: true,
     },
+    hasTasks: true,
   },
   learningPath: {
     displayName: 'Learning path',
@@ -64,6 +67,7 @@ type ItemMeta = {
     url?: boolean;
     duration?: boolean;
   };
+  hasTasks?: boolean;
 };
 
 const itemKindMeta: {
@@ -293,9 +297,28 @@ const Creator = () => {
           typeMeta?.fields?.duration === true && currentDuration > 0
             ? currentDuration
             : undefined,
+        tasks:
+          typeMeta?.hasTasks === true
+            ? [
+                {
+                  title: 'This is a step',
+                  description: 'Do the thing',
+                  review: {
+                    instructions: 'Verify you did the thing',
+                    failedTaskHelp: 'Do it again.',
+                  },
+                },
+              ]
+            : undefined,
       },
     }),
     [commonState, typeMeta, currentUrl, currentDuration]
+  );
+
+  const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
+  const [activeQuickStart, setActiveQuickStart] = useState('');
+  const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
+    {}
   );
 
   return (
@@ -308,8 +331,8 @@ const Creator = () => {
         <p>Description</p>
       </PageSection>
 
-      <PageSection>
-        <Grid hasGutter>
+      <PageSection isFilled>
+        <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             <Stack hasGutter>
               <StackItem>
@@ -359,20 +382,56 @@ const Creator = () => {
           </GridItem>
 
           <GridItem span={12} lg={6}>
-            <section>
-              <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
-                Live card preview
-              </Title>
+            <QuickStartContainer
+              quickStarts={allQuickStarts}
+              activeQuickStartID={activeQuickStart}
+              setActiveQuickStartID={setActiveQuickStart}
+              allQuickStartStates={quickStartStates}
+              setAllQuickStartStates={setQuickStartStates}
+              useQueryParams={false}
+              className="pf-v5-u-h-100 pf-v5-u-w-100"
+            >
+              <section>
+                <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
+                  Live card preview
+                </Title>
 
-              <div className="rc-tile-preview-wrapper">
-                <WrappedQuickStartTile
-                  quickStart={quickStart}
-                  bookmarks={null}
-                  isActive={false}
-                  status={QuickStartStatus.NOT_STARTED}
-                />
-              </div>
-            </section>
+                <div className="rc-tile-preview-wrapper">
+                  <WrappedQuickStartTile
+                    quickStart={quickStart}
+                    bookmarks={null}
+                    isActive={false}
+                    status={QuickStartStatus.NOT_STARTED}
+                  />
+                </div>
+              </section>
+            </QuickStartContainer>
+
+            {/*<QuickStartContext.Provider*/}
+            {/*  value={useValuesForQuickStartContext({*/}
+            {/*    allQuickStarts: allQuickStarts,*/}
+            {/*    activeQuickStartID:*/}
+            {/*      typeMeta?.hasTasks === true ? quickStart.metadata.name : '',*/}
+            {/*    setActiveQuickStartID: (id) => setActiveQuickStart(id),*/}
+            {/*    allQuickStartStates: quickStartStates,*/}
+            {/*    setAllQuickStartStates: (states) => setQuickStartStates(states),*/}
+            {/*    useQueryParams: false,*/}
+            {/*  })}*/}
+            {/*>*/}
+
+            {/*  {typeMeta?.hasTasks ? (*/}
+            {/*    <DrawerContext.Provider*/}
+            {/*      value={{ isExpanded: true, isStatic: false }}*/}
+            {/*    >*/}
+            {/*      <QuickStartPanelContent*/}
+            {/*        quickStarts={allQuickStarts}*/}
+            {/*        activeQuickStartID={activeQuickStart}*/}
+            {/*        isResizable={false}*/}
+            {/*        handleClose={() => {}}*/}
+            {/*      />*/}
+            {/*    </DrawerContext.Provider>*/}
+            {/*  ) : null}*/}
+            {/*</QuickStartContext.Provider>*/}
           </GridItem>
         </Grid>
       </PageSection>
