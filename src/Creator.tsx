@@ -1,4 +1,4 @@
-import React, { ReactNode, useMemo, useState } from 'react';
+import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   FormGroup,
   FormSelect,
@@ -21,9 +21,11 @@ import './components/CatalogSection.scss';
 import {
   AllQuickStartStates,
   QuickStart,
-  QuickStartContainer,
+  QuickStartContext,
+  QuickStartDrawer,
   QuickStartStatus,
   QuickStartType,
+  useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 
@@ -279,6 +281,7 @@ const Creator = () => {
         displayName: commonState.title,
         icon: null,
         description: commonState.description,
+        introduction: 'Hi. *Really.* **Hello.**',
         link:
           typeMeta?.fields?.url === true
             ? {
@@ -320,6 +323,19 @@ const Creator = () => {
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
     {}
   );
+
+  const quickstartValues = useValuesForQuickStartContext({
+    allQuickStarts: allQuickStarts,
+    activeQuickStartID: activeQuickStart,
+    setActiveQuickStartID: (id) => setActiveQuickStart(id),
+    allQuickStartStates: quickStartStates,
+    setAllQuickStartStates: (states) => setQuickStartStates(states),
+    useQueryParams: false,
+  });
+
+  useEffect(() => {
+    quickstartValues.setAllQuickStarts?.(allQuickStarts);
+  }, [allQuickStarts]);
 
   return (
     <PageGroup>
@@ -382,56 +398,24 @@ const Creator = () => {
           </GridItem>
 
           <GridItem span={12} lg={6}>
-            <QuickStartContainer
-              quickStarts={allQuickStarts}
-              activeQuickStartID={activeQuickStart}
-              setActiveQuickStartID={setActiveQuickStart}
-              allQuickStartStates={quickStartStates}
-              setAllQuickStartStates={setQuickStartStates}
-              useQueryParams={false}
-              className="pf-v5-u-h-100 pf-v5-u-w-100"
-            >
-              <section>
-                <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
-                  Live card preview
-                </Title>
+            <QuickStartContext.Provider value={quickstartValues}>
+              <QuickStartDrawer quickStarts={allQuickStarts}>
+                <section>
+                  <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
+                    Live card preview
+                  </Title>
 
-                <div className="rc-tile-preview-wrapper">
-                  <WrappedQuickStartTile
-                    quickStart={quickStart}
-                    bookmarks={null}
-                    isActive={false}
-                    status={QuickStartStatus.NOT_STARTED}
-                  />
-                </div>
-              </section>
-            </QuickStartContainer>
-
-            {/*<QuickStartContext.Provider*/}
-            {/*  value={useValuesForQuickStartContext({*/}
-            {/*    allQuickStarts: allQuickStarts,*/}
-            {/*    activeQuickStartID:*/}
-            {/*      typeMeta?.hasTasks === true ? quickStart.metadata.name : '',*/}
-            {/*    setActiveQuickStartID: (id) => setActiveQuickStart(id),*/}
-            {/*    allQuickStartStates: quickStartStates,*/}
-            {/*    setAllQuickStartStates: (states) => setQuickStartStates(states),*/}
-            {/*    useQueryParams: false,*/}
-            {/*  })}*/}
-            {/*>*/}
-
-            {/*  {typeMeta?.hasTasks ? (*/}
-            {/*    <DrawerContext.Provider*/}
-            {/*      value={{ isExpanded: true, isStatic: false }}*/}
-            {/*    >*/}
-            {/*      <QuickStartPanelContent*/}
-            {/*        quickStarts={allQuickStarts}*/}
-            {/*        activeQuickStartID={activeQuickStart}*/}
-            {/*        isResizable={false}*/}
-            {/*        handleClose={() => {}}*/}
-            {/*      />*/}
-            {/*    </DrawerContext.Provider>*/}
-            {/*  ) : null}*/}
-            {/*</QuickStartContext.Provider>*/}
+                  <div className="rc-tile-preview-wrapper">
+                    <WrappedQuickStartTile
+                      quickStart={quickStart}
+                      bookmarks={null}
+                      isActive={false}
+                      status={QuickStartStatus.NOT_STARTED}
+                    />
+                  </div>
+                </section>
+              </QuickStartDrawer>
+            </QuickStartContext.Provider>
           </GridItem>
         </Grid>
       </PageSection>
