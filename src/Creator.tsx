@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useId, useMemo, useState } from 'react';
+import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   FormGroup,
   Grid,
@@ -89,7 +89,7 @@ type InputProps<T> = {
 };
 
 const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
-  const elementId = `rc-input-type-${useId()}`;
+  const elementId = `rc-input-type`;
 
   return (
     <FormGroup label="Select content type" isRequired fieldId={elementId}>
@@ -126,7 +126,7 @@ const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
 const BundleInput = ({ value, onChange }: InputProps<string[]>) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
-  const elementId = `rc-input-bundle-${useId()}`;
+  const elementId = `rc-input-bundle`;
 
   return (
     <FormGroup label="Bundles" isRequired fieldId={elementId}>
@@ -143,7 +143,7 @@ const BundleInput = ({ value, onChange }: InputProps<string[]>) => {
 };
 
 const TitleInput = ({ value, onChange }: InputProps<string>) => {
-  const elementId = `rc-input-title-${useId()}`;
+  const elementId = `rc-input-title`;
 
   return (
     <FormGroup label="Title" isRequired fieldId={elementId}>
@@ -161,7 +161,7 @@ const TitleInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const DescriptionInput = ({ value, onChange }: InputProps<string>) => {
-  const elementId = `rc-input-description-${useId()}`;
+  const elementId = `rc-input-description`;
 
   return (
     <FormGroup label="Description" isRequired fieldId={elementId}>
@@ -181,7 +181,7 @@ const DescriptionInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const UrlInput = ({ value, onChange }: InputProps<string>) => {
-  const elementId = `rc-input-url-${useId()}`;
+  const elementId = `rc-input-url`;
 
   return (
     <FormGroup label="Resource URL" isRequired fieldId={elementId}>
@@ -199,7 +199,7 @@ const UrlInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const DurationInput = ({ value, onChange }: InputProps<number>) => {
-  const elementId = `rc-input-duration-${useId()}`;
+  const elementId = `rc-input-duration`;
 
   return (
     <FormGroup
