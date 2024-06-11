@@ -383,7 +383,7 @@ const Creator = () => {
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             {/* Need to set a key to force Wizard to re-compute steps when they change. */}
-            <Wizard key={selectedType}>
+            <Wizard key={selectedType} isVisitRequired>
               <WizardStep name="Select content type" id="rc-wizard-type">
                 <p>
                   Learning resources are grouped by their &quot;content
