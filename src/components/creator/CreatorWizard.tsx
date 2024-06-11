@@ -1,4 +1,5 @@
 import {
+  Button,
   Form,
   FormGroup,
   FormSection,
@@ -7,6 +8,7 @@ import {
   Wizard,
   WizardStep,
 } from '@patternfly/react-core';
+import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
 import React, { ReactNode, useMemo } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
@@ -86,6 +88,8 @@ export type CreatorWizardState = {
   tasks: TaskState[];
 };
 
+const MAX_TASKS = 10;
+
 const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
   const selectedType = useMemo(() => {
     if (value.type === null) {
@@ -122,6 +126,12 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
     return onChangeTasks(copy);
   };
 
+  const onAddTask = () => {
+    if (value.tasks.length < MAX_TASKS) {
+      onChangeTasks([...value.tasks, EMPTY_TASK]);
+    }
+  };
+
   const commonState: CommonItemState = {
     bundle: value.bundles,
     title: value.title,
@@ -137,7 +147,31 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
     });
   };
 
-  /* Need to set a key to force Wizard to re-compute steps when they change. */
+  // A Wizard will cache its steps when it is initially created. We can't
+  // recreate the Wizard when the steps change because this will reset it back
+  // to step 1 (and also remove focus from elements, which is terrible for
+  // accessibility). However, we can change the visibility of steps.
+  //
+  // So, we need to ensure a constant number of steps is always created. Thus,
+  // we set a bound on the number of tasks and generate one step for possible
+  // task up to this bound (which is hidden if the task does not yet exist).
+
+  const taskSubSteps = [];
+
+  for (let index = 0; index < MAX_TASKS; ++index) {
+    const isPresent = index < value.tasks.length;
+
+    taskSubSteps.push(
+      <WizardStep
+        id={`rc-wizard-panel-task-${index}`}
+        name={`Task ${index + 1}`}
+        isHidden={selectedType === null || !isPresent}
+      >
+        {isPresent ? <></> : null}
+      </WizardStep>
+    );
+  }
+
   return (
     <Wizard isVisitRequired>
       <WizardStep name="Select content type" id="rc-wizard-type">
@@ -189,7 +223,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
             <Form isHorizontal>
               <FormSection title="Tasks">
                 {value.tasks.map((task, index) => {
-                  const elementId = `rc-wizard-tasks-task-${index}-title`;
+                  const elementId = `rc-wizard-panel-overview-tasks-task-${index}-title`;
 
                   return (
                     <FormGroup
@@ -212,9 +246,22 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                     </FormGroup>
                   );
                 })}
+
+                {value.tasks.length < MAX_TASKS ? (
+                  <Button
+                    variant="link"
+                    icon={<PlusCircleIcon />}
+                    onClick={() => onAddTask()}
+                  >
+                    Add another task
+                  </Button>
+                ) : (
+                  <span>A quickstart can only have {MAX_TASKS} tasks.</span>
+                )}
               </FormSection>
             </Form>
           </WizardStep>,
+          ...taskSubSteps,
         ]}
       />
 
