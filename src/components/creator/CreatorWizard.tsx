@@ -95,12 +95,15 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
     return { id: value.type, meta: itemKindMeta[value.type] };
   }, [value.type]);
 
-  const stepLabel: Record<ItemKind, string> = {
+  const stepLabelOfType: Record<ItemKind, string> = {
     quickstart: 'Quick start',
     documentation: 'Documentation',
     learningPath: 'Learning Path',
     other: '"Other"',
   };
+
+  const selectedTypeStepLabel =
+    selectedType !== null ? stepLabelOfType[selectedType.id] : null;
 
   const makeOnChangeFn =
     <K extends keyof CreatorWizardState>(key: K) =>
@@ -136,7 +139,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
 
   /* Need to set a key to force Wizard to re-compute steps when they change. */
   return (
-    <Wizard key={selectedType?.id} isVisitRequired>
+    <Wizard isVisitRequired>
       <WizardStep name="Select content type" id="rc-wizard-type">
         <p>Learning resources are grouped by their &quot;content type&quot;.</p>
 
@@ -146,83 +149,80 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
         />
       </WizardStep>
 
-      {selectedType !== null ? (
-        <WizardStep
-          name={`${stepLabel[selectedType.id]} details`}
-          id={`rc-wizard-details`}
-        >
-          <CommonItemForm
-            value={commonState}
-            onChange={(state) => onChangeCommonState(state)}
-          />
-
-          {selectedType?.meta?.fields?.url === true ? (
-            <ItemFormElement>
-              <UrlInput
-                value={value.url}
-                onChange={(newUrl) => onChangeUrl(newUrl)}
-              />
-            </ItemFormElement>
-          ) : null}
-
-          {selectedType?.meta?.fields?.duration === true ? (
-            <DurationInput
-              value={value.duration}
-              onChange={(newDuration) => onChangeDuration(newDuration)}
-            />
-          ) : null}
-        </WizardStep>
-      ) : null}
-
-      {selectedType?.meta?.hasTasks === true ? (
-        <WizardStep
-          name={`Create ${stepLabel[selectedType.id]} panel`}
-          id={`rc-wizard-panel`}
-          steps={[
-            <WizardStep
-              key={`overview`}
-              id={`rc-wizard-panel-overview`}
-              name={`Create ${stepLabel[selectedType.id]} overview`}
-            >
-              <Form isHorizontal>
-                <FormSection title="Tasks">
-                  {value.tasks.map((task, index) => {
-                    const elementId = `rc-wizard-tasks-task-${index}-title`;
-
-                    return (
-                      <FormGroup
-                        key={index}
-                        label={`Task ${index + 1}`}
-                        fieldId={elementId}
-                      >
-                        <TextInput
-                          id={elementId}
-                          isRequired
-                          type="text"
-                          value={task.title}
-                          onChange={(_, newTitle) =>
-                            onChangeTask(index, {
-                              ...task,
-                              title: newTitle,
-                            })
-                          }
-                        />
-                      </FormGroup>
-                    );
-                  })}
-                </FormSection>
-              </Form>
-            </WizardStep>,
-          ]}
+      <WizardStep
+        id={`rc-wizard-details`}
+        name={`${selectedTypeStepLabel ?? '[TBD]'} details`}
+        isHidden={selectedType === null}
+      >
+        <CommonItemForm
+          value={commonState}
+          onChange={(state) => onChangeCommonState(state)}
         />
-      ) : null}
 
-      {selectedType !== null ? (
-        <WizardStep
-          name="Generate files"
-          id={`rc-wizard-generate-files`}
-        ></WizardStep>
-      ) : null}
+        {selectedType?.meta?.fields?.url === true ? (
+          <ItemFormElement>
+            <UrlInput
+              value={value.url}
+              onChange={(newUrl) => onChangeUrl(newUrl)}
+            />
+          </ItemFormElement>
+        ) : null}
+
+        {selectedType?.meta?.fields?.duration === true ? (
+          <DurationInput
+            value={value.duration}
+            onChange={(newDuration) => onChangeDuration(newDuration)}
+          />
+        ) : null}
+      </WizardStep>
+
+      <WizardStep
+        id={`rc-wizard-panel`}
+        name={`Create ${selectedTypeStepLabel ?? '[TBD]'} panel`}
+        isHidden={selectedType === null || selectedType.meta.hasTasks !== true}
+        steps={[
+          <WizardStep
+            key={`overview`}
+            id={`rc-wizard-panel-overview`}
+            name={`Create ${selectedTypeStepLabel ?? '[TBD]'} overview`}
+          >
+            <Form isHorizontal>
+              <FormSection title="Tasks">
+                {value.tasks.map((task, index) => {
+                  const elementId = `rc-wizard-tasks-task-${index}-title`;
+
+                  return (
+                    <FormGroup
+                      key={index}
+                      label={`Task ${index + 1}`}
+                      fieldId={elementId}
+                    >
+                      <TextInput
+                        id={elementId}
+                        isRequired
+                        type="text"
+                        value={task.title}
+                        onChange={(_, newTitle) =>
+                          onChangeTask(index, {
+                            ...task,
+                            title: newTitle,
+                          })
+                        }
+                      />
+                    </FormGroup>
+                  );
+                })}
+              </FormSection>
+            </Form>
+          </WizardStep>,
+        ]}
+      />
+
+      <WizardStep
+        id={`rc-wizard-generate-files`}
+        name="Generate files"
+        isHidden={selectedType === null}
+      ></WizardStep>
     </Wizard>
   );
 };
