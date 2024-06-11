@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useMemo, useState } from 'react';
+import React, { ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import {
   FormGroup,
   FormSelect,
@@ -92,9 +92,15 @@ type InputProps<T> = {
 };
 
 const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
+  const elementId = `rc-input-type-${useId()}`;
+
   return (
-    <FormGroup label="Select content type" isRequired>
-      <FormGroup role="radiogroup" aria-label="Select content type">
+    <FormGroup label="Select content type" isRequired fieldId={elementId}>
+      <FormGroup
+        id={elementId}
+        role="radiogroup"
+        aria-label="Select content type"
+      >
         {Object.entries(itemKindMeta).map(([rawName, meta]) => {
           const name = rawName as keyof typeof itemKindMeta;
 
@@ -123,10 +129,12 @@ const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
 const BundleInput = ({ value, onChange }: InputProps<string>) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
+  const elementId = `rc-input-bundle-${useId()}`;
 
   return (
-    <FormGroup label="Bundle" isRequired>
+    <FormGroup label="Bundle" isRequired fieldId={elementId}>
       <FormSelect
+        id={elementId}
         value={value}
         onChange={(_, value) => onChange(value)}
         aria-label="Bundle"
@@ -142,9 +150,12 @@ const BundleInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const TitleInput = ({ value, onChange }: InputProps<string>) => {
+  const elementId = `rc-input-title-${useId()}`;
+
   return (
-    <FormGroup label="Title" isRequired>
+    <FormGroup label="Title" isRequired fieldId={elementId}>
       <TextInput
+        id={elementId}
         isRequired
         type="text"
         value={value}
@@ -157,9 +168,12 @@ const TitleInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const DescriptionInput = ({ value, onChange }: InputProps<string>) => {
+  const elementId = `rc-input-description-${useId()}`;
+
   return (
-    <FormGroup label="Description" isRequired>
+    <FormGroup label="Description" isRequired fieldId={elementId}>
       <TextArea
+        id={elementId}
         isRequired
         type="text"
         value={value}
@@ -174,9 +188,12 @@ const DescriptionInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const UrlInput = ({ value, onChange }: InputProps<string>) => {
+  const elementId = `rc-input-url-${useId()}`;
+
   return (
-    <FormGroup label="Resource URL" isRequired>
+    <FormGroup label="Resource URL" isRequired fieldId={elementId}>
       <TextInput
+        id={elementId}
         isRequired
         type="url"
         value={value}
@@ -189,9 +206,16 @@ const UrlInput = ({ value, onChange }: InputProps<string>) => {
 };
 
 const DurationInput = ({ value, onChange }: InputProps<number>) => {
+  const elementId = `rc-input-duration-${useId()}`;
+
   return (
-    <FormGroup label="Approximate completion time" isRequired>
+    <FormGroup
+      label="Approximate completion time"
+      isRequired
+      fieldId={elementId}
+    >
       <NumberInput
+        id={elementId}
         type="number"
         value={value}
         unit="minutes"
