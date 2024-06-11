@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useState } from 'react';
 import type { MenuToggleElement } from '@patternfly/react-core/dist/js';
 import {
   Button,
@@ -34,7 +34,7 @@ const SelectMultiTypeahead = ({
   );
   const [activeItem, setActiveItem] = React.useState<string | null>(null);
   const textInputRef = React.useRef<HTMLInputElement>();
-  const elementId = `multi-typeahead-select-${useId()}`;
+  const elementId = `multi-typeahead-select`;
 
   React.useEffect(() => {
     let newSelectOptions: SelectOptionProps[] = initialOptions;
