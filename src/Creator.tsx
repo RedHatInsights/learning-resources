@@ -9,8 +9,6 @@ import {
   PageGroup,
   PageSection,
   Radio,
-  Stack,
-  StackItem,
   TextArea,
   TextInput,
   Title,
@@ -391,6 +389,15 @@ const Creator = () => {
                       />
                     </ItemFormElement>
                   ) : null}
+
+                  {typeMeta?.fields?.duration === true ? (
+                    <DurationInput
+                      value={currentDuration}
+                      onChange={(newDuration) =>
+                        setCurrentDuration(newDuration)
+                      }
+                    />
+                  ) : null}
                 </WizardStep>
               ) : null}
 
@@ -408,27 +415,6 @@ const Creator = () => {
                 ></WizardStep>
               ) : null}
             </Wizard>
-
-            <Stack hasGutter>
-              <StackItem>
-                <section>
-                  <StepHeader stepNumber="2" label="Resource details" />
-
-                  <ItemFormContainer>
-                    {typeMeta?.fields?.duration === true ? (
-                      <ItemFormElement>
-                        <DurationInput
-                          value={currentDuration}
-                          onChange={(newDuration) =>
-                            setCurrentDuration(newDuration)
-                          }
-                        />
-                      </ItemFormElement>
-                    ) : null}
-                  </ItemFormContainer>
-                </section>
-              </StackItem>
-            </Stack>
           </GridItem>
 
           <GridItem span={12} lg={6}>
