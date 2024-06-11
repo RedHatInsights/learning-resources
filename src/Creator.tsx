@@ -14,6 +14,8 @@ import {
   TextArea,
   TextInput,
   Title,
+  Wizard,
+  WizardStep,
 } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import './Creator.scss';
@@ -230,12 +232,12 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
   return (
     <>
       {...commonInputs.map(([key, ComponentType]) => (
-        <ItemFormElement key={key}>
+        <div key={key}>
           <ComponentType
             value={value[key]}
             onChange={(newValue) => onChange({ ...value, [key]: newValue })}
           />
-        </ItemFormElement>
+        </div>
       ))}
     </>
   );
@@ -337,6 +339,13 @@ const Creator = () => {
     quickstartValues.setAllQuickStarts?.(allQuickStarts);
   }, [allQuickStarts]);
 
+  const stepLabel: Record<ItemKind, string> = {
+    quickstart: 'Quick start',
+    documentation: 'Documentation',
+    learningPath: 'Learning Path',
+    other: '"Other"',
+  };
+
   return (
     <PageGroup>
       <PageSection variant="darker">
@@ -350,37 +359,62 @@ const Creator = () => {
       <PageSection isFilled>
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
-            <Stack hasGutter>
-              <StackItem>
-                <section>
-                  <StepHeader stepNumber="1" label="Content type" />
+            {/* Need to set a key to force Wizard to re-compute steps when they change. */}
+            <Wizard key={selectedType}>
+              <WizardStep name="Select content type" id="rc-wizard-type">
+                <p>
+                  Learning resources are grouped by their &quot;content
+                  type&quot;.
+                </p>
 
-                  <TypeInput
-                    value={selectedType}
-                    onChange={(newType) => setSelectedType(newType)}
+                <TypeInput
+                  value={selectedType}
+                  onChange={(newType) => setSelectedType(newType)}
+                />
+              </WizardStep>
+
+              {selectedType !== null ? (
+                <WizardStep
+                  name={`${stepLabel[selectedType]} details`}
+                  id={`rc-wizard-${selectedType}-details`}
+                >
+                  <CommonItemForm
+                    value={commonState}
+                    onChange={(state) => setCommonState(state)}
                   />
-                </section>
-              </StackItem>
 
+                  {typeMeta?.fields?.url === true ? (
+                    <ItemFormElement>
+                      <UrlInput
+                        value={currentUrl}
+                        onChange={(newUrl) => setCurrentUrl(newUrl)}
+                      />
+                    </ItemFormElement>
+                  ) : null}
+                </WizardStep>
+              ) : null}
+
+              {selectedType !== null && typeMeta?.hasTasks == true ? (
+                <WizardStep
+                  name={`Create ${stepLabel[selectedType]} panel`}
+                  id={`rc-wizard-${selectedType}-tasks`}
+                ></WizardStep>
+              ) : null}
+
+              {selectedType !== null ? (
+                <WizardStep
+                  name="Generate files"
+                  id={`rc-wizard-generate-files`}
+                ></WizardStep>
+              ) : null}
+            </Wizard>
+
+            <Stack hasGutter>
               <StackItem>
                 <section>
                   <StepHeader stepNumber="2" label="Resource details" />
 
                   <ItemFormContainer>
-                    <CommonItemForm
-                      value={commonState}
-                      onChange={(state) => setCommonState(state)}
-                    />
-
-                    {typeMeta?.fields?.url === true ? (
-                      <ItemFormElement>
-                        <UrlInput
-                          value={currentUrl}
-                          onChange={(newUrl) => setCurrentUrl(newUrl)}
-                        />
-                      </ItemFormElement>
-                    ) : null}
-
                     {typeMeta?.fields?.duration === true ? (
                       <ItemFormElement>
                         <DurationInput
