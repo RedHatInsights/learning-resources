@@ -237,10 +237,6 @@ const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
 
-const ItemFormContainer = ({ children }: { children: ReactNode }) => {
-  return <Grid hasGutter>{children}</Grid>;
-};
-
 const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
   const commonInputs: [
     keyof CommonItemState,
@@ -262,23 +258,6 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
         </div>
       ))}
     </>
-  );
-};
-
-const StepHeader = ({
-  stepNumber,
-  label,
-}: {
-  stepNumber: string;
-  label: string;
-}) => {
-  return (
-    <Title headingLevel="h2" size="xl" className="rc-step-header">
-      <span className="rc-step-index" aria-label={`Step ${stepNumber}: `}>
-        {stepNumber}
-      </span>{' '}
-      {label}
-    </Title>
   );
 };
 
