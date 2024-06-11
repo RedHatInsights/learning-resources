@@ -242,7 +242,7 @@ function itemInputDesc<K extends keyof CommonItemState>(
 ): ItemInputDesc {
   return {
     key,
-    element: (props) => element(props as InputProps<CommonItemState[K]>),
+    element: element as (props: InputProps<unknown>) => ReactNode,
   };
 }
 
@@ -255,24 +255,12 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
 
   return (
     <>
-      {...commonInputs.map(({ key, element }: ItemInputDesc) => (
+      {...commonInputs.map(({ key, element: ComponentType }: ItemInputDesc) => (
         <div key={key}>
-          {
-            // It may look tempting to replace this with <Element ... />.
-            // Do not do this.
-            //
-            // Because Element is a lambda defined in itemInputDesc, each time
-            // this component is rendered, a new lambda is produced. Thus, if
-            // the lambda were to be used as the element, it would legally be a
-            // different element every time, and React will discard its state.
-            // This doesn't matter for certain inputs (like plain text inputs),
-            // but does matter for inputs like SelectMultiTypeahead (used in
-            // BundleInput).
-            element({
-              value: value[key],
-              onChange: (newValue) => onChange({ ...value, [key]: newValue }),
-            })
-          }
+          <ComponentType
+            value={value[key]}
+            onChange={(newValue) => onChange({ ...value, [key]: newValue })}
+          />
         </div>
       ))}
     </>
