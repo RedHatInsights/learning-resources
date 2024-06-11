@@ -1,8 +1,6 @@
 import React, { ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import {
   FormGroup,
-  FormSelect,
-  FormSelectOption,
   Grid,
   GridItem,
   NumberInput,
@@ -28,6 +26,7 @@ import {
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
+import SelectMultiTypeahead from './components/SelectMultiTypeahead';
 
 const rawItemKindMeta = {
   documentation: {
@@ -79,12 +78,10 @@ const itemKindMeta: {
 type ItemKind = keyof typeof itemKindMeta;
 
 type CommonItemState = {
-  bundle: string;
+  bundle: string[];
   title: string;
   description: string;
 };
-
-const INVALID_BUNDLE = 'invalid-bundle';
 
 type InputProps<T> = {
   value: T;
@@ -126,25 +123,21 @@ const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
   );
 };
 
-const BundleInput = ({ value, onChange }: InputProps<string>) => {
+const BundleInput = ({ value, onChange }: InputProps<string[]>) => {
   const { getAvailableBundles } = useChrome();
   const bundles = useMemo(() => getAvailableBundles(), []);
   const elementId = `rc-input-bundle-${useId()}`;
 
   return (
-    <FormGroup label="Bundle" isRequired fieldId={elementId}>
-      <FormSelect
-        id={elementId}
-        value={value}
-        onChange={(_, value) => onChange(value)}
-        aria-label="Bundle"
-      >
-        <FormSelectOption value={INVALID_BUNDLE} label="--chose one" />
-
-        {...bundles.map((b) => (
-          <FormSelectOption key={b.id} value={b.id} label={b.title} />
-        ))}
-      </FormSelect>
+    <FormGroup label="Bundles" isRequired fieldId={elementId}>
+      <SelectMultiTypeahead
+        options={bundles.map((b) => ({
+          value: b.id,
+          children: `${b.title} (${b.id})`,
+        }))}
+        selected={value}
+        onChangeSelected={onChange}
+      />
     </FormGroup>
   );
 };
@@ -237,24 +230,49 @@ const ItemFormElement = ({ children }: { children: ReactNode }) => {
   return <GridItem span={6}>{children}</GridItem>;
 };
 
+type ItemInputDesc = {
+  key: keyof CommonItemState;
+  element: (props: InputProps<unknown>) => ReactNode;
+};
+
+// Checks that type of element matches the key, then erases the type.
+function itemInputDesc<K extends keyof CommonItemState>(
+  key: K,
+  element: (props: InputProps<CommonItemState[K]>) => ReactNode
+): ItemInputDesc {
+  return {
+    key,
+    element: (props) => element(props as InputProps<CommonItemState[K]>),
+  };
+}
+
 const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
-  const commonInputs: [
-    keyof CommonItemState,
-    (props: InputProps<string>) => ReactNode
-  ][] = [
-    ['bundle', BundleInput],
-    ['title', TitleInput],
-    ['description', DescriptionInput],
+  const commonInputs: ItemInputDesc[] = [
+    itemInputDesc('bundle', BundleInput),
+    itemInputDesc('title', TitleInput),
+    itemInputDesc('description', DescriptionInput),
   ];
 
   return (
     <>
-      {...commonInputs.map(([key, ComponentType]) => (
+      {...commonInputs.map(({ key, element }: ItemInputDesc) => (
         <div key={key}>
-          <ComponentType
-            value={value[key]}
-            onChange={(newValue) => onChange({ ...value, [key]: newValue })}
-          />
+          {
+            // It may look tempting to replace this with <Element ... />.
+            // Do not do this.
+            //
+            // Because Element is a lambda defined in itemInputDesc, each time
+            // this component is rendered, a new lambda is produced. Thus, if
+            // the lambda were to be used as the element, it would legally be a
+            // different element every time, and React will discard its state.
+            // This doesn't matter for certain inputs (like plain text inputs),
+            // but does matter for inputs like SelectMultiTypeahead (used in
+            // BundleInput).
+            element({
+              value: value[key],
+              onChange: (newValue) => onChange({ ...value, [key]: newValue }),
+            })
+          }
         </div>
       ))}
     </>
@@ -266,7 +284,7 @@ const Creator = () => {
   const typeMeta = selectedType !== null ? itemKindMeta[selectedType] : null;
 
   const [commonState, setCommonState] = useState<CommonItemState>({
-    bundle: INVALID_BUNDLE,
+    bundle: [],
     title: '',
     description: '',
   });
