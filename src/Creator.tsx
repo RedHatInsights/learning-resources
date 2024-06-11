@@ -345,6 +345,10 @@ const Creator = () => {
     {}
   );
 
+  if (typeMeta?.hasTasks !== true && activeQuickStart !== '') {
+    setActiveQuickStart('');
+  }
+
   const quickstartValues = useValuesForQuickStartContext({
     allQuickStarts: allQuickStarts,
     activeQuickStartID: activeQuickStart,
