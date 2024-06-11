@@ -1,6 +1,8 @@
 import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
+  Form,
   FormGroup,
+  FormSection,
   Grid,
   GridItem,
   NumberInput,
@@ -267,6 +269,16 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
   );
 };
 
+type TaskState = {
+  title: string;
+  description: string;
+};
+
+const EMPTY_TASK: TaskState = {
+  title: '',
+  description: '',
+};
+
 const Creator = () => {
   const [selectedType, setSelectedType] = useState<ItemKind | null>(null);
   const typeMeta = selectedType !== null ? itemKindMeta[selectedType] : null;
@@ -279,6 +291,8 @@ const Creator = () => {
 
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [currentDuration, setCurrentDuration] = useState<number>(0);
+
+  const [currentTasks, setCurrentTasks] = useState<TaskState[]>([EMPTY_TASK]);
 
   const quickStart = useMemo<QuickStart>(
     () => ({
@@ -417,8 +431,50 @@ const Creator = () => {
               {selectedType !== null && typeMeta?.hasTasks == true ? (
                 <WizardStep
                   name={`Create ${stepLabel[selectedType]} panel`}
-                  id={`rc-wizard-${selectedType}-tasks`}
-                ></WizardStep>
+                  id={`rc-wizard-${selectedType}-panel`}
+                  steps={[
+                    <WizardStep
+                      key={`overview`}
+                      id={`rc-wizard-${selectedType}-panel-overview`}
+                      name={`Create ${stepLabel[selectedType]} overview`}
+                    >
+                      <Form isHorizontal>
+                        <FormSection title="Tasks">
+                          {currentTasks.map((task, index) => {
+                            const elementId = `rc-wizard-tasks-task-${index}-title`;
+
+                            return (
+                              <FormGroup
+                                key={index}
+                                label={`Task ${index + 1}`}
+                                fieldId={elementId}
+                              >
+                                <TextInput
+                                  id={elementId}
+                                  isRequired
+                                  type="text"
+                                  value={task.title}
+                                  onChange={(_, newTitle) =>
+                                    setCurrentTasks((old) => {
+                                      const copy = [...old];
+
+                                      copy[index] = {
+                                        ...copy[index],
+                                        title: newTitle,
+                                      };
+
+                                      return copy;
+                                    })
+                                  }
+                                />
+                              </FormGroup>
+                            );
+                          })}
+                        </FormSection>
+                      </Form>
+                    </WizardStep>,
+                  ]}
+                />
               ) : null}
 
               {selectedType !== null ? (
