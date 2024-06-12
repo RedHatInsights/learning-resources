@@ -22,6 +22,7 @@
   "dependencies": {
     "@patternfly/quickstarts": "5.2.0-prerelease.3",
     "@patternfly/react-core": "^5.1.2",
+    "@patternfly/react-code-editor": "^5.1.2",
     "@patternfly/react-table": "^5.1.1",
     "@redhat-cloud-services/frontend-components": "^4.2.9",
     "@redhat-cloud-services/frontend-components-notifications": "^4.0.4",
