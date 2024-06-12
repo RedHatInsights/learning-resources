@@ -293,6 +293,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                         {value.tasks.length > 1 ? (
                           <FlexItem>
                             <Button
+                              aria-label={`Remove task ${index + 1}`}
                               variant="plain"
                               icon={<MinusCircleIcon />}
                               onClick={() => onRemoveTask(index)}
