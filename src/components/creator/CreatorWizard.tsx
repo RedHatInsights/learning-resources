@@ -5,6 +5,7 @@ import {
   FormSection,
   GridItem,
   TextInput,
+  Title,
   Wizard,
   WizardStep,
 } from '@patternfly/react-core';
@@ -20,6 +21,7 @@ import {
   TypeInput,
   UrlInput,
 } from './CreatorInputs';
+import { CodeEditor, Language } from '@patternfly/react-code-editor';
 
 type CommonItemState = {
   bundle: string[];
@@ -86,6 +88,8 @@ export type CreatorWizardState = {
   url: string;
   duration: number;
   tasks: TaskState[];
+  introduction: string;
+  prerequisites: string;
 };
 
 const MAX_TASKS = 10;
@@ -118,6 +122,8 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
   const onChangeUrl = makeOnChangeFn('url');
   const onChangeDuration = makeOnChangeFn('duration');
   const onChangeTasks = makeOnChangeFn('tasks');
+  const onChangeIntroduction = makeOnChangeFn('introduction');
+  const onChangePrerequisites = makeOnChangeFn('prerequisites');
 
   const onChangeTask = (index: number, task: TaskState) => {
     const copy = [...value.tasks];
@@ -160,6 +166,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
 
   for (let index = 0; index < MAX_TASKS; ++index) {
     const isPresent = index < value.tasks.length;
+    const task = value.tasks[index];
 
     taskSubSteps.push(
       <WizardStep
@@ -167,7 +174,13 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
         name={`Task ${index + 1}`}
         isHidden={selectedType === null || !isPresent}
       >
-        {isPresent ? <></> : null}
+        {isPresent ? (
+          <section>
+            <Title headingLevel={'h2'} size="xl">
+              {task.title}
+            </Title>
+          </section>
+        ) : null}
       </WizardStep>
     );
   }
@@ -220,6 +233,36 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
             id={`rc-wizard-panel-overview`}
             name={`Create ${selectedTypeStepLabel ?? '[TBD]'} overview`}
           >
+            <Form>
+              <FormSection title={`${selectedTypeStepLabel} Overview`}>
+                <FormGroup label="Introduction" isRequired>
+                  <CodeEditor
+                    language={Language.markdown}
+                    height="150px"
+                    isLanguageLabelVisible
+                    isLineNumbersVisible={false}
+                    value={value.introduction}
+                    onCodeChange={(newIntroduction) =>
+                      onChangeIntroduction(newIntroduction)
+                    }
+                  />
+                </FormGroup>
+
+                <FormGroup label="Prerequisites" isRequired>
+                  <CodeEditor
+                    language={Language.markdown}
+                    height="150px"
+                    isLanguageLabelVisible
+                    isLineNumbersVisible={false}
+                    value={value.prerequisites}
+                    onCodeChange={(newPrerequisites) =>
+                      onChangePrerequisites(newPrerequisites)
+                    }
+                  />
+                </FormGroup>
+              </FormSection>
+            </Form>
+
             <Form isHorizontal>
               <FormSection title="Tasks">
                 {value.tasks.map((task, index) => {

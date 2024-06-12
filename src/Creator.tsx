@@ -23,7 +23,7 @@ import CreatorWizard, {
 } from './components/creator/CreatorWizard';
 import { itemKindMeta } from './components/creator/meta';
 
-function makeDemoQuickStart(state: CreatorWizardState) {
+function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
   const selectedTypeMeta =
     state.type !== null ? itemKindMeta[state.type] : null;
 
@@ -36,7 +36,10 @@ function makeDemoQuickStart(state: CreatorWizardState) {
       displayName: state.title,
       icon: null,
       description: state.description,
-      introduction: 'Hi. *Really.* **Hello.**',
+      introduction:
+        selectedTypeMeta?.hasTasks === true ? state.introduction : undefined,
+      // prerequisites:
+      //   selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
       link:
         selectedTypeMeta?.fields?.url === true
           ? {
@@ -57,16 +60,10 @@ function makeDemoQuickStart(state: CreatorWizardState) {
           : undefined,
       tasks:
         selectedTypeMeta?.hasTasks === true
-          ? [
-              {
-                title: 'This is a step',
-                description: 'Do the thing',
-                review: {
-                  instructions: 'Verify you did the thing',
-                  failedTaskHelp: 'Do it again.',
-                },
-              },
-            ]
+          ? state.tasks.map((task) => ({
+              title: task.title,
+              description: task.description,
+            }))
           : undefined,
     },
   };
@@ -81,6 +78,8 @@ const Creator = () => {
     url: '',
     duration: 0,
     tasks: [EMPTY_TASK],
+    introduction: '',
+    prerequisites: '',
   });
 
   const selectedType = useMemo(() => {
