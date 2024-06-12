@@ -129,23 +129,19 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
   const onChangePrerequisites = makeOnChangeFn('prerequisites');
 
   const onChangeTask = (index: number, task: TaskState) => {
-    const copy = [...value.tasks];
-    copy[index] = task;
-
-    return onChangeTasks(copy);
+    return onChangeTasks(value.tasks.toSpliced(index, 1, task));
   };
 
   const onAddTask = () => {
     if (value.tasks.length < MAX_TASKS) {
-      onChangeTasks([...value.tasks, EMPTY_TASK]);
+      onChangeTasks(value.tasks.concat(EMPTY_TASK));
     }
   };
 
   const onRemoveTask = (index: number) => {
     // Never allow the final task to be removed.
     if (value.tasks.length > 1) {
-      const newTasks = [...value.tasks];
-      onChangeTasks(newTasks.toSpliced(index, 1));
+      onChangeTasks(value.tasks.toSpliced(index, 1));
     }
   };
 
