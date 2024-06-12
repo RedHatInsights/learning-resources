@@ -5,7 +5,6 @@ import {
   Form,
   FormGroup,
   FormSection,
-  GridItem,
   TextInput,
   Title,
   Wizard,
@@ -30,10 +29,6 @@ type CommonItemState = {
   bundle: string[];
   title: string;
   description: string;
-};
-
-const ItemFormElement = ({ children }: { children: ReactNode }) => {
-  return <GridItem span={6}>{children}</GridItem>;
 };
 
 type ItemInputDesc = {
@@ -214,12 +209,10 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
         />
 
         {selectedType?.meta?.fields?.url === true ? (
-          <ItemFormElement>
-            <UrlInput
-              value={value.url}
-              onChange={(newUrl) => onChangeUrl(newUrl)}
-            />
-          </ItemFormElement>
+          <UrlInput
+            value={value.url}
+            onChange={(newUrl) => onChangeUrl(newUrl)}
+          />
         ) : null}
 
         {selectedType?.meta?.fields?.duration === true ? (
