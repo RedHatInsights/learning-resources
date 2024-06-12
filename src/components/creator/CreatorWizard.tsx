@@ -1,5 +1,7 @@
 import {
   Button,
+  Flex,
+  FlexItem,
   Form,
   FormGroup,
   FormSection,
@@ -10,6 +12,7 @@ import {
   WizardStep,
 } from '@patternfly/react-core';
 import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
+import MinusCircleIcon from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
 import React, { ReactNode, useMemo } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
@@ -135,6 +138,14 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
   const onAddTask = () => {
     if (value.tasks.length < MAX_TASKS) {
       onChangeTasks([...value.tasks, EMPTY_TASK]);
+    }
+  };
+
+  const onRemoveTask = (index: number) => {
+    // Never allow the final task to be removed.
+    if (value.tasks.length > 1) {
+      const newTasks = [...value.tasks];
+      onChangeTasks(newTasks.toSpliced(index, 1));
     }
   };
 
@@ -274,18 +285,32 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                       label={`Task ${index + 1}`}
                       fieldId={elementId}
                     >
-                      <TextInput
-                        id={elementId}
-                        isRequired
-                        type="text"
-                        value={task.title}
-                        onChange={(_, newTitle) =>
-                          onChangeTask(index, {
-                            ...task,
-                            title: newTitle,
-                          })
-                        }
-                      />
+                      <Flex gap={{ default: 'gapNone' }}>
+                        <FlexItem grow={{ default: 'grow' }}>
+                          <TextInput
+                            id={elementId}
+                            isRequired
+                            type="text"
+                            value={task.title}
+                            onChange={(_, newTitle) =>
+                              onChangeTask(index, {
+                                ...task,
+                                title: newTitle,
+                              })
+                            }
+                          />
+                        </FlexItem>
+
+                        {value.tasks.length > 1 ? (
+                          <FlexItem>
+                            <Button
+                              variant="plain"
+                              icon={<MinusCircleIcon />}
+                              onClick={() => onRemoveTask(index)}
+                            />
+                          </FlexItem>
+                        ) : null}
+                      </Flex>
                     </FormGroup>
                   );
                 })}
