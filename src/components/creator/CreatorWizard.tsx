@@ -12,7 +12,7 @@ import {
 } from '@patternfly/react-core';
 import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
 import MinusCircleIcon from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useId, useMemo } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
   BundleInput,
@@ -24,6 +24,91 @@ import {
   UrlInput,
 } from './CreatorInputs';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
+
+type StringArrayInputProps = {
+  value: string[];
+  groupLabel: string;
+  itemLabel: (index: number) => string;
+  add?: { onAdd: () => void; label: string };
+  remove?: {
+    onRemove: (index: number) => void;
+    label: (index: number) => string;
+  };
+  onChange: (index: number, newValue: string) => void;
+};
+
+// function expandLabel(
+//   props: StringArrayInputLabelProps
+// ): StringArrayInputLabelFns {
+//   if ('kind' in props) {
+//     return {
+//       groupLabel: props.groupLabel ?? `${props.kind}s`,
+//       itemLabel: (index) => `${props.kind} ${index + 1}`,
+//       addLabel: `Add ${props.kind}`,
+//       removeLabel: (index) => `Remove ${props.kind} ${index + 1}`,
+//     };
+//   }
+//
+//   return props;
+// }
+
+const StringArrayInput = ({
+  value,
+  groupLabel,
+  itemLabel,
+  add,
+  remove,
+  onChange,
+}: StringArrayInputProps) => {
+  const id = useId();
+
+  return (
+    <FormSection title={groupLabel}>
+      {value.map((element, index) => {
+        const elementId = `${id}-${index}-title`;
+
+        return (
+          <FormGroup key={index} label={itemLabel(index)} fieldId={elementId}>
+            <Flex gap={{ default: 'gapNone' }}>
+              <FlexItem grow={{ default: 'grow' }}>
+                <TextInput
+                  id={elementId}
+                  isRequired
+                  type="text"
+                  value={element}
+                  onChange={(_, newValue) => onChange(index, newValue)}
+                />
+              </FlexItem>
+
+              {remove !== undefined ? (
+                <FlexItem>
+                  <Button
+                    aria-label={remove.label(index)}
+                    variant="plain"
+                    icon={<MinusCircleIcon />}
+                    onClick={() => remove.onRemove(index)}
+                  />
+                </FlexItem>
+              ) : null}
+            </Flex>
+          </FormGroup>
+        );
+      })}
+
+      {add !== undefined ? (
+        <Button
+          variant="link"
+          icon={<PlusCircleIcon />}
+          onClick={() => add.onAdd()}
+        >
+          {add.label}
+        </Button>
+      ) : (
+        <span>A quickstart can only have {MAX_TASKS} tasks.</span>
+      )}
+    </FormSection>
+  );
+};
 
 type CommonItemState = {
   bundle: string[];
@@ -249,74 +334,47 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                 </FormGroup>
 
                 <FormGroup label="Prerequisites" isRequired>
-                  <CodeEditor
-                    language={Language.markdown}
-                    height="150px"
-                    isLanguageLabelVisible
-                    isLineNumbersVisible={false}
-                    value={value.prerequisites}
-                    onCodeChange={(newPrerequisites) =>
-                      onChangePrerequisites(newPrerequisites)
-                    }
-                  />
+                  <div>
+                    <FormGroup label="Prerequisite 1">
+                      <TextInput />
+                    </FormGroup>
+                  </div>
                 </FormGroup>
+
+                <Button variant="link" icon={<PlusCircleIcon />}>
+                  Add a prerequisite
+                </Button>
               </FormSection>
             </Form>
 
             <Form isHorizontal>
-              <FormSection title="Tasks">
-                {value.tasks.map((task, index) => {
-                  const elementId = `rc-wizard-panel-overview-tasks-task-${index}-title`;
-
-                  return (
-                    <FormGroup
-                      key={index}
-                      label={`Task ${index + 1}`}
-                      fieldId={elementId}
-                    >
-                      <Flex gap={{ default: 'gapNone' }}>
-                        <FlexItem grow={{ default: 'grow' }}>
-                          <TextInput
-                            id={elementId}
-                            isRequired
-                            type="text"
-                            value={task.title}
-                            onChange={(_, newTitle) =>
-                              onChangeTask(index, {
-                                ...task,
-                                title: newTitle,
-                              })
-                            }
-                          />
-                        </FlexItem>
-
-                        {value.tasks.length > 1 ? (
-                          <FlexItem>
-                            <Button
-                              aria-label={`Remove task ${index + 1}`}
-                              variant="plain"
-                              icon={<MinusCircleIcon />}
-                              onClick={() => onRemoveTask(index)}
-                            />
-                          </FlexItem>
-                        ) : null}
-                      </Flex>
-                    </FormGroup>
-                  );
-                })}
-
-                {value.tasks.length < MAX_TASKS ? (
-                  <Button
-                    variant="link"
-                    icon={<PlusCircleIcon />}
-                    onClick={() => onAddTask()}
-                  >
-                    Add another task
-                  </Button>
-                ) : (
-                  <span>A quickstart can only have {MAX_TASKS} tasks.</span>
-                )}
-              </FormSection>
+              <StringArrayInput
+                groupLabel="Tasks"
+                value={value.tasks.map((task) => task.title)}
+                itemLabel={(index) => `Task ${index + 1}`}
+                onChange={(index, newTitle) =>
+                  onChangeTask(index, {
+                    ...value.tasks[index],
+                    title: newTitle,
+                  })
+                }
+                add={
+                  value.tasks.length < MAX_TASKS
+                    ? {
+                        label: 'Add another task',
+                        onAdd: () => onAddTask(),
+                      }
+                    : undefined
+                }
+                remove={
+                  value.tasks.length > 1
+                    ? {
+                        label: (index) => `Remove task ${index + 1}`,
+                        onRemove: (index) => onRemoveTask(index),
+                      }
+                    : undefined
+                }
+              />
             </Form>
           </WizardStep>,
           ...taskSubSteps,
