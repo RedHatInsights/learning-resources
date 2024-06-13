@@ -1,5 +1,7 @@
 import {
   Button,
+  ClipboardCopy,
+  ClipboardCopyVariant,
   Flex,
   FlexItem,
   Form,
@@ -257,7 +259,14 @@ const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
   );
 };
 
-const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
+type CreatorWizardProps = InputProps<CreatorWizardState> & {
+  files: {
+    name: string;
+    content: string;
+  }[];
+};
+
+const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
   const selectedType = useMemo(() => {
     if (value.type === null) {
       return null;
@@ -473,9 +482,28 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
 
       <WizardStep
         id={`rc-wizard-generate-files`}
-        name="Generate files"
+        name={'Generate files'}
         isHidden={selectedType === null}
-      ></WizardStep>
+      >
+        <div>
+          Download these files.
+          {files.map((file) => (
+            <div key={file.name}>
+              {file.name}
+
+              <ClipboardCopy
+                isCode
+                isReadOnly
+                variant={ClipboardCopyVariant.expansion}
+                hoverTip="Copy"
+                clickTip="Copied"
+              >
+                {file.content}
+              </ClipboardCopy>
+            </div>
+          ))}
+        </div>
+      </WizardStep>
     </Wizard>
   );
 };
