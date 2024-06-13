@@ -172,7 +172,7 @@ export type CreatorWizardState = {
   duration: number;
   tasks: TaskState[];
   introduction: string;
-  prerequisites: string;
+  prerequisites: string[];
 };
 
 const MAX_TASKS = 10;
@@ -318,7 +318,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
             id={`rc-wizard-panel-overview`}
             name={`Create ${selectedTypeStepLabel ?? '[TBD]'} overview`}
           >
-            <Form>
+            <Form isHorizontal>
               <FormSection title={`${selectedTypeStepLabel} Overview`}>
                 <FormGroup label="Introduction" isRequired>
                   <CodeEditor
@@ -333,17 +333,28 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                   />
                 </FormGroup>
 
-                <FormGroup label="Prerequisites" isRequired>
-                  <div>
-                    <FormGroup label="Prerequisite 1">
-                      <TextInput />
-                    </FormGroup>
-                  </div>
-                </FormGroup>
-
-                <Button variant="link" icon={<PlusCircleIcon />}>
-                  Add a prerequisite
-                </Button>
+                <StringArrayInput
+                  groupLabel="Prerequisites"
+                  itemLabel={(index) => `Prerequisite ${index + 1}`}
+                  value={value.prerequisites}
+                  onChange={(index, newPrereq) =>
+                    onChangePrerequisites(
+                      value.prerequisites.toSpliced(index, 1, newPrereq)
+                    )
+                  }
+                  add={{
+                    label: 'Add prerequisite',
+                    onAdd: () =>
+                      onChangePrerequisites(value.prerequisites.concat('')),
+                  }}
+                  remove={{
+                    label: (index) => `Remove prerequisite ${index + 1}`,
+                    onRemove: (index) =>
+                      onChangePrerequisites(
+                        value.prerequisites.toSpliced(index, 1)
+                      ),
+                  }}
+                />
               </FormSection>
             </Form>
 

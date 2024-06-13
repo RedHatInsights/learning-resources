@@ -38,8 +38,8 @@ function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
       description: state.description,
       introduction:
         selectedTypeMeta?.hasTasks === true ? state.introduction : undefined,
-      // prerequisites:
-      //   selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
+      prerequisites:
+        selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
       link:
         selectedTypeMeta?.fields?.url === true
           ? {
@@ -79,7 +79,7 @@ const Creator = () => {
     duration: 0,
     tasks: [EMPTY_TASK],
     introduction: '',
-    prerequisites: '',
+    prerequisites: [],
   });
 
   const selectedType = useMemo(() => {
