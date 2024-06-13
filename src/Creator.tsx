@@ -63,6 +63,12 @@ function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
           ? state.tasks.map((task) => ({
               title: task.title,
               description: task.description,
+              review: task.enableWorkCheck
+                ? {
+                    instructions: task.checkWorkInstructions,
+                    failedTaskHelp: task.checkWorkFailureHelp,
+                  }
+                : undefined,
             }))
           : undefined,
     },

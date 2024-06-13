@@ -5,6 +5,8 @@ import {
   Form,
   FormGroup,
   FormSection,
+  Switch,
+  TextArea,
   TextInput,
   Title,
   Wizard,
@@ -156,11 +158,17 @@ const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
 export type TaskState = {
   title: string;
   description: string;
+  enableWorkCheck: boolean;
+  checkWorkInstructions: string;
+  checkWorkFailureHelp: string;
 };
 
 export const EMPTY_TASK: TaskState = {
   title: '',
   description: '',
+  enableWorkCheck: false,
+  checkWorkInstructions: '',
+  checkWorkFailureHelp: '',
 };
 
 export type CreatorWizardState = {
@@ -176,6 +184,78 @@ export type CreatorWizardState = {
 };
 
 const MAX_TASKS = 10;
+
+const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
+  const id = useId();
+
+  return (
+    <section>
+      <Title headingLevel={'h2'} size="xl">
+        {value.title}
+      </Title>
+
+      <Form>
+        <FormGroup label="Description" isRequired fieldId={`${id}-description`}>
+          <TextArea
+            id={`${id}-description}`}
+            resizeOrientation="vertical"
+            value={value.description}
+            onChange={(_, newDescription) =>
+              onChange({ ...value, description: newDescription })
+            }
+          />
+        </FormGroup>
+
+        <FormSection title="Add a work check (optional)">
+          <Switch
+            label={'Show "Work Check" section'}
+            isChecked={value.enableWorkCheck}
+            onChange={(_, checked) =>
+              onChange({ ...value, enableWorkCheck: checked })
+            }
+          />
+
+          {value.enableWorkCheck ? (
+            <div>
+              Add some content.
+              <FormGroup
+                label="Work check instructions"
+                fieldId={`${id}-work-check-instructions`}
+              >
+                <TextArea
+                  id={`${id}-work-check-instructions`}
+                  resizeOrientation="vertical"
+                  value={value.checkWorkInstructions}
+                  onChange={(_, newInstructions) =>
+                    onChange({
+                      ...value,
+                      checkWorkInstructions: newInstructions,
+                    })
+                  }
+                />
+              </FormGroup>
+              <FormGroup
+                label="Optional failure message"
+                fieldId={`${id}-work-check-help`}
+              >
+                <TextInput
+                  id={`${id}-work-check-help`}
+                  value={value.checkWorkFailureHelp}
+                  onChange={(_, newHelp) =>
+                    onChange({
+                      ...value,
+                      checkWorkFailureHelp: newHelp,
+                    })
+                  }
+                />
+              </FormGroup>
+            </div>
+          ) : null}
+        </FormSection>
+      </Form>
+    </section>
+  );
+};
 
 const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
   const selectedType = useMemo(() => {
@@ -262,11 +342,10 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
         isHidden={selectedType === null || !isPresent}
       >
         {isPresent ? (
-          <section>
-            <Title headingLevel={'h2'} size="xl">
-              {task.title}
-            </Title>
-          </section>
+          <TaskStepContents
+            value={task}
+            onChange={(newTask) => onChangeTask(index, newTask)}
+          />
         ) : null}
       </WizardStep>
     );
