@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "@patternfly/quickstarts": "5.2.0-prerelease.3",
-    "@patternfly/react-core": "^5.1.2",
     "@patternfly/react-code-editor": "^5.1.2",
+    "@patternfly/react-core": "^5.1.2",
     "@patternfly/react-table": "^5.1.1",
     "@redhat-cloud-services/frontend-components": "^4.2.9",
     "@redhat-cloud-services/frontend-components-notifications": "^4.0.4",
@@ -32,7 +32,8 @@
     "axios": "^1.6.7",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "yaml": "^2.4.5"
   },
   "devDependencies": {
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.3",
