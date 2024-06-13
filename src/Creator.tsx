@@ -131,7 +131,6 @@ const Creator = () => {
       .replaceAll(/[^a-z0-9]/g, '-')
       .replaceAll(/(^-+)|(-+$)/g, '');
 
-    console.log('generating');
     return [
       {
         name: 'metadata.yaml',
