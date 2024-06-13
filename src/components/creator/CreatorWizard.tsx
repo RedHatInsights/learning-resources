@@ -405,7 +405,7 @@ const CreatorWizard = ({ value, onChange }: InputProps<CreatorWizardState>) => {
                     height="150px"
                     isLanguageLabelVisible
                     isLineNumbersVisible={false}
-                    value={value.introduction}
+                    code={value.introduction}
                     onCodeChange={(newIntroduction) =>
                       onChangeIntroduction(newIntroduction)
                     }
