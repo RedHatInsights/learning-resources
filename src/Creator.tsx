@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import YAML from 'yaml';
 import {
   Grid,
   GridItem,
@@ -124,6 +125,32 @@ const Creator = () => {
     quickstartValues.setAllQuickStarts?.(allQuickStarts);
   }, [allQuickStarts]);
 
+  const files = useMemo(() => {
+    const effectiveName = quickStart.spec.displayName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/, '-');
+
+    console.log('generating');
+    return [
+      {
+        name: 'metadata.yaml',
+        content: YAML.stringify({
+          kind: 'QuickStarts',
+          name: effectiveName,
+          tags: [
+            state.bundles
+              .toSorted()
+              .map((bundle) => ({ kind: 'bundle', value: bundle })),
+          ],
+        }),
+      },
+      {
+        name: `${effectiveName}.yaml`,
+        content: YAML.stringify(quickStart),
+      },
+    ];
+  }, [quickStart, state]);
+
   return (
     <PageGroup>
       <PageSection variant="darker">
@@ -140,6 +167,7 @@ const Creator = () => {
             <CreatorWizard
               value={state}
               onChange={(newValue) => setState(newValue)}
+              files={files}
             />
           </GridItem>
 
