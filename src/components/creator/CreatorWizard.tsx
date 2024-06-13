@@ -16,6 +16,7 @@ import {
 } from '@patternfly/react-core';
 import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
 import MinusCircleIcon from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
+import DownloadIcon from '@patternfly/react-icons/dist/esm/icons/download-icon';
 import React, { ReactNode, useId, useMemo } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
@@ -28,6 +29,7 @@ import {
   UrlInput,
 } from './CreatorInputs';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
+import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 
 type StringArrayInputProps = {
   value: string[];
@@ -489,7 +491,23 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
           Download these files.
           {files.map((file) => (
             <div key={file.name}>
-              {file.name}
+              <Button
+                variant="secondary"
+                icon={<DownloadIcon />}
+                onClick={() => {
+                  const dotIndex = file.name.lastIndexOf('.');
+                  const baseName =
+                    dotIndex !== -1
+                      ? file.name.substring(0, dotIndex)
+                      : file.name;
+                  const extension =
+                    dotIndex !== -1 ? file.name.substring(dotIndex + 1) : 'txt';
+
+                  downloadFile(file.content, baseName, extension);
+                }}
+              >
+                {file.name}
+              </Button>
 
               <ClipboardCopy
                 isCode
