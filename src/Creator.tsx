@@ -131,6 +131,11 @@ const Creator = () => {
       .replaceAll(/[^a-z0-9]/g, '-')
       .replaceAll(/(^-+)|(-+$)/g, '');
 
+    const adjustedQuickstart = { ...quickStart };
+    adjustedQuickstart.spec = { ...adjustedQuickstart.spec };
+
+    delete adjustedQuickstart.spec['icon'];
+
     return [
       {
         name: 'metadata.yaml',
@@ -146,7 +151,7 @@ const Creator = () => {
       },
       {
         name: `${effectiveName}.yaml`,
-        content: YAML.stringify(quickStart),
+        content: YAML.stringify(adjustedQuickstart),
       },
     ];
   }, [quickStart, state]);
