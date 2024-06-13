@@ -128,7 +128,8 @@ const Creator = () => {
   const files = useMemo(() => {
     const effectiveName = quickStart.spec.displayName
       .toLowerCase()
-      .replace(/[^a-z0-9]/, '-');
+      .replaceAll(/[^a-z0-9]/g, '-')
+      .replaceAll(/(^-+)|(-+$)/g, '');
 
     console.log('generating');
     return [
