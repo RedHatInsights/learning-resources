@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import YAML from 'yaml';
 import {
+  Button,
+  Flex,
+  FlexItem,
   Grid,
   GridItem,
   PageGroup,
@@ -23,6 +26,7 @@ import CreatorWizard, {
   EMPTY_TASK,
 } from './components/creator/CreatorWizard';
 import { itemKindMeta } from './components/creator/meta';
+import { AppContext } from './AppContext';
 
 function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
   const selectedTypeMeta =
@@ -77,6 +81,8 @@ function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
 }
 
 const Creator = () => {
+  const { onNavigate } = useContext(AppContext);
+
   const [state, setState] = useState<CreatorWizardState>({
     type: null,
     title: '',
@@ -159,11 +165,26 @@ const Creator = () => {
   return (
     <PageGroup>
       <PageSection variant="darker">
-        <Title headingLevel="h1" size="2xl">
-          Add new learning resources
-        </Title>
+        <Flex
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          alignItems={{ default: 'alignItemsCenter' }}
+        >
+          <FlexItem>
+            <Title headingLevel="h1" size="2xl">
+              Add new learning resources
+            </Title>
 
-        <p>Description</p>
+            <p>Description</p>
+          </FlexItem>
+
+          {onNavigate !== undefined ? (
+            <FlexItem>
+              <Button variant="primary" onClick={() => onNavigate('viewer')}>
+                Viewer
+              </Button>
+            </FlexItem>
+          ) : null}
+        </Flex>
       </PageSection>
 
       <PageSection isFilled>

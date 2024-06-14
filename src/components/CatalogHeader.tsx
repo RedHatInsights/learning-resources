@@ -1,7 +1,15 @@
-import { Stack, StackItem, Title } from '@patternfly/react-core';
-import React from 'react';
+import {
+  Button,
+  Flex,
+  FlexItem,
+  Stack,
+  StackItem,
+  Title,
+} from '@patternfly/react-core';
+import React, { useContext } from 'react';
 import './CatalogHeader.scss';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import { AppContext } from '../AppContext';
 
 const CatalogHeader = () => {
   // FIXME: Add missing type to the types lib
@@ -9,23 +17,40 @@ const CatalogHeader = () => {
   // @ts-ignore
   const { getBundleData } = useChrome();
   const { bundleTitle } = getBundleData();
+  const { onNavigate } = useContext(AppContext);
+
   return (
-    <Stack className="lr-c-catalog__header">
-      <StackItem>
-        <Title
-          className="lr-c-catalog__header-bundle"
-          headingLevel="h2"
-          size="lg"
-        >
-          {bundleTitle}
-        </Title>
-      </StackItem>
-      <StackItem>
-        <Title headingLevel="h1" size="2xl">
-          Learning Resources
-        </Title>
-      </StackItem>
-    </Stack>
+    <Flex
+      justifyContent={{ default: 'justifyContentSpaceBetween' }}
+      alignItems={{ default: 'alignItemsCenter' }}
+    >
+      <FlexItem grow={{ default: 'grow' }}>
+        <Stack className="lr-c-catalog__header">
+          <StackItem>
+            <Title
+              className="lr-c-catalog__header-bundle"
+              headingLevel="h2"
+              size="lg"
+            >
+              {bundleTitle}
+            </Title>
+          </StackItem>
+          <StackItem>
+            <Title headingLevel="h1" size="2xl">
+              Learning Resources
+            </Title>
+          </StackItem>
+        </Stack>
+      </FlexItem>
+
+      {onNavigate !== undefined ? (
+        <FlexItem>
+          <Button variant="secondary" onClick={() => onNavigate('creator')}>
+            Creator
+          </Button>
+        </FlexItem>
+      ) : null}
+    </Flex>
   );
 };
 
