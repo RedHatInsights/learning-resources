@@ -65,16 +65,19 @@ function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
           : undefined,
       tasks:
         selectedTypeMeta?.hasTasks === true
-          ? state.tasks.map((task) => ({
-              title: task.title,
-              description: task.description,
-              review: task.enableWorkCheck
-                ? {
-                    instructions: task.checkWorkInstructions,
-                    failedTaskHelp: task.checkWorkFailureHelp,
-                  }
-                : undefined,
-            }))
+          ? state.tasks.map((task) => {
+              try {
+                return {
+                  ...YAML.parse(task.yamlContent),
+                  title: task.title,
+                };
+              } catch (e) {
+                return {
+                  title: task.title,
+                  description: 'An error occurred while parsing the task.',
+                };
+              }
+            })
           : undefined,
     },
   };
