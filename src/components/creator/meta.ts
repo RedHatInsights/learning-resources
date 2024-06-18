@@ -7,6 +7,9 @@ const rawItemKindMeta = {
     fields: {
       url: true,
     },
+    extraMetadata: {
+      externalDocumentation: true,
+    },
   },
   quickstart: {
     displayName: 'Quickstart',
@@ -16,6 +19,7 @@ const rawItemKindMeta = {
       duration: true,
     },
     hasTasks: true,
+    extraMetadata: {},
   },
   learningPath: {
     displayName: 'Learning path',
@@ -23,12 +27,18 @@ const rawItemKindMeta = {
     fields: {
       url: true,
     },
+    extraMetadata: {
+      learningPath: true,
+    },
   },
   other: {
     displayName: 'Other',
     tagColor: 'purple',
     fields: {
       url: true,
+    },
+    extraMetadata: {
+      otherResource: true,
     },
   },
 } as const;
@@ -41,6 +51,7 @@ export type ItemMeta = {
     duration?: boolean;
   };
   hasTasks?: boolean;
+  extraMetadata: object;
 };
 
 export const itemKindMeta: {

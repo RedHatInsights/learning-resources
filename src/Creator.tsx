@@ -36,6 +36,7 @@ function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
     metadata: {
       name: 'test-quickstart',
       kind: 'QuickStarts',
+      ...(selectedTypeMeta?.extraMetadata ?? {}),
     },
     spec: {
       displayName: state.title,
