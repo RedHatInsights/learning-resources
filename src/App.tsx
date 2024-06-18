@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './App.scss';
-import Viewer from './Viewer';
-import Creator from './Creator';
 import { AppContext, AppNavigationPart } from './AppContext';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import { Route, Routes, useNavigate } from 'react-router-dom';
+import Viewer from './Viewer';
+import Creator from './Creator';
+
+const routes: Record<AppNavigationPart, string> = {
+  viewer: '/',
+  creator: '/creator',
+};
 
 export const App = ({ bundle }: { bundle: string }) => {
-  const [state, setState] = useState<AppNavigationPart>('viewer');
+  const navigate = useNavigate();
 
   const {
     visibilityFunctions: { featureFlag },
+    getBundle,
   } = useChrome();
 
   const creatorEnabled = featureFlag(
@@ -20,10 +27,22 @@ export const App = ({ bundle }: { bundle: string }) => {
   return (
     <AppContext.Provider
       value={{
-        onNavigate: creatorEnabled ? (newPart) => setState(newPart) : undefined,
+        onNavigate: creatorEnabled
+          ? (newPart) => {
+              let dest = routes[newPart];
+              if (dest.startsWith('/')) dest = dest.substring(1);
+              navigate(`/${getBundle()}/learning-resources/${dest}`);
+            }
+          : undefined,
       }}
     >
-      {state === 'viewer' ? <Viewer bundle={bundle} /> : <Creator />}
+      <Routes>
+        <Route path={routes.viewer} element={<Viewer bundle={bundle} />} />
+
+        {creatorEnabled ? (
+          <Route path={routes.creator} element={<Creator />} />
+        ) : null}
+      </Routes>
     </AppContext.Provider>
   );
 };
