@@ -122,6 +122,8 @@ const Creator = () => {
     setActiveQuickStart('');
   }
 
+  const parentContext = useContext(QuickStartContext);
+
   const quickstartValues = useValuesForQuickStartContext({
     allQuickStarts: allQuickStarts,
     activeQuickStartID: activeQuickStart,
@@ -129,6 +131,7 @@ const Creator = () => {
     allQuickStartStates: quickStartStates,
     setAllQuickStartStates: (states) => setQuickStartStates(states),
     useQueryParams: false,
+    footer: parentContext.footer,
   });
 
   useEffect(() => {
