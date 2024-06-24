@@ -10,13 +10,7 @@ import { Gallery } from '@patternfly/react-core/dist/dynamic/layouts/Gallery';
 import { Label } from '@patternfly/react-core/dist/dynamic/components/Label';
 import LearningResourcesEmptyState from './EmptyState';
 import useQuickStarts from '../../hooks/useQuickStarts';
-import {
-  Bullseye,
-  Flex,
-  FlexItem,
-  Icon,
-  Spinner,
-} from '@patternfly/react-core';
+import { Flex, FlexItem, Icon } from '@patternfly/react-core';
 import ExternalLinkAltIcon from '@patternfly/react-icons/dist/js/icons/external-link-alt-icon';
 
 import './LearningResourcesWidget.scss';
@@ -115,24 +109,16 @@ const GetFavorites = ({
 };
 
 const LearningResourcesWidgetWrapper = () => {
-  const { getAvailableBundles } = useChrome();
   const [allFavorites, setAllFavorites] = useState<QuickStart[][]>([]);
   return (
     <Fragment>
-      {getAvailableBundles().map(({ id }, index) => (
-        <GetFavorites
-          bundle={id}
-          key={index}
-          onContentReady={(data) => setAllFavorites((prev) => [...prev, data])}
-        />
-      ))}
-      {allFavorites.length !== getAvailableBundles().length ? (
-        <Bullseye>
-          <Spinner />
-        </Bullseye>
-      ) : (
-        <LearningResourcesWidget bookmarks={allFavorites.flat()} />
-      )}
+      <GetFavorites
+        /** only include the "settings" bundle is temporary until the new bookmarks page includes all bundles */
+        bundle={'settings'}
+        key={1}
+        onContentReady={(data) => setAllFavorites((prev) => [...prev, data])}
+      />
+      <LearningResourcesWidget bookmarks={allFavorites.flat()} />
     </Fragment>
   );
 };
