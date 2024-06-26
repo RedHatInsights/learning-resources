@@ -191,7 +191,7 @@ const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
       </Title>
 
       <Form>
-        <FormGroup label="Description" isRequired fieldId={`${id}-code`}>
+        <FormGroup label="Task YAML" isRequired fieldId={`${id}-code`}>
           <CodeEditor
             id={`${id}-code}`}
             height="400px"
