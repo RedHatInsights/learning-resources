@@ -132,6 +132,7 @@ const Creator = () => {
     setAllQuickStartStates: (states) => setQuickStartStates(states),
     useQueryParams: false,
     footer: parentContext.footer,
+    focusOnQuickStart: false,
   });
 
   useEffect(() => {
