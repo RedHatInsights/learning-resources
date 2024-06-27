@@ -190,19 +190,17 @@ const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
         {value.title}
       </Title>
 
-      <Form>
-        <FormGroup label="Task YAML" isRequired fieldId={`${id}-code`}>
-          <CodeEditor
-            id={`${id}-code}`}
-            height="400px"
-            language={Language.yaml}
-            code={value.yamlContent}
-            onCodeChange={(newContent) =>
-              onChange({ ...value, yamlContent: newContent })
-            }
-          />
-        </FormGroup>
-      </Form>
+      <FormGroup label="Task YAML" isRequired fieldId={`${id}-code`}>
+        <CodeEditor
+          id={`${id}-code}`}
+          height="400px"
+          language={Language.yaml}
+          code={value.yamlContent}
+          onCodeChange={(newContent) =>
+            onChange({ ...value, yamlContent: newContent })
+          }
+        />
+      </FormGroup>
     </section>
   );
 };
@@ -306,52 +304,56 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
   }
 
   return (
-    <Wizard isVisitRequired>
-      <WizardStep name="Select content type" id="rc-wizard-type">
-        <p>Learning resources are grouped by their &quot;content type&quot;.</p>
+    <Form>
+      <Wizard isVisitRequired>
+        <WizardStep name="Select content type" id="rc-wizard-type">
+          <p>
+            Learning resources are grouped by their &quot;content type&quot;.
+          </p>
 
-        <TypeInput
-          value={selectedType?.id ?? null}
-          onChange={(newType) => onChangeType(newType)}
-        />
-      </WizardStep>
-
-      <WizardStep
-        id={`rc-wizard-details`}
-        name={`${selectedTypeStepLabel ?? '[TBD]'} details`}
-        isHidden={selectedType === null}
-      >
-        <CommonItemForm
-          value={commonState}
-          onChange={(state) => onChangeCommonState(state)}
-        />
-
-        {selectedType?.meta?.fields?.url === true ? (
-          <UrlInput
-            value={value.url}
-            onChange={(newUrl) => onChangeUrl(newUrl)}
+          <TypeInput
+            value={selectedType?.id ?? null}
+            onChange={(newType) => onChangeType(newType)}
           />
-        ) : null}
+        </WizardStep>
 
-        {selectedType?.meta?.fields?.duration === true ? (
-          <DurationInput
-            value={value.duration}
-            onChange={(newDuration) => onChangeDuration(newDuration)}
+        <WizardStep
+          id={`rc-wizard-details`}
+          name={`${selectedTypeStepLabel ?? '[TBD]'} details`}
+          isHidden={selectedType === null}
+        >
+          <CommonItemForm
+            value={commonState}
+            onChange={(state) => onChangeCommonState(state)}
           />
-        ) : null}
-      </WizardStep>
 
-      <WizardStep
-        id={`rc-wizard-panel`}
-        name={`Create ${selectedTypeStepLabel ?? '[TBD]'} panel`}
-        isHidden={selectedType === null || selectedType.meta.hasTasks !== true}
-        steps={[
-          <WizardStep
-            key={`overview`}
-            id={`rc-wizard-panel-overview`}
-            name={`Create ${selectedTypeStepLabel ?? '[TBD]'} overview`}
-          >
-            <Form isHorizontal>
+          {selectedType?.meta?.fields?.url === true ? (
+            <UrlInput
+              value={value.url}
+              onChange={(newUrl) => onChangeUrl(newUrl)}
+            />
+          ) : null}
+
+          {selectedType?.meta?.fields?.duration === true ? (
+            <DurationInput
+              value={value.duration}
+              onChange={(newDuration) => onChangeDuration(newDuration)}
+            />
+          ) : null}
+        </WizardStep>
+
+        <WizardStep
+          id={`rc-wizard-panel`}
+          name={`Create ${selectedTypeStepLabel ?? '[TBD]'} panel`}
+          isHidden={
+            selectedType === null || selectedType.meta.hasTasks !== true
+          }
+          steps={[
+            <WizardStep
+              key={`overview`}
+              id={`rc-wizard-panel-overview`}
+              name={`Create ${selectedTypeStepLabel ?? '[TBD]'} overview`}
+            >
               <FormSection title={`${selectedTypeStepLabel} Overview`}>
                 <FormGroup label="Introduction" isRequired>
                   <CodeEditor
@@ -389,9 +391,7 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
                   }}
                 />
               </FormSection>
-            </Form>
 
-            <Form isHorizontal>
               <StringArrayInput
                 groupLabel="Tasks"
                 value={value.tasks.map((task) => task.title)}
@@ -419,53 +419,55 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
                     : undefined
                 }
               />
-            </Form>
-          </WizardStep>,
-          ...taskSubSteps,
-        ]}
-      />
+            </WizardStep>,
+            ...taskSubSteps,
+          ]}
+        />
 
-      <WizardStep
-        id={`rc-wizard-generate-files`}
-        name={'Generate files'}
-        isHidden={selectedType === null}
-      >
-        <div>
-          Download these files.
-          {files.map((file) => (
-            <div key={file.name}>
-              <Button
-                variant="secondary"
-                icon={<DownloadIcon />}
-                onClick={() => {
-                  const dotIndex = file.name.lastIndexOf('.');
-                  const baseName =
-                    dotIndex !== -1
-                      ? file.name.substring(0, dotIndex)
-                      : file.name;
-                  const extension =
-                    dotIndex !== -1 ? file.name.substring(dotIndex + 1) : 'txt';
+        <WizardStep
+          id={`rc-wizard-generate-files`}
+          name={'Generate files'}
+          isHidden={selectedType === null}
+        >
+          <div>
+            Download these files.
+            {files.map((file) => (
+              <div key={file.name}>
+                <Button
+                  variant="secondary"
+                  icon={<DownloadIcon />}
+                  onClick={() => {
+                    const dotIndex = file.name.lastIndexOf('.');
+                    const baseName =
+                      dotIndex !== -1
+                        ? file.name.substring(0, dotIndex)
+                        : file.name;
+                    const extension =
+                      dotIndex !== -1
+                        ? file.name.substring(dotIndex + 1)
+                        : 'txt';
 
-                  downloadFile(file.content, baseName, extension);
-                }}
-              >
-                {file.name}
-              </Button>
+                    downloadFile(file.content, baseName, extension);
+                  }}
+                >
+                  {file.name}
+                </Button>
 
-              <ClipboardCopy
-                isCode
-                isReadOnly
-                variant={ClipboardCopyVariant.expansion}
-                hoverTip="Copy"
-                clickTip="Copied"
-              >
-                {file.content}
-              </ClipboardCopy>
-            </div>
-          ))}
-        </div>
-      </WizardStep>
-    </Wizard>
+                <ClipboardCopy
+                  isCode
+                  isReadOnly
+                  variant={ClipboardCopyVariant.expansion}
+                  hoverTip="Copy"
+                  clickTip="Copied"
+                >
+                  {file.content}
+                </ClipboardCopy>
+              </div>
+            ))}
+          </div>
+        </WizardStep>
+      </Wizard>
+    </Form>
   );
 };
 
