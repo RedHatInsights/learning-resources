@@ -12,9 +12,9 @@ import {
   Wizard,
   WizardStep,
 } from '@patternfly/react-core';
-import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
-import MinusCircleIcon from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
-import DownloadIcon from '@patternfly/react-icons/dist/esm/icons/download-icon';
+import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
+import MinusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/minus-circle-icon';
+import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
 import React, { ReactNode, useId, useMemo } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
