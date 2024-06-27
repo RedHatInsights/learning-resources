@@ -195,11 +195,7 @@ const Creator = () => {
       <PageSection isFilled>
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
-            <CreatorWizard
-              value={state}
-              onChange={(newValue) => setState(newValue)}
-              files={files}
-            />
+            <CreatorWizard value={state} onChange={setState} files={files} />
           </GridItem>
 
           <GridItem span={12} lg={6}>
