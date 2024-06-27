@@ -51,7 +51,7 @@ const SelectMultiTypeahead = ({
           {
             isDisabled: false,
             children: `No results found for "${inputValue}"`,
-            value: 'no results',
+            value: undefined,
           },
         ];
       }
@@ -118,7 +118,7 @@ const SelectMultiTypeahead = ({
       case 'Enter':
         if (!isOpen) {
           setIsOpen((prevIsOpen) => !prevIsOpen);
-        } else if (isOpen && focusedItem.value !== 'no results') {
+        } else if (isOpen && focusedItem.value !== undefined) {
           onSelect(focusedItem.value as string);
         }
         break;
@@ -147,7 +147,7 @@ const SelectMultiTypeahead = ({
   };
 
   const onSelect = (value: string) => {
-    if (value && value !== 'no results') {
+    if (value !== undefined) {
       onChangeSelected(
         selected.includes(value)
           ? selected.filter((selection) => selection !== value)
