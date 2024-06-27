@@ -15,7 +15,7 @@ import {
 import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
 import MinusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/minus-circle-icon';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
-import React, { ReactNode, useId, useMemo } from 'react';
+import React, { ReactNode, useId } from 'react';
 import { ItemKind, itemKindMeta } from './meta';
 import {
   BundleInput,
@@ -215,13 +215,10 @@ type CreatorWizardProps = InputProps<CreatorWizardState> & {
 };
 
 const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
-  const selectedType = useMemo(() => {
-    if (value.type === null) {
-      return null;
-    }
-
-    return { id: value.type, meta: itemKindMeta[value.type] };
-  }, [value.type]);
+  const selectedType =
+    value.type !== null
+      ? { id: value.type, meta: itemKindMeta[value.type] }
+      : null;
 
   const stepLabelOfType: Record<ItemKind, string> = {
     quickstart: 'Quick start',
