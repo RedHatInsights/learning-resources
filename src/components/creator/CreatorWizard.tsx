@@ -304,7 +304,7 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
   }
 
   return (
-    <Form>
+    <Form onSubmit={(e) => e.preventDefault()}>
       <Wizard isVisitRequired>
         <WizardStep name="Select content type" id="rc-wizard-type">
           <p>
