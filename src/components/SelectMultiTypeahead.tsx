@@ -98,7 +98,7 @@ const SelectMultiTypeahead = ({
           (option) => !option.isDisabled
         )[indexToFocus];
         setActiveItem(
-          `select-multi-typeahead-${focusedItem.value.replace(' ', '-')}`
+          `select-multi-typeahead-${focusedItem.value.replaceAll(/\s/g, '-')}`
         );
       }
     }
