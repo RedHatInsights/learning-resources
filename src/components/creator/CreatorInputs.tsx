@@ -52,7 +52,7 @@ export const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
 
 export const BundleInput = ({ value, onChange }: InputProps<string[]>) => {
   const { getAvailableBundles } = useChrome();
-  const bundles = useMemo(() => getAvailableBundles(), []);
+  const bundles = getAvailableBundles();
   const elementId = `rc-input-bundle`;
 
   return (
