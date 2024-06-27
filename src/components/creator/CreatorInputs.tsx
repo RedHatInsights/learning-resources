@@ -32,7 +32,7 @@ export const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
             <Radio
               key={name}
               id={`cr-input-type-${name}`}
-              name={`cr-input-type`}
+              name="cr-input-type"
               isChecked={value === name}
               onChange={(_, isChecked) => {
                 if (isChecked) {
