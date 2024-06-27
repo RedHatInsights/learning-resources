@@ -19,33 +19,33 @@ export const TypeInput = ({ value, onChange }: InputProps<ItemKind | null>) => {
   const elementId = `rc-input-type`;
 
   return (
-    <FormGroup label="Select content type" isRequired fieldId={elementId}>
-      <FormGroup
-        id={elementId}
-        role="radiogroup"
-        aria-label="Select content type"
-      >
-        {Object.entries(itemKindMeta).map(([rawName, meta]) => {
-          const name = rawName as keyof typeof itemKindMeta;
+    <FormGroup
+      id={elementId}
+      role="radiogroup"
+      label="Select content type"
+      isRequired
+      aria-label="Select content type"
+    >
+      {Object.entries(itemKindMeta).map(([rawName, meta]) => {
+        const name = rawName as keyof typeof itemKindMeta;
 
-          return (
-            <Radio
-              key={name}
-              id={`cr-input-type-${name}`}
-              name="cr-input-type"
-              isChecked={value === name}
-              onChange={(_, isChecked) => {
-                if (isChecked) {
-                  onChange(name);
-                } else if (value === name) {
-                  onChange(null);
-                }
-              }}
-              label={meta.displayName}
-            ></Radio>
-          );
-        })}
-      </FormGroup>
+        return (
+          <Radio
+            key={name}
+            id={`cr-input-type-${name}`}
+            name="cr-input-type"
+            isChecked={value === name}
+            onChange={(_, isChecked) => {
+              if (isChecked) {
+                onChange(name);
+              } else if (value === name) {
+                onChange(null);
+              }
+            }}
+            label={meta.displayName}
+          ></Radio>
+        );
+      })}
     </FormGroup>
   );
 };
