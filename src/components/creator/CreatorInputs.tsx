@@ -6,7 +6,7 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
-import React, { useMemo } from 'react';
+import React from 'react';
 import SelectMultiTypeahead from '../SelectMultiTypeahead';
 import { ItemKind, itemKindMeta } from './meta';
 
