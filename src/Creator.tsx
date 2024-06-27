@@ -139,7 +139,7 @@ const Creator = () => {
   const files = useMemo(() => {
     const effectiveName = quickStart.spec.displayName
       .toLowerCase()
-      .replaceAll(/[^a-z0-9]/g, '-')
+      .replaceAll(/\s/g, '-')
       .replaceAll(/(^-+)|(-+$)/g, '');
 
     const adjustedQuickstart = { ...quickStart };
