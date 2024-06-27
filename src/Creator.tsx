@@ -99,13 +99,10 @@ const Creator = () => {
     prerequisites: [],
   });
 
-  const selectedType = useMemo(() => {
-    if (state.type === null) {
-      return null;
-    }
-
-    return { id: state.type, meta: itemKindMeta[state.type] };
-  }, [state.type]);
+  const selectedType =
+    state.type !== null
+      ? { id: state.type, meta: itemKindMeta[state.type] }
+      : null;
 
   const quickStart = useMemo<QuickStart>(
     () => makeDemoQuickStart(state),
