@@ -82,7 +82,7 @@ export const TitleInput = ({ value, onChange }: InputProps<string>) => {
         onChange={(_, value) => onChange(value)}
         aria-label="Resource title"
         placeholder="Title to display on card"
-      ></TextInput>
+      />
     </FormGroup>
   );
 };
