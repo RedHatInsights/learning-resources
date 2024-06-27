@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { MenuToggleElement } from '@patternfly/react-core/dist/js';
 import {
   Button,
@@ -25,18 +25,16 @@ const SelectMultiTypeahead = ({
   onChangeSelected: (newSelections: string[]) => void;
 }) => {
   const [initialOptions] = useState(options);
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState<string>('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const [selectOptions, setSelectOptions] =
-    React.useState<SelectOptionProps[]>(options);
-  const [focusedItemIndex, setFocusedItemIndex] = React.useState<number | null>(
-    null
-  );
-  const [activeItem, setActiveItem] = React.useState<string | null>(null);
-  const textInputRef = React.useRef<HTMLInputElement>();
+    useState<SelectOptionProps[]>(options);
+  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
+  const [activeItem, setActiveItem] = useState<string | null>(null);
+  const textInputRef = useRef<HTMLInputElement>();
   const elementId = `multi-typeahead-select`;
 
-  React.useEffect(() => {
+  useEffect(() => {
     let newSelectOptions: SelectOptionProps[] = initialOptions;
 
     // Filter menu items based on the text input value when one exists
