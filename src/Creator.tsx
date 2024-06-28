@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import YAML from 'yaml';
+import YAML, { YAMLError } from 'yaml';
 import {
   Button,
   Flex,
@@ -18,6 +18,7 @@ import {
   QuickStartContext,
   QuickStartDrawer,
   QuickStartStatus,
+  QuickStartTask,
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
@@ -28,60 +29,79 @@ import CreatorWizard, {
 import { itemKindMeta } from './components/creator/meta';
 import { AppContext } from './AppContext';
 
-function makeDemoQuickStart(state: CreatorWizardState): QuickStart {
+export type CreatorErrors = {
+  taskErrors: Map<number, string>;
+};
+
+function makeDemoQuickStart(
+  state: CreatorWizardState
+): [QuickStart, CreatorErrors] {
   const selectedTypeMeta =
     state.type !== null ? itemKindMeta[state.type] : null;
 
-  return {
-    metadata: {
-      name: 'test-quickstart',
-      kind: 'QuickStarts',
-      ...(selectedTypeMeta?.extraMetadata ?? {}),
-    },
-    spec: {
-      displayName: state.title,
-      icon: null,
-      description: state.description,
-      introduction:
-        selectedTypeMeta?.hasTasks === true ? state.introduction : undefined,
-      prerequisites:
-        selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
-      link:
-        selectedTypeMeta?.fields?.url === true
-          ? {
-              href: state.url,
-              text: 'View documentation',
-            }
-          : undefined,
-      type:
-        selectedTypeMeta !== null
-          ? {
-              text: selectedTypeMeta.displayName,
-              color: selectedTypeMeta.tagColor,
-            }
-          : undefined,
-      durationMinutes:
-        selectedTypeMeta?.fields?.duration === true && state.duration > 0
-          ? state.duration
-          : undefined,
-      tasks:
-        selectedTypeMeta?.hasTasks === true
-          ? state.tasks.map((task) => {
-              try {
-                return {
-                  ...YAML.parse(task.yamlContent),
-                  title: task.title,
-                };
-              } catch (e) {
-                return {
-                  title: task.title,
-                  description: 'An error occurred while parsing the task.',
-                };
+  const [tasks, taskErrors] = (() => {
+    if (selectedTypeMeta?.hasTasks !== true) return [undefined, new Map()];
+
+    const out: QuickStartTask[] = [];
+    const errors: CreatorErrors['taskErrors'] = new Map();
+
+    for (let index = 0; index < state.tasks.length; ++index) {
+      const task = state.tasks[index];
+
+      try {
+        out.push({
+          ...YAML.parse(task.yamlContent),
+          title: task.title,
+        });
+      } catch (e) {
+        if (!(e instanceof YAMLError)) throw e;
+
+        out.push({ ...EMPTY_TASK, title: task.title });
+        errors.set(index, e.message);
+      }
+    }
+
+    return [out, errors];
+  })();
+
+  return [
+    {
+      metadata: {
+        name: 'test-quickstart',
+        kind: 'QuickStarts',
+        ...(selectedTypeMeta?.extraMetadata ?? {}),
+      },
+      spec: {
+        displayName: state.title,
+        icon: null,
+        description: state.description,
+        introduction:
+          selectedTypeMeta?.hasTasks === true ? state.introduction : undefined,
+        prerequisites:
+          selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
+        link:
+          selectedTypeMeta?.fields?.url === true
+            ? {
+                href: state.url,
+                text: 'View documentation',
               }
-            })
-          : undefined,
+            : undefined,
+        type:
+          selectedTypeMeta !== null
+            ? {
+                text: selectedTypeMeta.displayName,
+                color: selectedTypeMeta.tagColor,
+              }
+            : undefined,
+        durationMinutes:
+          selectedTypeMeta?.fields?.duration === true && state.duration > 0
+            ? state.duration
+            : undefined,
+        tasks: tasks,
+      },
     },
-  };
+    { taskErrors },
+  ];
 }
 
 const Creator = () => {
@@ -104,7 +124,7 @@ const Creator = () => {
       ? { id: state.type, meta: itemKindMeta[state.type] }
       : null;
 
-  const quickStart = useMemo<QuickStart>(
+  const [quickStart, quickStartErrors] = useMemo(
     () => makeDemoQuickStart(state),
     [state]
   );
@@ -195,7 +215,12 @@ const Creator = () => {
       <PageSection isFilled>
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
-            <CreatorWizard value={state} onChange={setState} files={files} />
+            <CreatorWizard
+              value={state}
+              onChange={setState}
+              files={files}
+              errors={quickStartErrors}
+            />
           </GridItem>
 
           <GridItem span={12} lg={6}>

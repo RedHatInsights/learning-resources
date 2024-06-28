@@ -28,6 +28,7 @@ import {
 } from './CreatorInputs';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
+import { CreatorErrors } from '../../Creator';
 
 type StringArrayInputProps = {
   value: string[];
@@ -181,7 +182,11 @@ export type CreatorWizardState = {
 
 const MAX_TASKS = 10;
 
-const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
+const TaskStepContents = ({
+  value,
+  onChange,
+  error,
+}: InputProps<TaskState> & { error?: string }) => {
   const id = useId();
 
   return (
@@ -201,6 +206,8 @@ const TaskStepContents = ({ value, onChange }: InputProps<TaskState>) => {
           }
         />
       </FormGroup>
+
+      {error !== undefined ? <pre>{error}</pre> : null}
     </section>
   );
 };
@@ -210,9 +217,15 @@ type CreatorWizardProps = InputProps<CreatorWizardState> & {
     name: string;
     content: string;
   }[];
+  errors: CreatorErrors;
 };
 
-const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
+const CreatorWizard = ({
+  value,
+  onChange,
+  files,
+  errors,
+}: CreatorWizardProps) => {
   const selectedType =
     value.type !== null
       ? { id: value.type, meta: itemKindMeta[value.type] }
@@ -297,6 +310,7 @@ const CreatorWizard = ({ value, onChange, files }: CreatorWizardProps) => {
           <TaskStepContents
             value={task}
             onChange={(newTask) => onChangeTask(index, newTask)}
+            error={errors.taskErrors.get(index)}
           />
         ) : null}
       </WizardStep>
