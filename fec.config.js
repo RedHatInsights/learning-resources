@@ -31,6 +31,7 @@ module.exports = {
         __dirname,
         './src/components/GlobalLearningResourcesPage/GlobalLearningResourcesPage'
       ),
+      './Creator': path.resolve(__dirname, './src/Creator.tsx'),
     },
     exclude: ['react-router-dom'],
     shared: [
