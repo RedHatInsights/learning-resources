@@ -19,21 +19,17 @@ const CreatorPreview = ({
   quickStart: QuickStart;
 }) => {
   const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
-  const [activeQuickStart, setActiveQuickStart] = useState('');
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
     {}
   );
-
-  if (typeMeta?.hasTasks !== true && activeQuickStart !== '') {
-    setActiveQuickStart('');
-  }
 
   const parentContext = useContext(QuickStartContext);
 
   const quickstartValues = useValuesForQuickStartContext({
     allQuickStarts: [quickStart],
-    activeQuickStartID: activeQuickStart,
-    setActiveQuickStartID: (id) => setActiveQuickStart(id),
+    activeQuickStartID:
+      typeMeta?.hasTasks === true ? quickStart.metadata.name : '',
+    setActiveQuickStartID: () => {},
     allQuickStartStates: quickStartStates,
     setAllQuickStartStates: (states) => setQuickStartStates(states),
     useQueryParams: false,
