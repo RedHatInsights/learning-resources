@@ -357,8 +357,8 @@ const CreatorWizard = ({
   }
 
   return (
-    <Form onSubmit={(e) => e.preventDefault()}>
-      <Wizard isVisitRequired>
+    <Form onSubmit={(e) => e.preventDefault()} className="pf-v5-u-h-100-on-lg">
+      <Wizard isVisitRequired className="pf-v5-u-h-100-on-lg">
         <WizardStep name="Select content type" id="rc-wizard-type">
           <p>
             Learning resources are grouped by their &quot;content type&quot;.
