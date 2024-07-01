@@ -1,9 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react';
 import YAML, { YAMLError } from 'yaml';
 import {
-  Button,
-  Flex,
-  FlexItem,
   Grid,
   GridItem,
   PageGroup,
@@ -25,7 +22,6 @@ import {
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
 import { ItemKind, itemKindMeta } from './components/creator/meta';
-import { AppContext } from './AppContext';
 
 export type CreatorErrors = {
   taskErrors: Map<number, string>;
@@ -87,8 +83,6 @@ function makeDemoQuickStart(
 }
 
 const Creator = () => {
-  const { onNavigate } = useContext(AppContext);
-
   const [rawType, setRawType] = useState<ItemKind | null>(null);
 
   const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
@@ -241,26 +235,11 @@ const Creator = () => {
   return (
     <PageGroup>
       <PageSection variant="darker">
-        <Flex
-          justifyContent={{ default: 'justifyContentSpaceBetween' }}
-          alignItems={{ default: 'alignItemsCenter' }}
-        >
-          <FlexItem>
-            <Title headingLevel="h1" size="2xl">
-              Add new learning resources
-            </Title>
+        <Title headingLevel="h1" size="2xl">
+          Add new learning resources
+        </Title>
 
-            <p>Description</p>
-          </FlexItem>
-
-          {onNavigate !== undefined ? (
-            <FlexItem>
-              <Button variant="primary" onClick={() => onNavigate('viewer')}>
-                Viewer
-              </Button>
-            </FlexItem>
-          ) : null}
-        </Flex>
+        <p>Description</p>
       </PageSection>
 
       <PageSection isFilled>
