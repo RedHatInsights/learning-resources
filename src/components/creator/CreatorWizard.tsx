@@ -29,6 +29,7 @@ import {
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 import { CreatorErrors } from '../../Creator';
+import { QuickStart, QuickStartSpec } from '@patternfly/quickstarts';
 
 type StringArrayInputProps = {
   value: string[];
@@ -183,16 +184,22 @@ export type CreatorWizardState = {
 const MAX_TASKS = 10;
 
 const TaskStepContents = ({
-  value,
-  onChange,
+  title,
+  onChangeContent,
+  content,
   error,
-}: InputProps<TaskState> & { error?: string }) => {
+}: {
+  title: string;
+  content: string;
+  onChangeContent: (newContent: string) => void;
+  error?: string;
+}) => {
   const id = useId();
 
   return (
     <section>
       <Title headingLevel={'h2'} size="xl">
-        {value.title}
+        {title}
       </Title>
 
       <FormGroup label="Task YAML" isRequired fieldId={`${id}-code`}>
@@ -200,10 +207,8 @@ const TaskStepContents = ({
           id={`${id}-code}`}
           height="400px"
           language={Language.yaml}
-          code={value.yamlContent}
-          onCodeChange={(newContent) =>
-            onChange({ ...value, yamlContent: newContent })
-          }
+          code={content}
+          onCodeChange={onChangeContent}
         />
       </FormGroup>
 
@@ -212,7 +217,17 @@ const TaskStepContents = ({
   );
 };
 
-type CreatorWizardProps = InputProps<CreatorWizardState> & {
+type CreatorWizardProps = {
+  type: ItemKind | null;
+  onChangeType: (newType: ItemKind | null) => void;
+  quickStart: QuickStart;
+  onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
+  bundles: string[];
+  onChangeBundles: (newValue: string[]) => void;
+  taskContents: string[];
+  onAddTask: () => void;
+  onRemoveTask: (index: number) => void;
+  onChangeTaskContents: (contents: string[]) => void;
   files: {
     name: string;
     content: string;
@@ -221,15 +236,21 @@ type CreatorWizardProps = InputProps<CreatorWizardState> & {
 };
 
 const CreatorWizard = ({
-  value,
-  onChange,
+  type,
+  onChangeType,
+  quickStart,
+  onChangeQuickStartSpec,
+  bundles,
+  onChangeBundles,
+  taskContents,
+  onChangeTaskContents,
+  onAddTask,
+  onRemoveTask,
   files,
   errors,
 }: CreatorWizardProps) => {
   const selectedType =
-    value.type !== null
-      ? { id: value.type, meta: itemKindMeta[value.type] }
-      : null;
+    type !== null ? { id: type, meta: itemKindMeta[type] } : null;
 
   const stepLabelOfType: Record<ItemKind, string> = {
     quickstart: 'Quick start',
@@ -241,49 +262,67 @@ const CreatorWizard = ({
   const selectedTypeStepLabel =
     selectedType !== null ? stepLabelOfType[selectedType.id] : null;
 
-  const makeOnChangeFn =
-    <K extends keyof CreatorWizardState>(key: K) =>
-    (newValue: CreatorWizardState[K]) =>
-      onChange({ ...value, [key]: newValue });
+  const makeOnChangeSpecFn =
+    <K extends keyof QuickStartSpec>(key: K) =>
+    (newValue: QuickStartSpec[K]) =>
+      onChangeQuickStartSpec({
+        ...quickStart.spec,
+        [key]: newValue,
+      });
 
-  const onChangeType = makeOnChangeFn('type');
-  const onChangeUrl = makeOnChangeFn('url');
-  const onChangeDuration = makeOnChangeFn('duration');
-  const onChangeTasks = makeOnChangeFn('tasks');
-  const onChangeIntroduction = makeOnChangeFn('introduction');
-  const onChangePrerequisites = makeOnChangeFn('prerequisites');
+  const onChangeDuration = makeOnChangeSpecFn('durationMinutes');
+  const onChangeTasks = makeOnChangeSpecFn('tasks');
+  const onChangeIntroduction = makeOnChangeSpecFn('introduction');
+  const onChangePrerequisites = makeOnChangeSpecFn('prerequisites');
 
-  const onChangeTask = (index: number, task: TaskState) => {
-    return onChangeTasks(value.tasks.toSpliced(index, 1, task));
+  const onChangeUrl = (url: string) => {
+    onChangeQuickStartSpec({
+      ...quickStart.spec,
+      link: {
+        href: url,
+        text: 'View documentation',
+      },
+    });
   };
 
-  const onAddTask = () => {
-    if (value.tasks.length < MAX_TASKS) {
-      onChangeTasks(value.tasks.concat(EMPTY_TASK));
+  const onChangeTaskTitle = (index: number, newTitle: string) => {
+    const tasks = quickStart.spec.tasks;
+
+    if (tasks !== undefined && index < tasks.length) {
+      onChangeTasks(
+        tasks.toSpliced(index, 1, {
+          ...tasks[index],
+          title: newTitle,
+        })
+      );
     }
   };
 
-  const onRemoveTask = (index: number) => {
-    // Never allow the final task to be removed.
-    if (value.tasks.length > 1) {
-      onChangeTasks(value.tasks.toSpliced(index, 1));
+  const onChangeTaskContent = (index: number, content: string) => {
+    const tasks = quickStart.spec.tasks;
+
+    if (tasks !== undefined && index < tasks.length) {
+      onChangeTaskContents(taskContents.toSpliced(index, 1, content));
     }
   };
 
   const commonState: CommonItemState = {
-    bundle: value.bundles,
-    title: value.title,
-    description: value.description,
+    bundle: bundles,
+    title: quickStart.spec.displayName,
+    description: quickStart.spec.description,
   };
 
   const onChangeCommonState = (newCommonState: CommonItemState) => {
-    return onChange({
-      ...value,
-      bundles: newCommonState.bundle,
-      title: newCommonState.title,
+    onChangeQuickStartSpec({
+      ...quickStart.spec,
+      displayName: newCommonState.title,
       description: newCommonState.description,
     });
+
+    onChangeBundles(newCommonState.bundle);
   };
+
+  const spec = quickStart.spec;
 
   // A Wizard will cache its steps when it is initially created. We can't
   // recreate the Wizard when the steps change because this will reset it back
@@ -297,8 +336,7 @@ const CreatorWizard = ({
   const taskSubSteps = [];
 
   for (let index = 0; index < MAX_TASKS; ++index) {
-    const isPresent = index < value.tasks.length;
-    const task = value.tasks[index];
+    const isPresent = spec.tasks !== undefined && index < spec.tasks.length;
 
     taskSubSteps.push(
       <WizardStep
@@ -308,8 +346,9 @@ const CreatorWizard = ({
       >
         {isPresent ? (
           <TaskStepContents
-            value={task}
-            onChange={(newTask) => onChangeTask(index, newTask)}
+            title={spec.tasks?.[index].title ?? ''}
+            content={taskContents[index]}
+            onChangeContent={(newTask) => onChangeTaskContent(index, newTask)}
             error={errors.taskErrors.get(index)}
           />
         ) : null}
@@ -325,10 +364,7 @@ const CreatorWizard = ({
             Learning resources are grouped by their &quot;content type&quot;.
           </p>
 
-          <TypeInput
-            value={selectedType?.id ?? null}
-            onChange={(newType) => onChangeType(newType)}
-          />
+          <TypeInput value={selectedType?.id ?? null} onChange={onChangeType} />
         </WizardStep>
 
         <WizardStep
@@ -336,22 +372,16 @@ const CreatorWizard = ({
           name={`${selectedTypeStepLabel ?? '[TBD]'} details`}
           isHidden={selectedType === null}
         >
-          <CommonItemForm
-            value={commonState}
-            onChange={(state) => onChangeCommonState(state)}
-          />
+          <CommonItemForm value={commonState} onChange={onChangeCommonState} />
 
           {selectedType?.meta?.fields?.url === true ? (
-            <UrlInput
-              value={value.url}
-              onChange={(newUrl) => onChangeUrl(newUrl)}
-            />
+            <UrlInput value={spec.link?.href ?? ''} onChange={onChangeUrl} />
           ) : null}
 
           {selectedType?.meta?.fields?.duration === true ? (
             <DurationInput
-              value={value.duration}
-              onChange={(newDuration) => onChangeDuration(newDuration)}
+              value={spec.durationMinutes ?? 0}
+              onChange={onChangeDuration}
             />
           ) : null}
         </WizardStep>
@@ -375,7 +405,7 @@ const CreatorWizard = ({
                     height="150px"
                     isLanguageLabelVisible
                     isLineNumbersVisible={false}
-                    code={value.introduction}
+                    code={spec.introduction}
                     onCodeChange={(newIntroduction) =>
                       onChangeIntroduction(newIntroduction)
                     }
@@ -385,50 +415,60 @@ const CreatorWizard = ({
                 <StringArrayInput
                   groupLabel="Prerequisites"
                   itemLabel={(index) => `Prerequisite ${index + 1}`}
-                  value={value.prerequisites}
-                  onChange={(index, newPrereq) =>
-                    onChangePrerequisites(
-                      value.prerequisites.toSpliced(index, 1, newPrereq)
-                    )
-                  }
+                  value={spec.prerequisites ?? []}
+                  onChange={(index, newPrereq) => {
+                    if (
+                      spec.prerequisites !== undefined &&
+                      index < spec.prerequisites.length
+                    ) {
+                      onChangePrerequisites(
+                        spec.prerequisites.toSpliced(index, 1, newPrereq)
+                      );
+                    }
+                  }}
                   add={{
                     label: 'Add prerequisite',
                     onAdd: () =>
-                      onChangePrerequisites(value.prerequisites.concat('')),
+                      onChangePrerequisites(
+                        (spec.prerequisites ?? []).concat('')
+                      ),
                   }}
                   remove={{
                     label: (index) => `Remove prerequisite ${index + 1}`,
-                    onRemove: (index) =>
-                      onChangePrerequisites(
-                        value.prerequisites.toSpliced(index, 1)
-                      ),
+                    onRemove: (index) => {
+                      if (
+                        spec.prerequisites !== undefined &&
+                        index < spec.prerequisites.length
+                      ) {
+                        onChangePrerequisites(
+                          spec.prerequisites.toSpliced(index, 1)
+                        );
+                      }
+                    },
                   }}
                 />
               </FormSection>
 
               <StringArrayInput
                 groupLabel="Tasks"
-                value={value.tasks.map((task) => task.title)}
+                value={spec.tasks?.map((task) => task.title ?? '') ?? []}
                 itemLabel={(index) => `Task ${index + 1}`}
-                onChange={(index, newTitle) =>
-                  onChangeTask(index, {
-                    ...value.tasks[index],
-                    title: newTitle,
-                  })
-                }
+                onChange={(index, newTitle) => {
+                  onChangeTaskTitle(index, newTitle);
+                }}
                 add={
-                  value.tasks.length < MAX_TASKS
+                  spec.tasks === undefined || spec.tasks.length < MAX_TASKS
                     ? {
                         label: 'Add another task',
-                        onAdd: () => onAddTask(),
+                        onAdd: onAddTask,
                       }
                     : undefined
                 }
                 remove={
-                  value.tasks.length > 1
+                  spec.tasks !== undefined && spec.tasks.length > 1
                     ? {
                         label: (index) => `Remove task ${index + 1}`,
-                        onRemove: (index) => onRemoveTask(index),
+                        onRemove: onRemoveTask,
                       }
                     : undefined
                 }
