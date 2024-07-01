@@ -229,7 +229,12 @@ const SelectMultiTypeahead = ({
       <SelectList isAriaMultiselectable id={`${elementId}-listbox`}>
         {selectOptions.map((option, index) => (
           <SelectOption
-            key={option.value || option.children}
+            key={
+              typeof option.value === 'string' ||
+              typeof option.value === 'number'
+                ? `value:${option.value}`
+                : `index:${index}`
+            }
             isFocused={focusedItemIndex === index}
             className={option.className}
             id={`${elementId}-${
