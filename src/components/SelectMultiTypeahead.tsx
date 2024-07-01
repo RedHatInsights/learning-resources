@@ -237,9 +237,6 @@ const SelectMultiTypeahead = ({
             }
             isFocused={focusedItemIndex === index}
             className={option.className}
-            id={`${elementId}-${
-              option.value?.replace(' ', '-') ?? 'undefined'
-            }`}
             {...option}
             ref={null}
           />
