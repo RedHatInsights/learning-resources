@@ -146,8 +146,8 @@ const SelectMultiTypeahead = ({
     setInputValue(value);
   };
 
-  const onSelect = (value: string) => {
-    if (value !== undefined) {
+  const onSelect = (value: string | null) => {
+    if (value !== null) {
       onChangeSelected(
         selected.includes(value)
           ? selected.filter((selection) => selection !== value)
@@ -230,7 +230,9 @@ const SelectMultiTypeahead = ({
             key={option.value || option.children}
             isFocused={focusedItemIndex === index}
             className={option.className}
-            id={`${elementId}-${option.value.replace(' ', '-')}`}
+            id={`${elementId}-${
+              option.value?.replace(' ', '-') ?? 'undefined'
+            }`}
             {...option}
             ref={null}
           />
