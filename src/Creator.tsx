@@ -33,7 +33,6 @@ export type CreatorErrors = {
 
 const BASE_METADATA = {
   name: 'test-quickstart',
-  kind: 'QuickStarts',
 };
 
 function makeDemoQuickStart(
@@ -76,7 +75,6 @@ function makeDemoQuickStart(
       metadata: {
         ...baseQuickStart.metadata,
         name: 'test-quickstart',
-        kind: 'QuickStarts',
         ...(selectedTypeMeta?.extraMetadata ?? {}),
       },
       spec: {
@@ -96,7 +94,6 @@ const Creator = () => {
   const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
     metadata: {
       name: 'test-quickstart',
-      kind: 'QuickStarts',
     },
     spec: {
       displayName: '',
@@ -208,6 +205,10 @@ const Creator = () => {
 
     const adjustedQuickstart = { ...quickStart };
     adjustedQuickstart.spec = { ...adjustedQuickstart.spec };
+    adjustedQuickstart.metadata = {
+      ...adjustedQuickstart.metadata,
+      name: effectiveName,
+    };
 
     delete adjustedQuickstart.spec['icon'];
 
