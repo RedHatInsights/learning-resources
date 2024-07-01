@@ -1,7 +1,6 @@
 import {
   AllQuickStartStates,
   QuickStart,
-  QuickStartTile,
   getQuickStartStatus,
 } from '@patternfly/quickstarts';
 import {
@@ -12,34 +11,18 @@ import {
   FlexItem,
   Gallery,
   GalleryItem,
-  Icon,
   Split,
   SplitItem,
   Text,
   TextContent,
   Title,
 } from '@patternfly/react-core';
-import React, { PropsWithChildren, SyntheticEvent, useState } from 'react';
-import {
-  AngleRightIcon,
-  BookmarkIcon,
-  OutlinedBookmarkIcon,
-} from '@patternfly/react-icons';
+import React, { PropsWithChildren, useState } from 'react';
+import { AngleRightIcon } from '@patternfly/react-icons';
 import { useFlag } from '@unleash/proxy-client-react';
 
 import './CatalogSection.scss';
-
-const OutlinedBookmarkedIcon = () => (
-  <Icon className="lr-c-bookmark__icon">
-    <OutlinedBookmarkIcon />
-  </Icon>
-);
-
-const BookmarkedIcon = () => (
-  <Icon className="lr-c-bookmark__icon">
-    <BookmarkIcon />
-  </Icon>
-);
+import WrappedQuickStartTile from './WrappedQuickStartTile';
 
 const CatalogWrapper: React.FC<
   PropsWithChildren<{
@@ -178,39 +161,18 @@ const CatalogSection = ({
       {sectionCount ? (
         <Gallery hasGutter>
           {sectionQuickStarts.map((quickStart) => (
-            <GalleryItem
-              className="lr-c-quickstart_tile"
-              key={quickStart.metadata.name}
-            >
-              <QuickStartTile
-                action={{
-                  'aria-label': quickStart.metadata.favorite
-                    ? `Remove quickstart ${quickStart.spec.displayName} from bookmarks.`
-                    : `Bookmark quickstart ${quickStart.spec.displayName}.`,
-                  icon: showBookmarks
-                    ? quickStart.metadata.favorite
-                      ? BookmarkedIcon
-                      : OutlinedBookmarkedIcon
-                    : undefined,
-                  onClick: (e: SyntheticEvent<Element, Event>): void => {
-                    if (showBookmarks) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleFavorite(
-                        quickStart.metadata.name,
-                        !quickStart.metadata.favorite
-                      );
-                    }
-                  },
-                }}
-                quickStart={{
-                  ...quickStart,
-                  spec: {
-                    ...quickStart.spec,
-                    // remove any lingering icons
-                    icon: null,
-                  },
-                }}
+            <GalleryItem key={quickStart.metadata.name}>
+              <WrappedQuickStartTile
+                quickStart={quickStart}
+                bookmarks={
+                  showBookmarks
+                    ? {
+                        isFavorite: quickStart.metadata.favorite,
+                        setFavorite: (newState) =>
+                          toggleFavorite(quickStart.metadata.name, newState),
+                      }
+                    : null
+                }
                 isActive={quickStart.metadata.name === activeQuickStartID}
                 status={getQuickStartStatus(
                   allQuickStartStates || {},
