@@ -212,7 +212,12 @@ const TaskStepContents = ({
         />
       </FormGroup>
 
-      {error !== undefined ? <pre>{error}</pre> : null}
+      {error !== undefined ? (
+        <pre style={{ whiteSpace: 'pre-wrap' }}>
+          {'Error:\n\n'}
+          {error}
+        </pre>
+      ) : null}
     </section>
   );
 };
@@ -357,7 +362,10 @@ const CreatorWizard = ({
   }
 
   return (
-    <Form onSubmit={(e) => e.preventDefault()} className="pf-v5-u-h-100-on-lg">
+    <Form
+      onSubmit={(e) => e.preventDefault()}
+      className="pf-v5-u-w-100 pf-v5-u-h-100-on-lg"
+    >
       <Wizard isVisitRequired className="pf-v5-u-h-100-on-lg">
         <WizardStep name="Select content type" id="rc-wizard-type">
           <p>
