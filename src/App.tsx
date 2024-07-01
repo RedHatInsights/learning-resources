@@ -5,6 +5,7 @@ import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import Viewer from './Viewer';
 import Creator from './Creator';
+import { useFlag } from '@unleash/proxy-client-react';
 
 const routes: Record<AppNavigationPart, string> = {
   viewer: '/',
@@ -13,16 +14,8 @@ const routes: Record<AppNavigationPart, string> = {
 
 export const App = ({ bundle }: { bundle: string }) => {
   const navigate = useNavigate();
-
-  const {
-    visibilityFunctions: { featureFlag },
-    getBundle,
-  } = useChrome();
-
-  const creatorEnabled = featureFlag(
-    'platform.learning-resources.creator',
-    true
-  );
+  const { getBundle } = useChrome();
+  const creatorEnabled = useFlag('platform.learning-resources.creator');
 
   return (
     <AppContext.Provider
