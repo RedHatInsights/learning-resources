@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { MenuToggleElement } from '@patternfly/react-core/dist/js';
 import {
   Button,
@@ -24,7 +24,9 @@ const SelectMultiTypeahead = ({
   selected: string[];
   onChangeSelected: (newSelections: string[]) => void;
 }) => {
-  const [initialOptions] = useState(options);
+  // Cache initial options to avoid having to deal with them changing.
+  const initialOptions = useMemo(() => options, []);
+
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [selectOptions, setSelectOptions] =
