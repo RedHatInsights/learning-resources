@@ -13,15 +13,13 @@ import {
   AllQuickStartStates,
   QuickStart,
   QuickStartContext,
-  QuickStartDrawer,
   QuickStartSpec,
-  QuickStartStatus,
   QuickStartTask,
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
-import WrappedQuickStartTile from './components/WrappedQuickStartTile';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
 import { ItemKind, itemKindMeta } from './components/creator/meta';
+import CreatorPreview from './components/creator/CreatorPreview';
 
 export type CreatorErrors = {
   taskErrors: Map<number, string>;
@@ -278,24 +276,10 @@ const Creator = () => {
           </GridItem>
 
           <GridItem span={12} lg={6}>
-            <QuickStartContext.Provider value={quickstartValues}>
-              <QuickStartDrawer quickStarts={allQuickStarts}>
-                <section>
-                  <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
-                    Live card preview
-                  </Title>
-
-                  <div className="rc-tile-preview-wrapper">
-                    <WrappedQuickStartTile
-                      quickStart={quickStart}
-                      bookmarks={null}
-                      isActive={false}
-                      status={QuickStartStatus.NOT_STARTED}
-                    />
-                  </div>
-                </section>
-              </QuickStartDrawer>
-            </QuickStartContext.Provider>
+            <CreatorPreview
+              typeMeta={selectedType?.meta ?? null}
+              quickStart={quickStart}
+            />
           </GridItem>
         </Grid>
       </PageSection>
