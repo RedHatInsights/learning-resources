@@ -14,14 +14,18 @@ import { ItemMeta } from './meta';
 const CreatorPreview = ({
   typeMeta,
   quickStart,
+  currentTask,
 }: {
   typeMeta: ItemMeta | null;
   quickStart: QuickStart;
+  currentTask: number | null;
 }) => {
   const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
     {}
   );
+
+  const [prevTask, setPrevTask] = useState<number | null>(currentTask);
 
   const parentContext = useContext(QuickStartContext);
 
@@ -39,6 +43,25 @@ const CreatorPreview = ({
 
   if (quickstartValues.allQuickStarts?.[0] !== quickStart) {
     quickstartValues.setAllQuickStarts?.([quickStart]);
+  }
+
+  if (
+    prevTask !== currentTask ||
+    quickstartValues?.activeQuickStartState === undefined
+  ) {
+    setPrevTask(currentTask);
+
+    if (currentTask !== null) {
+      quickstartValues.setQuickStartTaskNumber?.(
+        quickStart.metadata.name,
+        currentTask
+      );
+    } else {
+      quickstartValues.restartQuickStart?.(
+        quickStart.metadata.name,
+        quickStart.spec.tasks?.length ?? 0
+      );
+    }
   }
 
   return (

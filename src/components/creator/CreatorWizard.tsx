@@ -233,6 +233,7 @@ type CreatorWizardProps = {
   onAddTask: () => void;
   onRemoveTask: (index: number) => void;
   onChangeTaskContents: (contents: string[]) => void;
+  onChangeCurrentTask: (index: number | null) => void;
   files: {
     name: string;
     content: string;
@@ -251,6 +252,7 @@ const CreatorWizard = ({
   onChangeTaskContents,
   onAddTask,
   onRemoveTask,
+  onChangeCurrentTask,
   files,
   errors,
 }: CreatorWizardProps) => {
@@ -338,6 +340,7 @@ const CreatorWizard = ({
   // we set a bound on the number of tasks and generate one step for possible
   // task up to this bound (which is hidden if the task does not yet exist).
 
+  const taskPrefix = 'rc-wizard-panel-task-';
   const taskSubSteps = [];
 
   for (let index = 0; index < MAX_TASKS; ++index) {
@@ -345,7 +348,7 @@ const CreatorWizard = ({
 
     taskSubSteps.push(
       <WizardStep
-        id={`rc-wizard-panel-task-${index}`}
+        id={`${taskPrefix}${index}`}
         name={`Task ${index + 1}`}
         isHidden={selectedType === null || !isPresent}
       >
@@ -361,12 +364,24 @@ const CreatorWizard = ({
     );
   }
 
+  const onStepChange = (newStepId: string) => {
+    if (newStepId.startsWith(taskPrefix)) {
+      onChangeCurrentTask(parseInt(newStepId.substring(taskPrefix.length)));
+    } else {
+      onChangeCurrentTask(null);
+    }
+  };
+
   return (
     <Form
       onSubmit={(e) => e.preventDefault()}
       className="pf-v5-u-w-100 pf-v5-u-h-100-on-lg"
     >
-      <Wizard isVisitRequired className="pf-v5-u-h-100-on-lg">
+      <Wizard
+        isVisitRequired
+        className="pf-v5-u-h-100-on-lg"
+        onStepChange={(_, newStep) => onStepChange(newStep.id.toString())}
+      >
         <WizardStep name="Select content type" id="rc-wizard-type">
           <p>
             Learning resources are grouped by their &quot;content type&quot;.
