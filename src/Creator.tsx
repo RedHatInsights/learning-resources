@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import YAML, { YAMLError } from 'yaml';
 import {
   Grid,
@@ -10,12 +10,9 @@ import {
 import './Creator.scss';
 import './components/CatalogSection.scss';
 import {
-  AllQuickStartStates,
   QuickStart,
-  QuickStartContext,
   QuickStartSpec,
   QuickStartTask,
-  useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
 import { ItemKind, itemKindMeta } from './components/creator/meta';
@@ -161,33 +158,6 @@ const Creator = () => {
     () => makeDemoQuickStart(rawType, rawQuickStart, taskContents),
     [rawType, rawQuickStart, taskContents]
   );
-
-  const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
-  const [activeQuickStart, setActiveQuickStart] = useState('');
-  const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
-    {}
-  );
-
-  if (selectedType?.meta?.hasTasks !== true && activeQuickStart !== '') {
-    setActiveQuickStart('');
-  }
-
-  const parentContext = useContext(QuickStartContext);
-
-  const quickstartValues = useValuesForQuickStartContext({
-    allQuickStarts: [quickStart],
-    activeQuickStartID: activeQuickStart,
-    setActiveQuickStartID: (id) => setActiveQuickStart(id),
-    allQuickStartStates: quickStartStates,
-    setAllQuickStartStates: (states) => setQuickStartStates(states),
-    useQueryParams: false,
-    footer: parentContext.footer,
-    focusOnQuickStart: false,
-  });
-
-  if (quickstartValues.allQuickStarts?.[0] !== quickStart) {
-    quickstartValues.setAllQuickStarts?.([quickStart]);
-  }
 
   const files = useMemo(() => {
     const effectiveName = quickStart.spec.displayName
