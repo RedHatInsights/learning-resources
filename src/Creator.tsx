@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import YAML, { YAMLError } from 'yaml';
 import {
   Button,
@@ -17,27 +17,31 @@ import {
   QuickStart,
   QuickStartContext,
   QuickStartDrawer,
+  QuickStartSpec,
   QuickStartStatus,
   QuickStartTask,
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import WrappedQuickStartTile from './components/WrappedQuickStartTile';
-import CreatorWizard, {
-  CreatorWizardState,
-  EMPTY_TASK,
-} from './components/creator/CreatorWizard';
-import { itemKindMeta } from './components/creator/meta';
+import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
+import { ItemKind, itemKindMeta } from './components/creator/meta';
 import { AppContext } from './AppContext';
 
 export type CreatorErrors = {
   taskErrors: Map<number, string>;
 };
 
+const BASE_METADATA = {
+  name: 'test-quickstart',
+  kind: 'QuickStarts',
+};
+
 function makeDemoQuickStart(
-  state: CreatorWizardState
+  type: ItemKind | null,
+  baseQuickStart: QuickStart,
+  taskContents: string[]
 ): [QuickStart, CreatorErrors] {
-  const selectedTypeMeta =
-    state.type !== null ? itemKindMeta[state.type] : null;
+  const selectedTypeMeta = type !== null ? itemKindMeta[type] : null;
 
   const [tasks, taskErrors] = (() => {
     if (selectedTypeMeta?.hasTasks !== true) return [undefined, new Map()];
@@ -45,19 +49,21 @@ function makeDemoQuickStart(
     const out: QuickStartTask[] = [];
     const errors: CreatorErrors['taskErrors'] = new Map();
 
-    for (let index = 0; index < state.tasks.length; ++index) {
-      const task = state.tasks[index];
+    if (baseQuickStart.spec.tasks !== undefined) {
+      for (let index = 0; index < baseQuickStart.spec.tasks.length; ++index) {
+        const task = baseQuickStart.spec.tasks[index];
 
-      try {
-        out.push({
-          ...YAML.parse(task.yamlContent),
-          title: task.title,
-        });
-      } catch (e) {
-        if (!(e instanceof YAMLError)) throw e;
+        try {
+          out.push({
+            ...YAML.parse(taskContents[index]),
+            title: task.title,
+          });
+        } catch (e) {
+          if (!(e instanceof YAMLError)) throw e;
 
-        out.push({ ...EMPTY_TASK, title: task.title });
-        errors.set(index, e.message);
+          out.push({ ...EMPTY_TASK, title: task.title });
+          errors.set(index, e.message);
+        }
       }
     }
 
@@ -66,37 +72,15 @@ function makeDemoQuickStart(
 
   return [
     {
+      ...baseQuickStart,
       metadata: {
+        ...baseQuickStart.metadata,
         name: 'test-quickstart',
         kind: 'QuickStarts',
         ...(selectedTypeMeta?.extraMetadata ?? {}),
       },
       spec: {
-        displayName: state.title,
-        icon: null,
-        description: state.description,
-        introduction:
-          selectedTypeMeta?.hasTasks === true ? state.introduction : undefined,
-        prerequisites:
-          selectedTypeMeta?.hasTasks === true ? state.prerequisites : undefined,
-        link:
-          selectedTypeMeta?.fields?.url === true
-            ? {
-                href: state.url,
-                text: 'View documentation',
-              }
-            : undefined,
-        type:
-          selectedTypeMeta !== null
-            ? {
-                text: selectedTypeMeta.displayName,
-                color: selectedTypeMeta.tagColor,
-              }
-            : undefined,
-        durationMinutes:
-          selectedTypeMeta?.fields?.duration === true && state.duration > 0
-            ? state.duration
-            : undefined,
+        ...baseQuickStart.spec,
         tasks: tasks,
       },
     },
@@ -107,26 +91,86 @@ function makeDemoQuickStart(
 const Creator = () => {
   const { onNavigate } = useContext(AppContext);
 
-  const [state, setState] = useState<CreatorWizardState>({
-    type: null,
-    title: '',
-    description: '',
-    bundles: [],
-    url: '',
-    duration: 0,
-    tasks: [EMPTY_TASK],
-    introduction: '',
-    prerequisites: [],
+  const [rawType, setRawType] = useState<ItemKind | null>(null);
+
+  const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
+    metadata: {
+      name: 'test-quickstart',
+      kind: 'QuickStarts',
+    },
+    spec: {
+      displayName: '',
+      icon: null,
+      description: '',
+    },
   });
 
   const selectedType =
-    state.type !== null
-      ? { id: state.type, meta: itemKindMeta[state.type] }
-      : null;
+    rawType !== null ? { id: rawType, meta: itemKindMeta[rawType] } : null;
 
-  const [quickStart, quickStartErrors] = useMemo(
-    () => makeDemoQuickStart(state),
-    [state]
+  const [bundles, setBundles] = useState<string[]>([]);
+  const [taskContents, setTaskContents] = useState<string[]>([]);
+
+  const updateSpec = (
+    updater: (old: QuickStartSpec) => Partial<QuickStartSpec>
+  ) => {
+    setRawQuickStart((old) => ({
+      ...old,
+      spec: {
+        ...old.spec,
+        ...updater(old.spec),
+      },
+    }));
+  };
+
+  const setType = (newType: ItemKind | null) => {
+    if (newType !== null) {
+      const meta = itemKindMeta[newType];
+
+      setRawQuickStart((old) => {
+        const updates: Partial<QuickStart> = {};
+
+        updates.spec = { ...old.spec };
+
+        updates.spec.type = {
+          text: meta.displayName,
+          color: meta.tagColor,
+        };
+
+        if (
+          meta.hasTasks &&
+          (old.spec.tasks === undefined || old.spec.tasks.length === 0)
+        ) {
+          updates.spec.tasks = [EMPTY_TASK];
+        }
+
+        if (!meta.hasTasks) {
+          updates.spec.tasks = undefined;
+          updates.spec.introduction = undefined;
+          updates.spec.prerequisites = [];
+        }
+
+        if (!meta.fields.url) updates.spec.link = undefined;
+        if (!meta.fields.duration) updates.spec.durationMinutes = undefined;
+
+        updates.metadata = { ...BASE_METADATA, ...meta.extraMetadata };
+
+        return { ...old, ...updates };
+      });
+
+      if (meta.hasTasks) {
+        setTaskContents((old) => (old.length === 0 ? [''] : old));
+      } else if (!meta.hasTasks) {
+        setTaskContents([]);
+      }
+    }
+
+    setRawType(newType);
+  };
+
+  const [quickStart, errors] = useMemo(
+    () => makeDemoQuickStart(rawType, rawQuickStart, taskContents),
+    [rawType, rawQuickStart, taskContents]
   );
 
   const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
@@ -142,7 +186,7 @@ const Creator = () => {
   const parentContext = useContext(QuickStartContext);
 
   const quickstartValues = useValuesForQuickStartContext({
-    allQuickStarts: allQuickStarts,
+    allQuickStarts: [quickStart],
     activeQuickStartID: activeQuickStart,
     setActiveQuickStartID: (id) => setActiveQuickStart(id),
     allQuickStartStates: quickStartStates,
@@ -152,9 +196,9 @@ const Creator = () => {
     focusOnQuickStart: false,
   });
 
-  useEffect(() => {
-    quickstartValues.setAllQuickStarts?.(allQuickStarts);
-  }, [allQuickStarts]);
+  if (quickstartValues.allQuickStarts?.[0] !== quickStart) {
+    quickstartValues.setAllQuickStarts?.([quickStart]);
+  }
 
   const files = useMemo(() => {
     const effectiveName = quickStart.spec.displayName
@@ -174,7 +218,7 @@ const Creator = () => {
           kind: 'QuickStarts',
           name: effectiveName,
           tags: [
-            state.bundles
+            bundles
               .toSorted()
               .map((bundle) => ({ kind: 'bundle', value: bundle })),
           ],
@@ -185,7 +229,13 @@ const Creator = () => {
         content: YAML.stringify(adjustedQuickstart),
       },
     ];
-  }, [quickStart, state]);
+  }, [quickStart, bundles]);
+
+  if ((quickStart.spec.tasks?.length ?? 0) != taskContents.length) {
+    throw new Error(
+      `Mismatch between quickstart tasks and task contents: ${quickStart.spec.tasks?.length} vs ${taskContents.length}`
+    );
+  }
 
   return (
     <PageGroup>
@@ -216,10 +266,34 @@ const Creator = () => {
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             <CreatorWizard
-              value={state}
-              onChange={setState}
+              quickStart={rawQuickStart}
+              onChangeQuickStartSpec={(spec) => updateSpec(() => spec)}
+              type={rawType}
+              onChangeType={setType}
+              bundles={bundles}
+              onChangeBundles={setBundles}
+              taskContents={taskContents}
+              onChangeTaskContents={setTaskContents}
+              onAddTask={() => {
+                updateSpec((old) => ({ tasks: (old.tasks ?? []).concat({}) }));
+                setTaskContents((old) => old.concat(''));
+              }}
+              onRemoveTask={(index) => {
+                updateSpec((old) => {
+                  if (old.tasks === undefined || old.tasks.length <= index)
+                    return {};
+
+                  return { tasks: old.tasks.toSpliced(index, 1) };
+                });
+
+                setTaskContents((old) => {
+                  if (old.length <= index) return old;
+
+                  return old.toSpliced(index, 1);
+                });
+              }}
+              errors={errors}
               files={files}
-              errors={quickStartErrors}
             />
           </GridItem>
 
