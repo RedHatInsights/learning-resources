@@ -97,6 +97,8 @@ const Creator = () => {
   const [bundles, setBundles] = useState<string[]>([]);
   const [taskContents, setTaskContents] = useState<string[]>([]);
 
+  const [currentTask, setCurrentTask] = useState<number | null>(null);
+
   const updateSpec = (
     updater: (old: QuickStartSpec) => Partial<QuickStartSpec>
   ) => {
@@ -240,6 +242,7 @@ const Creator = () => {
                   return old.toSpliced(index, 1);
                 });
               }}
+              onChangeCurrentTask={setCurrentTask}
               errors={errors}
               files={files}
             />
@@ -249,6 +252,7 @@ const Creator = () => {
             <CreatorPreview
               typeMeta={selectedType?.meta ?? null}
               quickStart={quickStart}
+              currentTask={currentTask}
             />
           </GridItem>
         </Grid>
