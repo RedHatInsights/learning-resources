@@ -63,3 +63,7 @@ export type ItemKind = keyof typeof itemKindMeta;
 export function isItemKind(kind: string): kind is ItemKind {
   return Object.hasOwn(itemKindMeta, kind);
 }
+
+export const ALL_ITEM_KINDS = Object.freeze(
+  Object.keys(itemKindMeta)
+) as ItemKind[];
