@@ -1,6 +1,6 @@
 import { QuickStartType } from '@patternfly/quickstarts';
 
-const rawItemKindMeta = {
+const rawItemKindMeta = Object.freeze({
   documentation: {
     displayName: 'Documentation',
     tagColor: 'orange',
@@ -41,7 +41,7 @@ const rawItemKindMeta = {
       otherResource: true,
     },
   },
-} as const;
+} as const);
 
 export type ItemMeta = {
   displayName: string;
@@ -59,3 +59,7 @@ export const itemKindMeta: {
 } = rawItemKindMeta;
 
 export type ItemKind = keyof typeof itemKindMeta;
+
+export function isItemKind(kind: string): kind is ItemKind {
+  return Object.hasOwn(itemKindMeta, kind);
+}
