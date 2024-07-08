@@ -43,21 +43,6 @@ type StringArrayInputProps = {
   onChange: (index: number, newValue: string) => void;
 };
 
-// function expandLabel(
-//   props: StringArrayInputLabelProps
-// ): StringArrayInputLabelFns {
-//   if ('kind' in props) {
-//     return {
-//       groupLabel: props.groupLabel ?? `${props.kind}s`,
-//       itemLabel: (index) => `${props.kind} ${index + 1}`,
-//       addLabel: `Add ${props.kind}`,
-//       removeLabel: (index) => `Remove ${props.kind} ${index + 1}`,
-//     };
-//   }
-//
-//   return props;
-// }
-
 const StringArrayInput = ({
   value,
   groupLabel,
