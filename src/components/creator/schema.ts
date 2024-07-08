@@ -35,6 +35,13 @@ function detailsStepName(kind: ItemKind): string {
   return `step-details-${kind}`;
 }
 
+export const NAME_TYPE = 'type';
+export const NAME_TITLE = 'title';
+export const NAME_BUNDLES = 'bundles';
+export const NAME_DESCRIPTION = 'description';
+export const NAME_DURATION = 'duration';
+export const NAME_URL = 'url';
+
 function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   const meta = itemKindMeta[kind];
 
@@ -43,14 +50,14 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   fields.push(
     {
       component: componentTypes.TEXT_FIELD,
-      name: 'title',
+      name: NAME_TITLE,
       label: 'Title',
       isRequired: true,
       validate: [REQUIRED],
     },
     {
       component: componentTypes.SELECT,
-      name: 'bundles',
+      name: NAME_BUNDLES,
       label: 'Bundles',
       simpleValue: true,
       isMulti: true,
@@ -61,7 +68,7 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
     },
     {
       component: componentTypes.TEXT_FIELD,
-      name: 'description',
+      name: NAME_DESCRIPTION,
       label: 'Description',
       isRequired: true,
       validate: [REQUIRED],
@@ -71,7 +78,7 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   if (meta.fields.duration) {
     fields.push({
       component: componentTypes.TEXT_FIELD,
-      name: 'duration',
+      name: NAME_DURATION,
       label: 'Duration',
       dataType: dataTypes.NUMBER,
       isRequired: true,
@@ -82,7 +89,7 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   if (meta.fields.url) {
     fields.push({
       component: componentTypes.TEXT_FIELD,
-      name: 'url',
+      name: NAME_URL,
       label: 'URL',
       isRequired: true,
       validate: [
@@ -102,7 +109,7 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   };
 }
 
-export default function makeSchema(chrome: ChromeAPI): Schema {
+export function makeSchema(chrome: ChromeAPI): Schema {
   const bundles = chrome.getAvailableBundles();
 
   return {
@@ -118,7 +125,7 @@ export default function makeSchema(chrome: ChromeAPI): Schema {
             fields: [
               {
                 component: componentTypes.SELECT,
-                name: 'type',
+                name: NAME_TYPE,
                 label: 'Type',
                 simpleValue: true,
                 options: Object.entries(itemKindMeta).map(([name, value]) => ({
