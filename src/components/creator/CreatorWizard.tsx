@@ -309,6 +309,18 @@ const CreatorWizard = ({
         FormTemplate={FormTemplate}
       >
         <FormSpy subscription={{ values: true }}>
+          {/*
+            In order to display the live preview, we need to update the parent
+            whenever the form state changes. Unfortunately, as best as I can
+            tell, there is no way to pass FormRenderer a callback that's called
+            whenever a value changes.
+
+            The example at [0] shows using a custom component in the schema to
+            watch the values, but it seems clearer to just add it once here
+            (and it avoids introducing another custom component name).
+
+            [0]: https://github.com/data-driven-forms/react-forms/blob/master/packages/react-renderer-demo/src/examples/components/examples/value-listener.js
+             */}
           {(props) => (
             <PropUpdater
               values={props.values}
