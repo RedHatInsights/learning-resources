@@ -132,7 +132,13 @@ function makeTaskStep(index: number): object {
       {
         component: componentTypes.TEXTAREA,
         name: `${NAME_TASKS_ARRAY}[${index}].${NAME_TASK_CONTENT}`,
+        label: 'Task data (YAML)',
         resizeOrientation: 'vertical',
+      },
+      {
+        component: 'lr-task-error',
+        name: `internal-task-errors[${index}]`,
+        index: index,
       },
     ],
     nextStep: ({ values }: { values: AnyObject }) => {

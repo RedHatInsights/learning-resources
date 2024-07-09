@@ -9,7 +9,7 @@ import {
 } from '@patternfly/react-core';
 import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
 import MinusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/minus-circle-icon';
-import React, { ReactNode, useEffect, useId, useMemo } from 'react';
+import React, { ReactNode, useContext, useEffect, useId, useMemo } from 'react';
 import { ItemKind, isItemKind, itemKindMeta } from './meta';
 import {
   BundleInput,
@@ -22,7 +22,7 @@ import { CreatorErrors } from '../../Creator';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import { FormRenderer, FormSpy } from '@data-driven-forms/react-form-renderer';
 import { FormTemplate } from '@data-driven-forms/pf4-component-mapper';
-import componentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
+import pf4ComponentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
 import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
@@ -336,6 +336,19 @@ const PropUpdater = ({
   return undefined;
 };
 
+const CreatorWizardContext = React.createContext<{ errors: CreatorErrors }>({
+  errors: {
+    taskErrors: new Map(),
+  },
+});
+
+const TaskErrorPreview = ({ index }: { index: number }) => {
+  const context = useContext(CreatorWizardContext);
+  const error = context.errors.taskErrors.get(index);
+
+  return error !== undefined ? <pre>{error}</pre> : undefined;
+};
+
 const CreatorWizard = ({
   onChangeType,
   onChangeQuickStartSpec,
@@ -348,25 +361,39 @@ const CreatorWizard = ({
   const chrome = useChrome();
   const schema = useMemo(() => makeSchema(chrome), []);
 
+  const context = useMemo(
+    () => ({
+      errors,
+    }),
+    [errors]
+  );
+
+  const componentMapper = {
+    ...pf4ComponentMapper,
+    'lr-task-error': TaskErrorPreview,
+  };
+
   return (
-    <FormRenderer
-      onSubmit={() => {}}
-      schema={schema}
-      componentMapper={componentMapper}
-      FormTemplate={FormTemplate}
-    >
-      <FormSpy subscription={{ values: true }}>
-        {(props) => (
-          <PropUpdater
-            values={props.values}
-            onChangeType={onChangeType}
-            onChangeBundles={onChangeBundles}
-            onChangeQuickStartSpec={onChangeQuickStartSpec}
-            onChangeTaskContents={onChangeTaskContents}
-          />
-        )}
-      </FormSpy>
-    </FormRenderer>
+    <CreatorWizardContext.Provider value={context}>
+      <FormRenderer
+        onSubmit={() => {}}
+        schema={schema}
+        componentMapper={componentMapper}
+        FormTemplate={FormTemplate}
+      >
+        <FormSpy subscription={{ values: true }}>
+          {(props) => (
+            <PropUpdater
+              values={props.values}
+              onChangeType={onChangeType}
+              onChangeBundles={onChangeBundles}
+              onChangeQuickStartSpec={onChangeQuickStartSpec}
+              onChangeTaskContents={onChangeTaskContents}
+            />
+          )}
+        </FormSpy>
+      </FormRenderer>
+    </CreatorWizardContext.Provider>
   );
 };
 
