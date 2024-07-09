@@ -10,6 +10,7 @@ import { ItemKind, isItemKind, itemKindMeta } from './meta';
 import { CreatorErrors } from '../../Creator';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import {
+  AnyObject,
   FormRenderer,
   FormSpy,
   componentTypes,
@@ -64,7 +65,7 @@ type CreatorWizardProps = {
   errors: CreatorErrors;
 };
 
-type FormValue = Record<string, any>;
+type FormValue = AnyObject;
 
 type UpdaterProps = {
   values: FormValue;
