@@ -123,8 +123,18 @@ const MAX_TASKS = 10;
 export const NAME_TASKS_ARRAY = 'tasks';
 export const NAME_TASK_CONTENT = 'content';
 
+const TASK_STEP_PREFIX = 'step-task-detail-';
+
 function taskStepName(index: number): string {
-  return `step-task-detail-${index}`;
+  return `${TASK_STEP_PREFIX}${index}`;
+}
+
+export function taskFromStepName(name: string): number | null {
+  if (name.startsWith(TASK_STEP_PREFIX)) {
+    return parseInt(name.substring(TASK_STEP_PREFIX.length));
+  }
+
+  return null;
 }
 
 function makeTaskStep(index: number): object {

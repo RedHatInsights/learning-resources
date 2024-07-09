@@ -23,9 +23,19 @@ import {
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import { CreatorErrors } from '../../Creator';
 import { QuickStartSpec } from '@patternfly/quickstarts';
-import { FormRenderer, FormSpy } from '@data-driven-forms/react-form-renderer';
-import { FormTemplate } from '@data-driven-forms/pf4-component-mapper';
+import {
+  FormRenderer,
+  FormSpy,
+  componentTypes,
+} from '@data-driven-forms/react-form-renderer';
+import {
+  FormTemplate,
+  StepTemplateProps,
+  WizardProps,
+} from '@data-driven-forms/pf4-component-mapper';
+import DdfWizardContext from '@data-driven-forms/react-form-renderer/wizard-context';
 import pf4ComponentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
+import DdfWizard from '@data-driven-forms/pf4-component-mapper/wizard';
 import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
@@ -38,6 +48,7 @@ import {
   NAME_TYPE,
   NAME_URL,
   makeSchema,
+  taskFromStepName,
 } from './schema';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
@@ -345,11 +356,13 @@ const PropUpdater = ({
 const CreatorWizardContext = React.createContext<{
   errors: CreatorErrors;
   files: CreatorFiles;
+  onChangeCurrentTask: (index: number | null) => void;
 }>({
   errors: {
     taskErrors: new Map(),
   },
   files: [],
+  onChangeCurrentTask: () => {},
 });
 
 const TaskErrorPreview = ({ index }: { index: number }) => {
@@ -400,6 +413,44 @@ const FileDownload = () => {
   );
 };
 
+// Stolen from https://github.com/data-driven-forms/react-forms/blob/994aa08f168c2d25332b7177e900b823ece082af/packages/pf4-component-mapper/src/wizard/wizard-components/wizard-step.js
+const DefaultStepTemplate = ({
+  formFields,
+  title,
+  customTitle,
+  showTitle,
+  showTitles,
+}: StepTemplateProps) => (
+  <div className="pf-c-form">
+    {((showTitles && showTitle !== false) || showTitle) &&
+      (customTitle ? (
+        customTitle
+      ) : (
+        <Title headingLevel="h1" size="xl">
+          {title}
+        </Title>
+      ))}
+    {formFields}
+  </div>
+);
+
+const CustomStepTemplate = (props: StepTemplateProps) => {
+  const wizardContext = useContext(DdfWizardContext);
+  const creatorContext = useContext(CreatorWizardContext);
+
+  useEffect(() => {
+    creatorContext.onChangeCurrentTask(
+      taskFromStepName(wizardContext.currentStep.name)
+    );
+  }, [wizardContext.currentStep.name]);
+
+  return <DefaultStepTemplate {...props} />;
+};
+
+const CustomWizard = (props: WizardProps) => {
+  return <DdfWizard {...props} StepTemplate={CustomStepTemplate} />;
+};
+
 const CreatorWizard = ({
   onChangeType,
   onChangeQuickStartSpec,
@@ -416,6 +467,7 @@ const CreatorWizard = ({
     () => ({
       errors,
       files,
+      onChangeCurrentTask,
     }),
     [errors, files]
   );
@@ -424,6 +476,7 @@ const CreatorWizard = ({
     ...pf4ComponentMapper,
     'lr-task-error': TaskErrorPreview,
     'lr-download-files': FileDownload,
+    [componentTypes.WIZARD]: CustomWizard,
   };
 
   return (
