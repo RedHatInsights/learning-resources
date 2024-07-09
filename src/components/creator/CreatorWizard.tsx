@@ -297,7 +297,7 @@ const PropUpdater = ({
     const effective = [];
 
     for (let i = 0; i < (taskTitles?.length ?? 0); ++i) {
-      effective.push(taskValues?.[i]?.content ?? 'missing content');
+      effective.push(taskValues?.[i]?.content ?? '');
     }
 
     return effective;
