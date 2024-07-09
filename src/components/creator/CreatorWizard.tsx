@@ -19,7 +19,7 @@ import {
 } from './CreatorInputs';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import { CreatorErrors } from '../../Creator';
-import { QuickStart, QuickStartSpec } from '@patternfly/quickstarts';
+import { QuickStartSpec } from '@patternfly/quickstarts';
 import { FormRenderer, FormSpy } from '@data-driven-forms/react-form-renderer';
 import { FormTemplate } from '@data-driven-forms/pf4-component-mapper';
 import componentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
@@ -27,6 +27,10 @@ import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
   NAME_DURATION,
+  NAME_PANEL_INTRODUCTION,
+  NAME_PREREQUISITES,
+  NAME_TASKS_ARRAY,
+  NAME_TASK_TITLES,
   NAME_TITLE,
   NAME_TYPE,
   NAME_URL,
@@ -211,15 +215,9 @@ const TaskStepContents = ({
 };
 
 type CreatorWizardProps = {
-  type: ItemKind | null;
   onChangeType: (newType: ItemKind | null) => void;
-  quickStart: QuickStart;
   onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
-  bundles: string[];
   onChangeBundles: (newValue: string[]) => void;
-  taskContents: string[];
-  onAddTask: () => void;
-  onRemoveTask: (index: number) => void;
   onChangeTaskContents: (contents: string[]) => void;
   onChangeCurrentTask: (index: number | null) => void;
   files: {
@@ -233,14 +231,20 @@ type FormValue = Record<string, any>;
 
 type UpdaterProps = {
   values: FormValue;
+  onChangeType: (newType: ItemKind | null) => void;
   onChangeBundles: (bundles: string[]) => void;
   onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
+  onChangeTaskContents: (contents: string[]) => void;
 };
+
+const DEFAULT_TASK_TITLES: string[] = [''];
 
 const PropUpdater = ({
   values,
+  onChangeType,
   onChangeBundles,
   onChangeQuickStartSpec,
+  onChangeTaskContents,
 }: UpdaterProps) => {
   const bundles = values[NAME_BUNDLES];
 
@@ -248,18 +252,41 @@ const PropUpdater = ({
     onChangeBundles(bundles ?? []);
   }, [bundles]);
 
-  const type = values[NAME_TYPE];
-  const title = values[NAME_TITLE];
-  const description = values[NAME_DESCRIPTION];
-  const url = values[NAME_URL];
-  const duration = values[NAME_DURATION];
+  const rawType: string | undefined = values[NAME_TYPE];
+  const title: string | undefined = values[NAME_TITLE];
+  const description: string | undefined = values[NAME_DESCRIPTION];
+  const url: string | undefined = values[NAME_URL];
+  const duration: number | string | undefined = values[NAME_DURATION];
+  const prerequisites: string[] | undefined = values[NAME_PREREQUISITES];
+  const introduction: string | undefined = values[NAME_PANEL_INTRODUCTION];
 
-  console.log('duration', duration);
+  const taskTitles: string[] = values[NAME_TASK_TITLES] ?? DEFAULT_TASK_TITLES;
+  const taskValues: { content: string | undefined }[] | undefined =
+    values[NAME_TASKS_ARRAY];
+
+  const type =
+    typeof rawType === 'string' && isItemKind(rawType) ? rawType : null;
+  const meta = type !== null ? itemKindMeta[type] : null;
 
   useEffect(() => {
-    const meta =
-      typeof type === 'string' && isItemKind(type) ? itemKindMeta[type] : null;
+    onChangeType(type);
+  }, [type]);
 
+  const taskContents = useMemo(() => {
+    if (meta?.hasTasks !== true) {
+      return [];
+    }
+
+    const effective = [];
+
+    for (let i = 0; i < (taskTitles?.length ?? 0); ++i) {
+      effective.push(taskValues?.[i]?.content ?? 'missing content');
+    }
+
+    return effective;
+  }, [meta, taskTitles, taskValues]);
+
+  useEffect(() => {
     onChangeQuickStartSpec({
       type:
         meta !== null
@@ -280,26 +307,40 @@ const PropUpdater = ({
           : undefined,
       durationMinutes:
         meta?.fields?.duration && typeof duration === 'number'
-          ? Number(duration)
+          ? duration
+          : undefined,
+      prerequisites: meta?.hasTasks === true ? prerequisites : undefined,
+      introduction: meta?.hasTasks === true ? introduction : undefined,
+      tasks:
+        meta?.hasTasks === true
+          ? (taskTitles ?? []).map((t) => ({ title: t }))
           : undefined,
     });
-  }, [type, title, description, url, duration]);
+  }, [
+    meta,
+    rawType,
+    title,
+    description,
+    url,
+    duration,
+    prerequisites,
+    introduction,
+    taskTitles,
+  ]);
+
+  useEffect(() => {
+    onChangeTaskContents(taskContents);
+  }, [taskContents]);
 
   // Allow use as JSX component
   return undefined;
 };
 
 const CreatorWizard = ({
-  type,
   onChangeType,
-  quickStart,
   onChangeQuickStartSpec,
-  bundles,
   onChangeBundles,
-  taskContents,
   onChangeTaskContents,
-  onAddTask,
-  onRemoveTask,
   onChangeCurrentTask,
   files,
   errors,
@@ -318,8 +359,10 @@ const CreatorWizard = ({
         {(props) => (
           <PropUpdater
             values={props.values}
+            onChangeType={onChangeType}
             onChangeBundles={onChangeBundles}
             onChangeQuickStartSpec={onChangeQuickStartSpec}
+            onChangeTaskContents={onChangeTaskContents}
           />
         )}
       </FormSpy>

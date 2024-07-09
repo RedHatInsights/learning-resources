@@ -216,31 +216,15 @@ const Creator = () => {
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             <CreatorWizard
-              quickStart={rawQuickStart}
-              onChangeQuickStartSpec={(spec) => updateSpec(() => spec)}
-              type={rawType}
               onChangeType={setType}
-              bundles={bundles}
-              onChangeBundles={setBundles}
-              taskContents={taskContents}
-              onChangeTaskContents={setTaskContents}
-              onAddTask={() => {
-                updateSpec((old) => ({ tasks: (old.tasks ?? []).concat({}) }));
-                setTaskContents((old) => old.concat(''));
+              onChangeQuickStartSpec={(spec) => {
+                console.log('onChangeQuickStartSpec', spec);
+                updateSpec(() => spec);
               }}
-              onRemoveTask={(index) => {
-                updateSpec((old) => {
-                  if (old.tasks === undefined || old.tasks.length <= index)
-                    return {};
-
-                  return { tasks: old.tasks.toSpliced(index, 1) };
-                });
-
-                setTaskContents((old) => {
-                  if (old.length <= index) return old;
-
-                  return old.toSpliced(index, 1);
-                });
+              onChangeBundles={setBundles}
+              onChangeTaskContents={(c) => {
+                console.log('onChangeTaskContents', c);
+                setTaskContents(c);
               }}
               onChangeCurrentTask={setCurrentTask}
               errors={errors}

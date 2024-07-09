@@ -1,4 +1,5 @@
 import {
+  AnyObject,
   ConditionProp,
   Schema,
   componentTypes,
@@ -41,6 +42,10 @@ export const NAME_BUNDLES = 'bundles';
 export const NAME_DESCRIPTION = 'description';
 export const NAME_DURATION = 'duration';
 export const NAME_URL = 'url';
+
+export const NAME_PANEL_INTRODUCTION = 'panel-overview';
+export const NAME_PREREQUISITES = 'prerequisites';
+export const NAME_TASK_TITLES = 'task-titles';
 
 function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   const meta = itemKindMeta[kind];
@@ -106,11 +111,48 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
     name: detailsStepName(kind),
     title: `${meta.displayName} details`,
     fields: fields,
+    nextStep: meta.hasTasks ? 'step-panel-overview' : undefined,
+  };
+}
+
+const MAX_TASKS = 10;
+
+export const NAME_TASKS_ARRAY = 'tasks';
+export const NAME_TASK_CONTENT = 'content';
+
+function taskStepName(index: number): string {
+  return `step-task-detail-${index}`;
+}
+
+function makeTaskStep(index: number): object {
+  return {
+    name: taskStepName(index),
+    title: `Task ${index + 1}`,
+    fields: [
+      {
+        component: componentTypes.TEXTAREA,
+        name: `${NAME_TASKS_ARRAY}[${index}].${NAME_TASK_CONTENT}`,
+        resizeOrientation: 'vertical',
+      },
+    ],
+    nextStep: ({ values }: { values: AnyObject }) => {
+      if (index + 1 < (values[NAME_TASK_TITLES]?.length ?? 0)) {
+        return taskStepName(index + 1);
+      }
+
+      return undefined;
+    },
   };
 }
 
 export function makeSchema(chrome: ChromeAPI): Schema {
   const bundles = chrome.getAvailableBundles();
+
+  const taskSteps = [];
+
+  for (let i = 0; i < MAX_TASKS; ++i) {
+    taskSteps.push(makeTaskStep(i));
+  }
 
   return {
     fields: [
@@ -118,6 +160,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
         component: componentTypes.WIZARD,
         name: 'wizard-learning-resource',
         isDynamic: true,
+        crossroads: [NAME_TYPE, NAME_TASK_TITLES],
         fields: [
           {
             name: 'step-type',
@@ -144,6 +187,47 @@ export function makeSchema(chrome: ChromeAPI): Schema {
             },
           },
           ...ALL_ITEM_KINDS.map((kind) => makeDetailsStep(kind, bundles)),
+          {
+            name: 'step-panel-overview',
+            title: 'Panel overview',
+            fields: [
+              {
+                component: componentTypes.TEXTAREA,
+                name: NAME_PANEL_INTRODUCTION,
+                label: 'Introduction (Markdown)',
+                resizeOrientation: 'vertical',
+              },
+              {
+                component: componentTypes.FIELD_ARRAY,
+                name: NAME_PREREQUISITES,
+                label: 'Prerequisites',
+                noItemsMessage: 'No prerequisites have been added.',
+                fields: [
+                  {
+                    component: componentTypes.TEXT_FIELD,
+                    label: 'Prerequisite',
+                  },
+                ],
+              },
+              {
+                component: componentTypes.FIELD_ARRAY,
+                name: NAME_TASK_TITLES,
+                label: 'Tasks',
+                minItems: 1,
+                maxItems: MAX_TASKS,
+                noItemsMessage: 'No tasks have been added.',
+                initialValue: [''],
+                fields: [
+                  {
+                    component: componentTypes.TEXT_FIELD,
+                    label: 'Title',
+                  },
+                ],
+              },
+            ],
+            nextStep: taskStepName(0),
+          },
+          ...taskSteps,
         ],
       },
     ],
