@@ -1,6 +1,7 @@
 import {
   AnyObject,
   ConditionProp,
+  Field,
   Schema,
   componentTypes,
   dataTypes,
@@ -50,10 +51,10 @@ export const NAME_TASK_TITLES = 'task-titles';
 const STEP_PANEL_OVERVIEW = 'step-panel-overview';
 const STEP_DOWNLOAD = 'step-download';
 
-function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
+function makeDetailsStep(kind: ItemKind, bundles: Bundles) {
   const meta = itemKindMeta[kind];
 
-  const fields = [];
+  const fields: Field[] = [];
 
   fields.push(
     {
@@ -137,7 +138,7 @@ export function taskFromStepName(name: string): number | null {
   return null;
 }
 
-function makeTaskStep(index: number): object {
+function makeTaskStep(index: number) {
   return {
     name: taskStepName(index),
     title: `Task ${index + 1}`,
@@ -173,7 +174,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
     taskSteps.push(makeTaskStep(i));
   }
 
-  return {
+  const schema = {
     fields: [
       {
         component: componentTypes.WIZARD,
@@ -261,4 +262,21 @@ export function makeSchema(chrome: ChromeAPI): Schema {
       },
     ],
   };
+
+  // Add an lr-wizard-spy component to all wizard steps. It must be here (rather
+  // than at the top level of the schema) so that it is inside the WizardContext.
+  for (const step of schema.fields) {
+    if (step.component === componentTypes.WIZARD) {
+      for (const page of step.fields) {
+        const f: Field[] = page.fields;
+
+        f.push({
+          component: 'lr-wizard-spy',
+          name: `internal-wizard-spies.${page.name}`,
+        });
+      }
+    }
+  }
+
+  return schema;
 }

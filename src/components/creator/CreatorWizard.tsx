@@ -2,7 +2,6 @@ import {
   Button,
   ClipboardCopy,
   ClipboardCopyVariant,
-  Title,
 } from '@patternfly/react-core';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
 import React, { useContext, useEffect, useMemo } from 'react';
@@ -13,16 +12,10 @@ import {
   AnyObject,
   FormRenderer,
   FormSpy,
-  componentTypes,
 } from '@data-driven-forms/react-form-renderer';
-import {
-  FormTemplate,
-  StepTemplateProps,
-  WizardProps,
-} from '@data-driven-forms/pf4-component-mapper';
+import { FormTemplate } from '@data-driven-forms/pf4-component-mapper';
 import DdfWizardContext from '@data-driven-forms/react-form-renderer/wizard-context';
 import pf4ComponentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
-import DdfWizard from '@data-driven-forms/pf4-component-mapper/wizard';
 import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
@@ -234,28 +227,9 @@ const FileDownload = () => {
   );
 };
 
-// Stolen from https://github.com/data-driven-forms/react-forms/blob/994aa08f168c2d25332b7177e900b823ece082af/packages/pf4-component-mapper/src/wizard/wizard-components/wizard-step.js
-const DefaultStepTemplate = ({
-  formFields,
-  title,
-  customTitle,
-  showTitle,
-  showTitles,
-}: StepTemplateProps) => (
-  <div className="pf-c-form">
-    {((showTitles && showTitle !== false) || showTitle) &&
-      (customTitle ? (
-        customTitle
-      ) : (
-        <Title headingLevel="h1" size="xl">
-          {title}
-        </Title>
-      ))}
-    {formFields}
-  </div>
-);
-
-const CustomStepTemplate = (props: StepTemplateProps) => {
+// Watches for changes in the current step, then calls onChangeCurrentTask so
+// that Creator can update the live preview.
+const WizardSpy = () => {
   const wizardContext = useContext(DdfWizardContext);
   const creatorContext = useContext(CreatorWizardContext);
 
@@ -265,11 +239,7 @@ const CustomStepTemplate = (props: StepTemplateProps) => {
     );
   }, [wizardContext.currentStep.name]);
 
-  return <DefaultStepTemplate {...props} />;
-};
-
-const CustomWizard = (props: WizardProps) => {
-  return <DdfWizard {...props} StepTemplate={CustomStepTemplate} />;
+  return undefined;
 };
 
 const CreatorWizard = ({
@@ -297,7 +267,7 @@ const CreatorWizard = ({
     ...pf4ComponentMapper,
     'lr-task-error': TaskErrorPreview,
     'lr-download-files': FileDownload,
-    [componentTypes.WIZARD]: CustomWizard,
+    'lr-wizard-spy': WizardSpy,
   };
 
   return (
