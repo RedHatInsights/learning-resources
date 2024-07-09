@@ -346,7 +346,9 @@ const TaskErrorPreview = ({ index }: { index: number }) => {
   const context = useContext(CreatorWizardContext);
   const error = context.errors.taskErrors.get(index);
 
-  return error !== undefined ? <pre>{error}</pre> : undefined;
+  return error !== undefined ? (
+    <pre style={{ whiteSpace: 'pre-wrap' }}>{error}</pre>
+  ) : undefined;
 };
 
 const CreatorWizard = ({
