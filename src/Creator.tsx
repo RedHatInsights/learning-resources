@@ -218,14 +218,10 @@ const Creator = () => {
             <CreatorWizard
               onChangeType={setType}
               onChangeQuickStartSpec={(spec) => {
-                console.log('onChangeQuickStartSpec', spec);
                 updateSpec(() => spec);
               }}
               onChangeBundles={setBundles}
-              onChangeTaskContents={(c) => {
-                console.log('onChangeTaskContents', c);
-                setTaskContents(c);
-              }}
+              onChangeTaskContents={setTaskContents}
               onChangeCurrentTask={setCurrentTask}
               errors={errors}
               files={files}
