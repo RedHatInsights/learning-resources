@@ -2,25 +2,11 @@ import {
   Button,
   ClipboardCopy,
   ClipboardCopyVariant,
-  Flex,
-  FlexItem,
-  FormGroup,
-  FormSection,
-  TextInput,
   Title,
 } from '@patternfly/react-core';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
-import MinusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/minus-circle-icon';
-import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
-import React, { ReactNode, useContext, useEffect, useId, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { ItemKind, isItemKind, itemKindMeta } from './meta';
-import {
-  BundleInput,
-  DescriptionInput,
-  InputProps,
-  TitleInput,
-} from './CreatorInputs';
-import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import { CreatorErrors } from '../../Creator';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import {
@@ -53,119 +39,6 @@ import {
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 
-type StringArrayInputProps = {
-  value: string[];
-  groupLabel: string;
-  itemLabel: (index: number) => string;
-  add?: { onAdd: () => void; label: string };
-  remove?: {
-    onRemove: (index: number) => void;
-    label: (index: number) => string;
-  };
-  onChange: (index: number, newValue: string) => void;
-};
-
-const StringArrayInput = ({
-  value,
-  groupLabel,
-  itemLabel,
-  add,
-  remove,
-  onChange,
-}: StringArrayInputProps) => {
-  const id = useId();
-
-  return (
-    <FormSection title={groupLabel}>
-      {value.map((element, index) => {
-        const elementId = `${id}-${index}-title`;
-
-        return (
-          <FormGroup key={index} label={itemLabel(index)} fieldId={elementId}>
-            <Flex gap={{ default: 'gapNone' }}>
-              <FlexItem grow={{ default: 'grow' }}>
-                <TextInput
-                  id={elementId}
-                  isRequired
-                  type="text"
-                  value={element}
-                  onChange={(_, newValue) => onChange(index, newValue)}
-                />
-              </FlexItem>
-
-              {remove !== undefined ? (
-                <FlexItem>
-                  <Button
-                    aria-label={remove.label(index)}
-                    variant="plain"
-                    icon={<MinusCircleIcon />}
-                    onClick={() => remove.onRemove(index)}
-                  />
-                </FlexItem>
-              ) : null}
-            </Flex>
-          </FormGroup>
-        );
-      })}
-
-      {add !== undefined ? (
-        <Button
-          variant="link"
-          icon={<PlusCircleIcon />}
-          onClick={() => add.onAdd()}
-        >
-          {add.label}
-        </Button>
-      ) : (
-        <span>A quickstart can only have {MAX_TASKS} tasks.</span>
-      )}
-    </FormSection>
-  );
-};
-
-type CommonItemState = {
-  bundle: string[];
-  title: string;
-  description: string;
-};
-
-type ItemInputDesc = {
-  key: keyof CommonItemState;
-  element: (props: InputProps<unknown>) => ReactNode;
-};
-
-// Checks that type of element matches the key, then erases the type.
-function itemInputDesc<K extends keyof CommonItemState>(
-  key: K,
-  element: (props: InputProps<CommonItemState[K]>) => ReactNode
-): ItemInputDesc {
-  return {
-    key,
-    element: element as (props: InputProps<unknown>) => ReactNode,
-  };
-}
-
-const CommonItemForm = ({ value, onChange }: InputProps<CommonItemState>) => {
-  const commonInputs: ItemInputDesc[] = [
-    itemInputDesc('bundle', BundleInput),
-    itemInputDesc('title', TitleInput),
-    itemInputDesc('description', DescriptionInput),
-  ];
-
-  return (
-    <>
-      {...commonInputs.map(({ key, element: ComponentType }: ItemInputDesc) => (
-        <div key={key}>
-          <ComponentType
-            value={value[key]}
-            onChange={(newValue) => onChange({ ...value, [key]: newValue })}
-          />
-        </div>
-      ))}
-    </>
-  );
-};
-
 export type TaskState = {
   title: string;
   yamlContent: string;
@@ -174,59 +47,6 @@ export type TaskState = {
 export const EMPTY_TASK: TaskState = {
   title: '',
   yamlContent: '',
-};
-
-export type CreatorWizardState = {
-  type: ItemKind | null;
-  title: string;
-  description: string;
-  bundles: string[];
-  url: string;
-  duration: number;
-  tasks: TaskState[];
-  introduction: string;
-  prerequisites: string[];
-};
-
-const MAX_TASKS = 10;
-
-const TaskStepContents = ({
-  title,
-  onChangeContent,
-  content,
-  error,
-}: {
-  title: string;
-  content: string;
-  onChangeContent: (newContent: string) => void;
-  error?: string;
-}) => {
-  const id = useId();
-
-  return (
-    <section>
-      <Title headingLevel={'h2'} size="xl">
-        {title}
-      </Title>
-
-      <FormGroup label="Task YAML" isRequired fieldId={`${id}-code`}>
-        <CodeEditor
-          id={`${id}-code}`}
-          height="400px"
-          language={Language.yaml}
-          code={content}
-          onCodeChange={onChangeContent}
-        />
-      </FormGroup>
-
-      {error !== undefined ? (
-        <pre style={{ whiteSpace: 'pre-wrap' }}>
-          {'Error:\n\n'}
-          {error}
-        </pre>
-      ) : null}
-    </section>
-  );
 };
 
 type CreatorFiles = {
