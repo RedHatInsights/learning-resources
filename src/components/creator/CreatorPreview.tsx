@@ -24,16 +24,14 @@ const CreatorPreview = ({
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
     {}
   );
-
-  const [prevTask, setPrevTask] = useState<number | null>(currentTask);
+  const [quickStartId, setQuickStartId] = useState<string>('');
 
   const parentContext = useContext(QuickStartContext);
 
   const quickstartValues = useValuesForQuickStartContext({
     allQuickStarts: [quickStart],
-    activeQuickStartID:
-      typeMeta?.hasTasks === true ? quickStart.metadata.name : '',
-    setActiveQuickStartID: () => {},
+    activeQuickStartID: quickStartId,
+    setActiveQuickStartID: setQuickStartId,
     allQuickStartStates: quickStartStates,
     setAllQuickStartStates: (states) => setQuickStartStates(states),
     useQueryParams: false,
@@ -43,25 +41,6 @@ const CreatorPreview = ({
 
   if (quickstartValues.allQuickStarts?.[0] !== quickStart) {
     quickstartValues.setAllQuickStarts?.([quickStart]);
-  }
-
-  if (
-    prevTask !== currentTask ||
-    quickstartValues?.activeQuickStartState === undefined
-  ) {
-    setPrevTask(currentTask);
-
-    if (currentTask !== null) {
-      quickstartValues.setQuickStartTaskNumber?.(
-        quickStart.metadata.name,
-        currentTask
-      );
-    } else {
-      quickstartValues.restartQuickStart?.(
-        quickStart.metadata.name,
-        quickStart.spec.tasks?.length ?? 0
-      );
-    }
   }
 
   return (
