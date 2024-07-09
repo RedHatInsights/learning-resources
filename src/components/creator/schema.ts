@@ -47,6 +47,9 @@ export const NAME_PANEL_INTRODUCTION = 'panel-overview';
 export const NAME_PREREQUISITES = 'prerequisites';
 export const NAME_TASK_TITLES = 'task-titles';
 
+const STEP_PANEL_OVERVIEW = 'step-panel-overview';
+const STEP_DOWNLOAD = 'step-download';
+
 function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
   const meta = itemKindMeta[kind];
 
@@ -111,7 +114,7 @@ function makeDetailsStep(kind: ItemKind, bundles: Bundles): object {
     name: detailsStepName(kind),
     title: `${meta.displayName} details`,
     fields: fields,
-    nextStep: meta.hasTasks ? 'step-panel-overview' : undefined,
+    nextStep: meta.hasTasks ? STEP_PANEL_OVERVIEW : STEP_DOWNLOAD,
   };
 }
 
@@ -146,7 +149,7 @@ function makeTaskStep(index: number): object {
         return taskStepName(index + 1);
       }
 
-      return undefined;
+      return STEP_DOWNLOAD;
     },
   };
 }
@@ -194,7 +197,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
           },
           ...ALL_ITEM_KINDS.map((kind) => makeDetailsStep(kind, bundles)),
           {
-            name: 'step-panel-overview',
+            name: STEP_PANEL_OVERVIEW,
             title: 'Panel overview',
             fields: [
               {
@@ -234,6 +237,16 @@ export function makeSchema(chrome: ChromeAPI): Schema {
             nextStep: taskStepName(0),
           },
           ...taskSteps,
+          {
+            name: STEP_DOWNLOAD,
+            title: 'Download files',
+            fields: [
+              {
+                component: 'lr-download-files',
+                name: 'internal-download',
+              },
+            ],
+          },
         ],
       },
     ],

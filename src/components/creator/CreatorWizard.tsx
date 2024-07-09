@@ -1,5 +1,7 @@
 import {
   Button,
+  ClipboardCopy,
+  ClipboardCopyVariant,
   Flex,
   FlexItem,
   FormGroup,
@@ -7,8 +9,9 @@ import {
   TextInput,
   Title,
 } from '@patternfly/react-core';
-import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
+import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
 import MinusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/minus-circle-icon';
+import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
 import React, { ReactNode, useContext, useEffect, useId, useMemo } from 'react';
 import { ItemKind, isItemKind, itemKindMeta } from './meta';
 import {
@@ -37,6 +40,7 @@ import {
   makeSchema,
 } from './schema';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 
 type StringArrayInputProps = {
   value: string[];
@@ -214,16 +218,18 @@ const TaskStepContents = ({
   );
 };
 
+type CreatorFiles = {
+  name: string;
+  content: string;
+}[];
+
 type CreatorWizardProps = {
   onChangeType: (newType: ItemKind | null) => void;
   onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
   onChangeBundles: (newValue: string[]) => void;
   onChangeTaskContents: (contents: string[]) => void;
   onChangeCurrentTask: (index: number | null) => void;
-  files: {
-    name: string;
-    content: string;
-  }[];
+  files: CreatorFiles;
   errors: CreatorErrors;
 };
 
@@ -336,10 +342,14 @@ const PropUpdater = ({
   return undefined;
 };
 
-const CreatorWizardContext = React.createContext<{ errors: CreatorErrors }>({
+const CreatorWizardContext = React.createContext<{
+  errors: CreatorErrors;
+  files: CreatorFiles;
+}>({
   errors: {
     taskErrors: new Map(),
   },
+  files: [],
 });
 
 const TaskErrorPreview = ({ index }: { index: number }) => {
@@ -349,6 +359,45 @@ const TaskErrorPreview = ({ index }: { index: number }) => {
   return error !== undefined ? (
     <pre style={{ whiteSpace: 'pre-wrap' }}>{error}</pre>
   ) : undefined;
+};
+
+const FileDownload = () => {
+  const { files } = useContext(CreatorWizardContext);
+
+  return (
+    <div>
+      Download these files.
+      {files.map((file) => (
+        <div key={file.name}>
+          <Button
+            variant="secondary"
+            icon={<DownloadIcon />}
+            onClick={() => {
+              const dotIndex = file.name.lastIndexOf('.');
+              const baseName =
+                dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
+              const extension =
+                dotIndex !== -1 ? file.name.substring(dotIndex + 1) : 'txt';
+
+              downloadFile(file.content, baseName, extension);
+            }}
+          >
+            {file.name}
+          </Button>
+
+          <ClipboardCopy
+            isCode
+            isReadOnly
+            variant={ClipboardCopyVariant.expansion}
+            hoverTip="Copy"
+            clickTip="Copied"
+          >
+            {file.content}
+          </ClipboardCopy>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 const CreatorWizard = ({
@@ -366,13 +415,15 @@ const CreatorWizard = ({
   const context = useMemo(
     () => ({
       errors,
+      files,
     }),
-    [errors]
+    [errors, files]
   );
 
   const componentMapper = {
     ...pf4ComponentMapper,
     'lr-task-error': TaskErrorPreview,
+    'lr-download-files': FileDownload,
   };
 
   return (
