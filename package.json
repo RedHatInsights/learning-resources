@@ -23,7 +23,7 @@
     "@data-driven-forms/pf4-component-mapper": "^3.23.0",
     "@data-driven-forms/react-form-renderer": "^3.23.0",
     "@patternfly/quickstarts": "^5.4.0-prerelease.1",
-    "@patternfly/react-code-editor": "^5.1.2",
+    "@patternfly/react-code-editor": "^5.3.4",
     "@patternfly/react-core": "^5.3.4",
     "@patternfly/react-table": "^5.1.1",
     "@redhat-cloud-services/frontend-components": "^4.2.9",
