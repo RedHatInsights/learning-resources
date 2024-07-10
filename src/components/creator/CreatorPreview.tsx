@@ -12,11 +12,11 @@ import React, { useContext, useMemo, useState } from 'react';
 import { ItemMeta } from './meta';
 
 const CreatorPreview = ({
-  typeMeta,
+  kindMeta,
   quickStart,
   currentTask,
 }: {
-  typeMeta: ItemMeta | null;
+  kindMeta: ItemMeta | null;
   quickStart: QuickStart;
   currentTask: number | null;
 }) => {
@@ -32,7 +32,7 @@ const CreatorPreview = ({
   const quickstartValues = useValuesForQuickStartContext({
     allQuickStarts: [quickStart],
     activeQuickStartID:
-      typeMeta?.hasTasks === true ? quickStart.metadata.name : '',
+      kindMeta?.hasTasks === true ? quickStart.metadata.name : '',
     setActiveQuickStartID: () => {},
     allQuickStartStates: quickStartStates,
     setAllQuickStartStates: (states) => setQuickStartStates(states),

@@ -95,7 +95,7 @@ function detailsStepName(kind: ItemKind): string {
   return `step-details-${kind}`;
 }
 
-export const NAME_TYPE = 'type';
+export const NAME_KIND = 'kind';
 export const NAME_TITLE = 'title';
 export const NAME_BUNDLES = 'bundles';
 export const NAME_DESCRIPTION = 'description';
@@ -239,15 +239,15 @@ export function makeSchema(chrome: ChromeAPI): Schema {
     component: componentTypes.WIZARD,
     name: 'wizard-learning-resource',
     isDynamic: true,
-    crossroads: [NAME_TYPE, NAME_TASK_TITLES],
+    crossroads: [NAME_KIND, NAME_TASK_TITLES],
     fields: [
       {
-        name: 'step-type',
+        name: 'step-kind',
         title: 'Select content type',
         fields: [
           {
             component: componentTypes.SELECT,
-            name: NAME_TYPE,
+            name: NAME_KIND,
             label: 'Type',
             simpleValue: true,
             options: ALL_KIND_ENTRIES.map(([name, value]) => ({
@@ -259,7 +259,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
           },
         ],
         nextStep: {
-          when: 'type',
+          when: NAME_KIND,
           stepMapper: Object.fromEntries(
             ALL_ITEM_KINDS.map((kind) => [kind, detailsStepName(kind)])
           ),

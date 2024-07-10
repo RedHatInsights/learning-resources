@@ -214,7 +214,7 @@ const Creator = () => {
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             <CreatorWizard
-              onChangeType={setType}
+              onChangeKind={setType}
               onChangeQuickStartSpec={(spec) => {
                 updateSpec(() => spec);
               }}
@@ -228,7 +228,7 @@ const Creator = () => {
 
           <GridItem span={12} lg={6}>
             <CreatorPreview
-              typeMeta={selectedType?.meta ?? null}
+              kindMeta={selectedType?.meta ?? null}
               quickStart={quickStart}
               currentTask={currentTask}
             />

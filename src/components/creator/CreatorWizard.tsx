@@ -19,12 +19,12 @@ import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
   NAME_DURATION,
+  NAME_KIND,
   NAME_PANEL_INTRODUCTION,
   NAME_PREREQUISITES,
   NAME_TASKS_ARRAY,
   NAME_TASK_TITLES,
   NAME_TITLE,
-  NAME_TYPE,
   NAME_URL,
   makeSchema,
   taskFromStepName,
@@ -48,7 +48,7 @@ type CreatorFiles = {
 }[];
 
 type CreatorWizardProps = {
-  onChangeType: (newType: ItemKind | null) => void;
+  onChangeKind: (newKind: ItemKind | null) => void;
   onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
   onChangeBundles: (newValue: string[]) => void;
   onChangeTaskContents: (contents: string[]) => void;
@@ -61,7 +61,7 @@ type FormValue = AnyObject;
 
 type UpdaterProps = {
   values: FormValue;
-  onChangeType: (newType: ItemKind | null) => void;
+  onChangeKind: (newKind: ItemKind | null) => void;
   onChangeBundles: (bundles: string[]) => void;
   onChangeQuickStartSpec: (newValue: QuickStartSpec) => void;
   onChangeTaskContents: (contents: string[]) => void;
@@ -71,7 +71,7 @@ const DEFAULT_TASK_TITLES: string[] = [''];
 
 const PropUpdater = ({
   values,
-  onChangeType,
+  onChangeKind,
   onChangeBundles,
   onChangeQuickStartSpec,
   onChangeTaskContents,
@@ -82,7 +82,7 @@ const PropUpdater = ({
     onChangeBundles(bundles ?? []);
   }, [bundles]);
 
-  const rawType: string | undefined = values[NAME_TYPE];
+  const rawKind: string | undefined = values[NAME_KIND];
   const title: string | undefined = values[NAME_TITLE];
   const description: string | undefined = values[NAME_DESCRIPTION];
   const url: string | undefined = values[NAME_URL];
@@ -94,13 +94,14 @@ const PropUpdater = ({
   const taskValues: { content: string | undefined }[] | undefined =
     values[NAME_TASKS_ARRAY];
 
-  const type =
-    typeof rawType === 'string' && isItemKind(rawType) ? rawType : null;
-  const meta = type !== null ? metaForKind(type) : null;
+  const kind =
+    typeof rawKind === 'string' && isItemKind(rawKind) ? rawKind : null;
+
+  const meta = kind !== null ? metaForKind(kind) : null;
 
   useEffect(() => {
-    onChangeType(type);
-  }, [type]);
+    onChangeKind(kind);
+  }, [kind]);
 
   const taskContents = useMemo(() => {
     if (meta?.hasTasks !== true) {
@@ -148,7 +149,7 @@ const PropUpdater = ({
     });
   }, [
     meta,
-    rawType,
+    rawKind,
     title,
     description,
     url,
@@ -242,7 +243,7 @@ const WizardSpy = () => {
 };
 
 const CreatorWizard = ({
-  onChangeType,
+  onChangeKind,
   onChangeQuickStartSpec,
   onChangeBundles,
   onChangeTaskContents,
@@ -294,7 +295,7 @@ const CreatorWizard = ({
               {(props) => (
                 <PropUpdater
                   values={props.values}
-                  onChangeType={onChangeType}
+                  onChangeKind={onChangeKind}
                   onChangeBundles={onChangeBundles}
                   onChangeQuickStartSpec={onChangeQuickStartSpec}
                   onChangeTaskContents={onChangeTaskContents}
