@@ -13,7 +13,6 @@ import {
   FormRenderer,
   FormSpy,
 } from '@data-driven-forms/react-form-renderer';
-import { FormTemplate } from '@data-driven-forms/pf4-component-mapper';
 import DdfWizardContext from '@data-driven-forms/react-form-renderer/wizard-context';
 import pf4ComponentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
 import {
@@ -276,10 +275,11 @@ const CreatorWizard = ({
         onSubmit={() => {}}
         schema={schema}
         componentMapper={componentMapper}
-        FormTemplate={FormTemplate}
       >
-        <FormSpy subscription={{ values: true }}>
-          {/*
+        {({ formFields }) => (
+          <form onSubmit={(e) => e.preventDefault()} className="pf-v5-c-form">
+            <FormSpy subscription={{ values: true }}>
+              {/*
             In order to display the live preview, we need to update the parent
             whenever the form state changes. Unfortunately, as best as I can
             tell, there is no way to pass FormRenderer a callback that's called
@@ -291,16 +291,19 @@ const CreatorWizard = ({
 
             [0]: https://github.com/data-driven-forms/react-forms/blob/master/packages/react-renderer-demo/src/examples/components/examples/value-listener.js
              */}
-          {(props) => (
-            <PropUpdater
-              values={props.values}
-              onChangeType={onChangeType}
-              onChangeBundles={onChangeBundles}
-              onChangeQuickStartSpec={onChangeQuickStartSpec}
-              onChangeTaskContents={onChangeTaskContents}
-            />
-          )}
-        </FormSpy>
+              {(props) => (
+                <PropUpdater
+                  values={props.values}
+                  onChangeType={onChangeType}
+                  onChangeBundles={onChangeBundles}
+                  onChangeQuickStartSpec={onChangeQuickStartSpec}
+                  onChangeTaskContents={onChangeTaskContents}
+                />
+              )}
+            </FormSpy>
+            <>{formFields}</>
+          </form>
+        )}
       </FormRenderer>
     </CreatorWizardContext.Provider>
   );
