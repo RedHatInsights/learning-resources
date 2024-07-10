@@ -7,7 +7,6 @@ import {
   PageSection,
   Title,
 } from '@patternfly/react-core';
-import './components/CatalogSection.scss';
 import {
   QuickStart,
   QuickStartSpec,
