@@ -1,6 +1,6 @@
 import React from 'react';
-import { App } from './App';
+import { Viewer } from './Viewer';
 
-const AppEntry = (props: { bundle: string }) => <App {...props} />;
+const AppEntry = (props: { bundle: string }) => <Viewer {...props} />;
 
 export default AppEntry;

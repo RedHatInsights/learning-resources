@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './App.scss';
+import './Viewer.scss';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import {
   LoadingBox,
@@ -26,7 +26,7 @@ import { BookmarkIcon, OutlinedBookmarkIcon } from '@patternfly/react-icons';
 import { useFlag } from '@unleash/proxy-client-react';
 import useQuickStarts from './hooks/useQuickStarts';
 
-export const App = ({ bundle }: { bundle: string }) => {
+export const Viewer = ({ bundle }: { bundle: string }) => {
   const chrome = useChrome();
   const { activeQuickStartID, allQuickStartStates, setFilter, loading } =
     React.useContext<QuickStartContextValues>(QuickStartContext);
