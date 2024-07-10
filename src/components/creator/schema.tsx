@@ -35,29 +35,18 @@ const CustomButtons = (props: WizardButtonsProps) => {
       }}
     >
       {(state) => {
-        const nextStep = props.nextStep
+        // Ensure that the form never says "Submit", and hide the button on the
+        // last step.
+
+        const computedNext = props.nextStep
           ? props.selectNext(props.nextStep, () => state)
           : undefined;
 
-        // Have to check pristine in addition to valid because for some reason,
-        // when the Wizard initially loads, "valid" is true.
-
         return (
           <>
-            {props.nextStep !== undefined ? (
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => {
-                  if (nextStep !== undefined) {
-                    props.handleNext(nextStep);
-                  }
-                }}
-                isDisabled={!state.valid || state.validating || state.pristine}
-              >
-                Next
-              </Button>
-            ) : null}
+            {computedNext !== undefined
+              ? props.renderNextButton({ submitLabel: 'Next' })
+              : null}
             <Button
               type="button"
               variant="secondary"
