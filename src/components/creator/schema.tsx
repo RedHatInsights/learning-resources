@@ -1,6 +1,7 @@
 import {
   ConditionProp,
   Field,
+  FormSpy,
   Schema,
   componentTypes,
   dataTypes,
@@ -14,8 +15,62 @@ import {
   itemKindMeta,
 } from './meta';
 import { ChromeAPI } from '@redhat-cloud-services/types';
-import { WizardProps } from '@data-driven-forms/pf4-component-mapper';
+import {
+  WizardButtonsProps,
+  WizardProps,
+} from '@data-driven-forms/pf4-component-mapper';
 import { WizardNextStepFunctionArgument } from '@data-driven-forms/pf4-component-mapper/wizard/wizard';
+import React from 'react';
+import { Button } from '@patternfly/react-core';
+
+const CustomButtons = (props: WizardButtonsProps) => {
+  return (
+    <FormSpy
+      subscription={{
+        pristine: true,
+        valid: true,
+        validating: true,
+        values: true, // The next step can depend on values.
+      }}
+    >
+      {(state) => {
+        const nextStep = props.nextStep
+          ? props.selectNext(props.nextStep, () => state)
+          : undefined;
+
+        // Have to check pristine in addition to valid because for some reason,
+        // when the Wizard initially loads, "valid" is true.
+
+        return (
+          <>
+            {props.nextStep !== undefined ? (
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  if (nextStep !== undefined) {
+                    props.handleNext(nextStep);
+                  }
+                }}
+                isDisabled={!state.valid || state.validating || state.pristine}
+              >
+                Next
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              isDisabled={props.disableBack}
+              onClick={() => props.handlePrev()}
+            >
+              Back
+            </Button>
+          </>
+        );
+      }}
+    </FormSpy>
+  );
+};
 
 const REQUIRED = {
   type: validatorTypes.REQUIRED,
@@ -276,6 +331,10 @@ export function makeSchema(chrome: ChromeAPI): Schema {
           component: 'lr-wizard-spy',
           name: `internal-wizard-spies.${page.name}`,
         });
+
+        if (page.buttons === undefined) {
+          page.buttons = CustomButtons;
+        }
       }
     }
   }
