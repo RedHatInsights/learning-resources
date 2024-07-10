@@ -182,11 +182,9 @@ const Creator = () => {
         content: YAML.stringify({
           kind: 'QuickStarts',
           name: effectiveName,
-          tags: [
-            bundles
-              .toSorted()
-              .map((bundle) => ({ kind: 'bundle', value: bundle })),
-          ],
+          tags: bundles
+            .toSorted()
+            .map((bundle) => ({ kind: 'bundle', value: bundle })),
         }),
       },
       {
