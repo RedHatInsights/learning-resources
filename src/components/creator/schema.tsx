@@ -79,7 +79,7 @@ const REQUIRED = {
 
 function kindMetaCondition(test: (meta: ItemMeta) => boolean): ConditionProp {
   return {
-    when: 'type',
+    when: NAME_KIND,
     is: (kind: string | undefined) => {
       return (
         typeof kind === 'string' && isItemKind(kind) && test(metaForKind(kind))

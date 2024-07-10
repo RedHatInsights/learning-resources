@@ -27,14 +27,14 @@ const BASE_METADATA = {
 };
 
 function makeDemoQuickStart(
-  type: ItemKind | null,
+  kind: ItemKind | null,
   baseQuickStart: QuickStart,
   taskContents: string[]
 ): [QuickStart, CreatorErrors] {
-  const selectedTypeMeta = type !== null ? metaForKind(type) : null;
+  const kindMeta = kind !== null ? metaForKind(kind) : null;
 
   const [tasks, taskErrors] = (() => {
-    if (selectedTypeMeta?.hasTasks !== true) return [undefined, new Map()];
+    if (kindMeta?.hasTasks !== true) return [undefined, new Map()];
 
     const out: QuickStartTask[] = [];
     const errors: CreatorErrors['taskErrors'] = new Map();
@@ -66,7 +66,7 @@ function makeDemoQuickStart(
       metadata: {
         ...baseQuickStart.metadata,
         name: 'test-quickstart',
-        ...(selectedTypeMeta?.extraMetadata ?? {}),
+        ...(kindMeta?.extraMetadata ?? {}),
       },
       spec: {
         ...baseQuickStart.spec,
@@ -78,7 +78,7 @@ function makeDemoQuickStart(
 }
 
 const Creator = () => {
-  const [rawType, setRawType] = useState<ItemKind | null>(null);
+  const [rawKind, setRawKind] = useState<ItemKind | null>(null);
 
   const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
     metadata: {
@@ -91,8 +91,8 @@ const Creator = () => {
     },
   });
 
-  const selectedType =
-    rawType !== null ? { id: rawType, meta: metaForKind(rawType) } : null;
+  const selectedKind =
+    rawKind !== null ? { id: rawKind, meta: metaForKind(rawKind) } : null;
 
   const [bundles, setBundles] = useState<string[]>([]);
   const [taskContents, setTaskContents] = useState<string[]>([]);
@@ -111,9 +111,9 @@ const Creator = () => {
     }));
   };
 
-  const setType = (newType: ItemKind | null) => {
-    if (newType !== null) {
-      const meta = metaForKind(newType);
+  const setKind = (newKind: ItemKind | null) => {
+    if (newKind !== null) {
+      const meta = metaForKind(newKind);
 
       setRawQuickStart((old) => {
         const updates: Partial<QuickStart> = {};
@@ -153,12 +153,12 @@ const Creator = () => {
       }
     }
 
-    setRawType(newType);
+    setRawKind(newKind);
   };
 
   const [quickStart, errors] = useMemo(
-    () => makeDemoQuickStart(rawType, rawQuickStart, taskContents),
-    [rawType, rawQuickStart, taskContents]
+    () => makeDemoQuickStart(rawKind, rawQuickStart, taskContents),
+    [rawKind, rawQuickStart, taskContents]
   );
 
   const files = useMemo(() => {
@@ -214,7 +214,7 @@ const Creator = () => {
         <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
           <GridItem span={12} lg={6}>
             <CreatorWizard
-              onChangeKind={setType}
+              onChangeKind={setKind}
               onChangeQuickStartSpec={(spec) => {
                 updateSpec(() => spec);
               }}
@@ -228,7 +228,7 @@ const Creator = () => {
 
           <GridItem span={12} lg={6}>
             <CreatorPreview
-              kindMeta={selectedType?.meta ?? null}
+              kindMeta={selectedKind?.meta ?? null}
               quickStart={quickStart}
               currentTask={currentTask}
             />
