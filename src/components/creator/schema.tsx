@@ -13,7 +13,6 @@ import {
   ItemKind,
   ItemMeta,
   isItemKind,
-  itemKindMeta,
   metaForKind,
 } from './meta';
 import { ChromeAPI } from '@redhat-cloud-services/types';
