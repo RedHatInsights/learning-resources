@@ -1,5 +1,4 @@
 import {
-  AnyObject,
   ConditionProp,
   Field,
   Schema,
@@ -15,6 +14,8 @@ import {
   itemKindMeta,
 } from './meta';
 import { ChromeAPI } from '@redhat-cloud-services/types';
+import { WizardProps } from '@data-driven-forms/pf4-component-mapper';
+import { WizardNextStepFunctionArgument } from '@data-driven-forms/pf4-component-mapper/wizard/wizard';
 
 const REQUIRED = {
   type: validatorTypes.REQUIRED,
@@ -155,8 +156,8 @@ function makeTaskStep(index: number) {
         index: index,
       },
     ],
-    nextStep: ({ values }: { values: AnyObject }) => {
-      if (index + 1 < (values[NAME_TASK_TITLES]?.length ?? 0)) {
+    nextStep: ({ values }: WizardNextStepFunctionArgument) => {
+      if (index + 1 < (values?.[NAME_TASK_TITLES]?.length ?? 0)) {
         return taskStepName(index + 1);
       }
 
@@ -174,93 +175,96 @@ export function makeSchema(chrome: ChromeAPI): Schema {
     taskSteps.push(makeTaskStep(i));
   }
 
-  const schema = {
+  const wizardProps: WizardProps & {
+    component: string;
+    name: string;
+  } = {
+    component: componentTypes.WIZARD,
+    name: 'wizard-learning-resource',
+    isDynamic: true,
+    crossroads: [NAME_TYPE, NAME_TASK_TITLES],
     fields: [
       {
-        component: componentTypes.WIZARD,
-        name: 'wizard-learning-resource',
-        isDynamic: true,
-        crossroads: [NAME_TYPE, NAME_TASK_TITLES],
+        name: 'step-type',
+        title: 'Select content type',
         fields: [
           {
-            name: 'step-type',
-            title: 'Select content type',
+            component: componentTypes.SELECT,
+            name: NAME_TYPE,
+            label: 'Type',
+            simpleValue: true,
+            options: Object.entries(itemKindMeta).map(([name, value]) => ({
+              value: name,
+              label: value.displayName,
+            })),
+            isRequired: true,
+            validate: [REQUIRED],
+          },
+        ],
+        nextStep: {
+          when: 'type',
+          stepMapper: Object.fromEntries(
+            ALL_ITEM_KINDS.map((kind) => [kind, detailsStepName(kind)])
+          ),
+        },
+      },
+      ...ALL_ITEM_KINDS.map((kind) => makeDetailsStep(kind, bundles)),
+      {
+        name: STEP_PANEL_OVERVIEW,
+        title: 'Panel overview',
+        fields: [
+          {
+            component: componentTypes.TEXTAREA,
+            name: NAME_PANEL_INTRODUCTION,
+            label: 'Introduction (Markdown)',
+            resizeOrientation: 'vertical',
+          },
+          {
+            component: componentTypes.FIELD_ARRAY,
+            name: NAME_PREREQUISITES,
+            label: 'Prerequisites',
+            noItemsMessage: 'No prerequisites have been added.',
             fields: [
               {
-                component: componentTypes.SELECT,
-                name: NAME_TYPE,
-                label: 'Type',
-                simpleValue: true,
-                options: Object.entries(itemKindMeta).map(([name, value]) => ({
-                  value: name,
-                  label: value.displayName,
-                })),
-                isRequired: true,
-                validate: [REQUIRED],
+                component: componentTypes.TEXT_FIELD,
+                label: 'Prerequisite',
               },
             ],
-            nextStep: {
-              when: 'type',
-              stepMapper: Object.fromEntries(
-                ALL_ITEM_KINDS.map((kind) => [kind, detailsStepName(kind)])
-              ),
-            },
           },
-          ...ALL_ITEM_KINDS.map((kind) => makeDetailsStep(kind, bundles)),
           {
-            name: STEP_PANEL_OVERVIEW,
-            title: 'Panel overview',
+            component: componentTypes.FIELD_ARRAY,
+            name: NAME_TASK_TITLES,
+            label: 'Tasks',
+            minItems: 1,
+            maxItems: MAX_TASKS,
+            noItemsMessage: 'No tasks have been added.',
+            initialValue: [''],
             fields: [
               {
-                component: componentTypes.TEXTAREA,
-                name: NAME_PANEL_INTRODUCTION,
-                label: 'Introduction (Markdown)',
-                resizeOrientation: 'vertical',
-              },
-              {
-                component: componentTypes.FIELD_ARRAY,
-                name: NAME_PREREQUISITES,
-                label: 'Prerequisites',
-                noItemsMessage: 'No prerequisites have been added.',
-                fields: [
-                  {
-                    component: componentTypes.TEXT_FIELD,
-                    label: 'Prerequisite',
-                  },
-                ],
-              },
-              {
-                component: componentTypes.FIELD_ARRAY,
-                name: NAME_TASK_TITLES,
-                label: 'Tasks',
-                minItems: 1,
-                maxItems: MAX_TASKS,
-                noItemsMessage: 'No tasks have been added.',
-                initialValue: [''],
-                fields: [
-                  {
-                    component: componentTypes.TEXT_FIELD,
-                    label: 'Title',
-                  },
-                ],
-              },
-            ],
-            nextStep: taskStepName(0),
-          },
-          ...taskSteps,
-          {
-            name: STEP_DOWNLOAD,
-            title: 'Download files',
-            fields: [
-              {
-                component: 'lr-download-files',
-                name: 'internal-download',
+                component: componentTypes.TEXT_FIELD,
+                label: 'Title',
               },
             ],
           },
         ],
+        nextStep: taskStepName(0),
+      },
+      ...taskSteps,
+      {
+        name: STEP_DOWNLOAD,
+        title: 'Download files',
+        fields: [
+          {
+            component: 'lr-download-files',
+            name: 'internal-download',
+          },
+        ],
       },
     ],
+  };
+
+  const schema = {
+    fields: [wizardProps],
   };
 
   // Add an lr-wizard-spy component to all wizard steps. It must be here (rather
@@ -268,9 +272,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
   for (const step of schema.fields) {
     if (step.component === componentTypes.WIZARD) {
       for (const page of step.fields) {
-        const f: Field[] = page.fields;
-
-        f.push({
+        page.fields.push({
           component: 'lr-wizard-spy',
           name: `internal-wizard-spies.${page.name}`,
         });
