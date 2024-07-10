@@ -54,7 +54,7 @@ export type ItemMeta = {
   extraMetadata: object;
 };
 
-export const itemKindMeta: {
+const itemKindMeta: {
   [k in keyof typeof rawItemKindMeta]: ItemMeta;
 } = rawItemKindMeta;
 
@@ -64,6 +64,17 @@ export function isItemKind(kind: string): kind is ItemKind {
   return Object.hasOwn(itemKindMeta, kind);
 }
 
+export function metaForKind(kind: ItemKind): ItemMeta {
+  return itemKindMeta[kind];
+}
+
 export const ALL_ITEM_KINDS = Object.freeze(
   Object.keys(itemKindMeta)
-) as ItemKind[];
+) as readonly ItemKind[];
+
+export const ALL_KIND_ENTRIES: readonly [ItemKind, ItemMeta][] = Object.entries(
+  itemKindMeta
+).map(([k, v]) => {
+  if (!isItemKind(k)) throw new Error('unexpected item kind');
+  return [k, v];
+});

@@ -15,7 +15,7 @@ import {
   QuickStartTask,
 } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
-import { ItemKind, itemKindMeta } from './components/creator/meta';
+import { ItemKind, metaForKind } from './components/creator/meta';
 import CreatorPreview from './components/creator/CreatorPreview';
 
 export type CreatorErrors = {
@@ -31,7 +31,7 @@ function makeDemoQuickStart(
   baseQuickStart: QuickStart,
   taskContents: string[]
 ): [QuickStart, CreatorErrors] {
-  const selectedTypeMeta = type !== null ? itemKindMeta[type] : null;
+  const selectedTypeMeta = type !== null ? metaForKind(type) : null;
 
   const [tasks, taskErrors] = (() => {
     if (selectedTypeMeta?.hasTasks !== true) return [undefined, new Map()];
@@ -92,7 +92,7 @@ const Creator = () => {
   });
 
   const selectedType =
-    rawType !== null ? { id: rawType, meta: itemKindMeta[rawType] } : null;
+    rawType !== null ? { id: rawType, meta: metaForKind(rawType) } : null;
 
   const [bundles, setBundles] = useState<string[]>([]);
   const [taskContents, setTaskContents] = useState<string[]>([]);
@@ -113,7 +113,7 @@ const Creator = () => {
 
   const setType = (newType: ItemKind | null) => {
     if (newType !== null) {
-      const meta = itemKindMeta[newType];
+      const meta = metaForKind(newType);
 
       setRawQuickStart((old) => {
         const updates: Partial<QuickStart> = {};

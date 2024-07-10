@@ -5,7 +5,7 @@ import {
 } from '@patternfly/react-core';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
 import React, { useContext, useEffect, useMemo } from 'react';
-import { ItemKind, isItemKind, itemKindMeta } from './meta';
+import { ItemKind, isItemKind, metaForKind } from './meta';
 import { CreatorErrors } from '../../Creator';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import {
@@ -96,7 +96,7 @@ const PropUpdater = ({
 
   const type =
     typeof rawType === 'string' && isItemKind(rawType) ? rawType : null;
-  const meta = type !== null ? itemKindMeta[type] : null;
+  const meta = type !== null ? metaForKind(type) : null;
 
   useEffect(() => {
     onChangeType(type);

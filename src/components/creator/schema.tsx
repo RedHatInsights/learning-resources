@@ -9,10 +9,12 @@ import {
 } from '@data-driven-forms/react-form-renderer';
 import {
   ALL_ITEM_KINDS,
+  ALL_KIND_ENTRIES,
   ItemKind,
   ItemMeta,
   isItemKind,
   itemKindMeta,
+  metaForKind,
 } from './meta';
 import { ChromeAPI } from '@redhat-cloud-services/types';
 import {
@@ -81,7 +83,7 @@ function kindMetaCondition(test: (meta: ItemMeta) => boolean): ConditionProp {
     when: 'type',
     is: (kind: string | undefined) => {
       return (
-        typeof kind === 'string' && isItemKind(kind) && test(itemKindMeta[kind])
+        typeof kind === 'string' && isItemKind(kind) && test(metaForKind(kind))
       );
     },
   };
@@ -108,7 +110,7 @@ const STEP_PANEL_OVERVIEW = 'step-panel-overview';
 const STEP_DOWNLOAD = 'step-download';
 
 function makeDetailsStep(kind: ItemKind, bundles: Bundles) {
-  const meta = itemKindMeta[kind];
+  const meta = metaForKind(kind);
 
   const fields: Field[] = [];
 
@@ -248,7 +250,7 @@ export function makeSchema(chrome: ChromeAPI): Schema {
             name: NAME_TYPE,
             label: 'Type',
             simpleValue: true,
-            options: Object.entries(itemKindMeta).map(([name, value]) => ({
+            options: ALL_KIND_ENTRIES.map(([name, value]) => ({
               value: name,
               label: value.displayName,
             })),
