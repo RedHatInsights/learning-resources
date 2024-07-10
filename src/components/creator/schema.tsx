@@ -322,16 +322,17 @@ export function makeSchema(chrome: ChromeAPI): Schema {
     fields: [wizardProps],
   };
 
-  // Add an lr-wizard-spy component to all wizard steps. It must be here (rather
-  // than at the top level of the schema) so that it is inside the WizardContext.
   for (const step of schema.fields) {
     if (step.component === componentTypes.WIZARD) {
       for (const page of step.fields) {
+        // Add an lr-wizard-spy component to all wizard steps. It must be here (rather
+        // than at the top level of the schema) so that it is inside the WizardContext.
         page.fields.push({
           component: 'lr-wizard-spy',
           name: `internal-wizard-spies.${page.name}`,
         });
 
+        // Use custom buttons for each step.
         if (page.buttons === undefined) {
           page.buttons = CustomButtons;
         }
