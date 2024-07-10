@@ -10,6 +10,7 @@ import { Title } from '@patternfly/react-core';
 import WrappedQuickStartTile from '../WrappedQuickStartTile';
 import React, { useContext, useMemo, useState } from 'react';
 import { ItemMeta } from './meta';
+import './CreatorPreview.scss';
 
 const CreatorPreview = ({
   kindMeta,
