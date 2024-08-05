@@ -7,6 +7,7 @@ import {
   filterQuickStarts,
 } from '@patternfly/quickstarts';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import { tagsFilterReducer } from '@redhat-cloud-services/frontend-components';
 
 export const API_BASE = '/api/quickstarts/v1';
 export const QUICKSTARTS = '/quickstarts';
@@ -17,8 +18,20 @@ export type FavoriteQuickStart = {
   quickstartName: string;
 };
 
-const sortFnc = (q1: QuickStart, q2: QuickStart) =>
-  q1.spec.displayName.localeCompare(q2.spec.displayName);
+const DEFAULT_PRIORITY = 1000;
+
+const makeSortFn = (targetBundle?: string) => (q1: QuickStart, q2: QuickStart) => {
+  if (targetBundle !== undefined) {
+    const priority1 = q1.metadata.bundle_priority?.[targetBundle] ?? DEFAULT_PRIORITY;
+    const priority2 = q2.metadata.bundle_priority?.[targetBundle] ?? DEFAULT_PRIORITY;
+
+    // A lower priority value makes the quickstart appear earlier in the list.
+    if (priority1 < priority2) return -1;
+    if (priority1 > priority2) return 1;
+  }
+
+  return q1.spec.displayName.localeCompare(q2.spec.displayName);
+}
 
 function isFavorite(quickStart: QuickStart, favorites: FavoriteQuickStart[]) {
   return !!favorites.find((f) => f.quickstartName === quickStart.metadata.name);
@@ -41,7 +54,7 @@ const useQuickStarts = (targetBundle?: string) => {
       filter?.keyword || '',
       filter?.status?.statusFilters,
       allQuickStartStates || {}
-    ).sort(sortFnc);
+    ).sort(makeSortFn(targetBundle));
     return filteredQuickStarts.reduce<{
       bookmarks: QuickStart[];
       documentation: QuickStart[];
