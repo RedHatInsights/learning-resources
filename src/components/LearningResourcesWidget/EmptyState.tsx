@@ -11,6 +11,8 @@ import {
 } from '@patternfly/react-core/';
 import BookMarkEmptyState from './Bookmarks_empty-state.svg';
 
+import './empty-state.scss';
+
 const LearningResourcesEmptyState: React.FunctionComponent = () => {
   return (
     <EmptyState variant={EmptyStateVariant.lg} className="pf-v5-u-py-md">
