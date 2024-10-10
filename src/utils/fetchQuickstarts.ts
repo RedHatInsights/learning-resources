@@ -22,6 +22,14 @@ export type FetchQuickstartsOptions = {
   'product-families'?: string[];
   content?: string[];
   'use-case'?: string[];
+  'display-name'?: string;
+};
+
+export const loaderOptionsFalllback: FetchQuickstartsOptions = {
+  'product-families': [],
+  content: [],
+  'use-case': [],
+  'display-name': '',
 };
 
 async function fetchQuickstarts(
@@ -67,11 +75,11 @@ async function fetchQuickstarts(
   });
 
   return content.map((item) => {
-    const name = item.metadata.name;
+    const name = item?.metadata?.name;
     return {
       ...item,
       metadata: {
-        ...item.metadata,
+        ...item?.metadata,
         favorite: !!hashMap[name],
       },
     };

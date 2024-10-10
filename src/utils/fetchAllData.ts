@@ -11,6 +11,7 @@ export const loaderOptionsDefault: FetchQuickstartsOptions = {
   'product-families': [],
   content: [],
   'use-case': [],
+  'display-name': '',
 };
 
 function fetchAllData(

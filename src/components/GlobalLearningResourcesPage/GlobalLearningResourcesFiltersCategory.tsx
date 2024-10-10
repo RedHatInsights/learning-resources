@@ -24,10 +24,31 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
     setIsExpanded(isExpanded);
   };
 
+  const updateCategory = (
+    isChecked: boolean,
+    filterId: string,
+    currentCategory: string | string[] | undefined
+  ) => {
+    if (isChecked) {
+      return [
+        ...(Array.isArray(currentCategory) ? currentCategory : []),
+        filterId,
+      ];
+    } else if (Array.isArray(currentCategory)) {
+      return currentCategory.filter((id) => id !== filterId);
+    }
+
+    return currentCategory;
+  };
+
   const updateLoaderOptions = (filter: Filter, isChecked: boolean) => {
-    const updatedCategory = isChecked
-      ? [...(loaderOptions[categoryId] || []), filter.id]
-      : (loaderOptions[categoryId] || []).filter((id) => id !== filter.id);
+    const currentCategory = loaderOptions[categoryId];
+
+    const updatedCategory = updateCategory(
+      isChecked,
+      filter.id,
+      currentCategory
+    );
 
     setLoaderOptions({
       ...loaderOptions,

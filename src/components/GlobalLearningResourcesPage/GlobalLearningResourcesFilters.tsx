@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Button,
   Split,
@@ -15,7 +15,10 @@ import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
 import { UnwrappedLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
 import fetchAllData from '../../utils/fetchAllData';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
-import { FetchQuickstartsOptions } from '../../utils/fetchQuickstarts';
+import {
+  FetchQuickstartsOptions,
+  loaderOptionsFalllback,
+} from '../../utils/fetchQuickstarts';
 
 interface GlobalLearningResourcesFiltersProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
@@ -26,7 +29,6 @@ interface GlobalLearningResourcesFiltersProps {
 const GlobalLearningResourcesFilters: React.FC<
   GlobalLearningResourcesFiltersProps
 > = ({ loader, loaderOptions, setLoaderOptions }) => {
-  const [inputValue, setInputValue] = useState('');
   const chrome = useChrome();
 
   const [filters] = loader(chrome.auth.getUser);
@@ -35,7 +37,13 @@ const GlobalLearningResourcesFilters: React.FC<
     _event: React.FormEvent<HTMLInputElement>,
     value: string
   ) => {
-    setInputValue(value);
+    const trimmedValue = value.trim();
+    if (trimmedValue) {
+      setLoaderOptions({
+        ...(loaderOptions || loaderOptionsFalllback),
+        'display-name': trimmedValue,
+      });
+    }
   };
 
   return (
@@ -49,7 +57,7 @@ const GlobalLearningResourcesFilters: React.FC<
             <TextInputGroup>
               <TextInputGroupMain
                 icon={<FilterIcon />}
-                value={inputValue}
+                value={loaderOptions['display-name']}
                 placeholder="Find by name ..."
                 onChange={handleInputChange}
               />
