@@ -87,7 +87,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           </Button>
         </CardTitle>
         <CardBody component="div">
-          <div className="lr-c-global-learning-resources-quickstart__card--body pf-v5-u-mb-md">
+          <div className="lr-c-global-learning-resources-quickstart__card--body">
             <Label isCompact color={labelColor}>
               {quickStart.spec.type?.text}
             </Label>
@@ -96,10 +96,20 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           <Text component={TextVariants.p}>{quickStart.spec.description}</Text>
         </CardBody>
         <CardFooter className="lr-c-global-learning-resources-quickstart__card--footer">
-          <Text component={TextVariants.small}>
-            {quickStartTags[TagsEnum.ProductFamilies]
-              .map((item) => item?.cardLabel)
-              .join(', ')}
+          <Text component={TextVariants.small} className="pf-v5-u-mb-sm">
+            {quickStartTags[TagsEnum.ProductFamilies].map((item, index) => (
+              <span
+                key={index}
+                className="lr-c-global-learning-resources-quickstart__card--footer-span"
+              >
+                <img
+                  src={item.icon}
+                  alt={item.cardLabel}
+                  className="lr-c-global-learning-resources-quickstart__card--footer-icon"
+                />
+                {item.cardLabel}
+              </span>
+            ))}
           </Text>
           <Text component={TextVariants.small}>
             {quickStartTags[TagsEnum.UseCase].length > 0 ? (

@@ -4,6 +4,7 @@ export interface Filter {
   id: string;
   cardLabel: string;
   filterLabel: string;
+  icon?: string;
 }
 
 export interface CategoryMap {

@@ -82,9 +82,7 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
                       {item.icon ? (
                         <img
                           className="lr-c-global-learning-resources-page__filters--checkbox-icon pf-v5-u-mr-sm"
-                          src={
-                            '/apps/frontend-assets/console-landing/ansible.svg'
-                          }
+                          src={item.icon}
                           alt={item.filterLabel}
                         />
                       ) : null}

@@ -16,7 +16,7 @@ export const GlobalLearningResourcesHeader = () => {
         className="pf-v5-u-ml-lg pf-v5-u-mr-lg"
         width="48px"
         height="48px"
-        src="/apps/frontend-assets/console-landing/ansible.svg"
+        src="/apps/frontend-assets/learning-resources/LearningResources.svg"
         alt="Learning resources icon"
       />
       <Divider

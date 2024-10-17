@@ -30,5 +30,15 @@
 
   &--footer {
     margin-top: auto;
+
+    &-span {
+      margin-right: var(--pf-v5-global--spacer--xs);
+    }
+
+    &-icon {
+      width: var(--pf-v5-global--icon--FontSize--md);
+      height: var(--pf-v5-global--icon--FontSize--md);
+      margin-right: var(--pf-v5-global--spacer--xs);
+    }
   }
 }

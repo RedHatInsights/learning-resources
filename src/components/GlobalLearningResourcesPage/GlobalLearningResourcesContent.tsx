@@ -202,6 +202,7 @@ const GlobalLearningResourcesContent: React.FC<
             id: filter.id,
             cardLabel: filter.cardLabel,
             filterLabel: filter.filterLabel,
+            ...(filter.icon && { icon: filter.icon }), // Only include the icon if it exists
           };
         });
       });
