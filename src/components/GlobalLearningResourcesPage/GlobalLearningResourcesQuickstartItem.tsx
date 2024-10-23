@@ -38,7 +38,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
     quickStart.metadata.favorite
   );
   const quickStartURL = new URL(
-    quickStart.spec.link?.href ?? 'https://access.redhat.com/'
+    quickStart.spec.link?.href ?? 'https://docs.redhat.com/'
   );
   const labelColor = quickStart.spec.type?.color;
   const QUICK_START_TYPE: QuickStartType = {
