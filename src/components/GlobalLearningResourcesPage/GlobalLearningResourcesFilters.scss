@@ -1,14 +1,15 @@
 .lr-c-global-learning-resources-page__filters {
   box-sizing: border-box;
-  background-color: var(--pf-v5-global--palette--black-100);
+  background-color: var(--pf-v5-global--BackgroundColor--100);
+  min-width: 200px;
 
   &--checkbox {
     display: flex;
     align-items: center;
   
     &-icon {
-      width: 16px;
-      height: 16px;
+      width: var(--pf-v5-global--icon--FontSize--lg);
+      height: var(--pf-v5-global--icon--FontSize--lg);
     }
   }
   // Styles for Fallback component
@@ -22,5 +23,11 @@
         height: nth($heights, $i);
       }
     }
+  }
+}
+
+@media only screen and (max-width: 550px) {
+  .lr-c-global-learning-resources-page__filters {
+    display: none;
   }
 }
