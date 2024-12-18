@@ -89,7 +89,10 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
             </Text>
           </div>
           <Button
-            onClick={handleBookmark}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent the event from propagating to the Card's onClick
+              handleBookmark(e);
+            }}
             variant="plain"
             aria-label={
               quickStart.metadata.favorite
