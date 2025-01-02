@@ -84,7 +84,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           className="lr-c-global-learning-resources-quickstart__card--title"
         >
           <div className="lr-c-global-learning-resources-quickstart__card--title-container">
-            <Text component={TextVariants.h3}>
+            <Text component={TextVariants.h4}>
               {quickStart.spec.displayName}
             </Text>
           </div>
@@ -103,26 +103,39 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
             {isBookmarked ? <BookmarkedIcon /> : <OutlinedBookmarkedIcon />}
           </Button>
         </CardTitle>
-        <CardBody component="div">
-          <div className="lr-c-global-learning-resources-quickstart__card--body">
-            <Label isCompact color={labelColor}>
+        <CardBody
+          component="div"
+          className="lr-c-global-learning-resources-quickstart__card--cardbody"
+        >
+          <div className="lr-c-global-learning-resources-quickstart__card--body pf-v5-u-mb-md">
+            <Label isCompact color={labelColor} className="pf-v5-u-mr-sm">
               {quickStart.spec.type?.text}
             </Label>
-            <Text component={TextVariants.small}>{quickStartURL.hostname}</Text>
+            <Text
+              component={TextVariants.small}
+              className="lr-c-global-learning-resources-quickstart__card--hostname"
+            >
+              {quickStartURL.hostname}
+            </Text>
           </div>
-          <Text component={TextVariants.p}>{quickStart.spec.description}</Text>
+          <Text
+            component={TextVariants.p}
+            className="lr-c-global-learning-resources-quickstart__card--description"
+          >
+            {quickStart.spec.description}
+          </Text>
         </CardBody>
         <CardFooter className="lr-c-global-learning-resources-quickstart__card--footer">
           <Text component={TextVariants.small} className="pf-v5-u-mb-sm">
             {quickStartTags[TagsEnum.ProductFamilies].map((item, index) => (
               <span
                 key={index}
-                className="lr-c-global-learning-resources-quickstart__card--footer-span"
+                className="pf-v5-u-mr-xs lr-c-global-learning-resources-quickstart__card--footer-span"
               >
                 <img
                   src={item.icon}
                   alt={item.cardLabel}
-                  className="lr-c-global-learning-resources-quickstart__card--footer-icon"
+                  className="lr-c-global-learning-resources-quickstart__card--footer-icon pf-v5-u-mr-xs"
                 />
                 {item.cardLabel}
               </span>

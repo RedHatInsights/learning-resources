@@ -1,4 +1,12 @@
 .lr-c-global-learning-resources-page__header {
   display: flex;
-  background-color: var(--pf-v5-global--palette--black-100);
+  background-color: var(--pf-v5-global--BackgroundColor--100);
+}
+
+@media only screen and (max-width: 360px) {
+  .lr-c-global-learning-resources-page__header {
+    &--image {
+      display: none;
+    }
+  }
 }
