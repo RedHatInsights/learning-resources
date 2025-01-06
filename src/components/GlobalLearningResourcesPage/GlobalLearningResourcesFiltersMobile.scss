@@ -1,0 +1,76 @@
+.lr-c-global-learning-resources-page__filters {
+  &-mobile {
+    display: none;
+    background-color: var(--pf-v5-global--BackgroundColor--100);
+  }
+
+  &-container {
+    position: relative;
+    width: 100%; /* Ensure the container allows children to expand fully */
+  }
+
+  &-row {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--sm);
+    flex-wrap: nowrap; /* Ensure elements remain in one row */
+    width: 100%; /* Allow row to take up the full width */
+
+    &--wrapper {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  &--input {
+    flex-grow: 1;
+  }
+
+  &--icon, &--sort, &--clear {
+    flex-shrink: 0; /* Prevent shrinking of icons/buttons */
+  }
+}
+
+@media only screen and (max-width: 550px) {
+  .lr-c-global-learning-resources-page__filters-mobile {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media only screen and (max-width: 360px) {
+  .lr-c-global-learning-resources-page__filters {
+    &-mobile {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: start;
+      justify-content: flex-start;
+    }
+
+    &-row {
+      display: flex;
+      flex-wrap: nowrap;
+      flex-direction: column;
+      align-items: start;
+      justify-content: start;
+      width: 100%;
+    }
+
+    &--input {
+      flex-grow: 1;
+      width: 100%; /* Ensure input is full-width */
+    }
+
+    &--icon, &--sort, &--clear {
+      padding-inline-start: var(--pf-v5-global--spacer--sm);
+    }
+
+    &--applied {
+      display: flex;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+  }
+}

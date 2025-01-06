@@ -20,7 +20,7 @@ import {
   loaderOptionsFalllback,
 } from '../../utils/fetchQuickstarts';
 
-interface GlobalLearningResourcesFiltersProps {
+export interface GlobalLearningResourcesFiltersProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
   loaderOptions: FetchQuickstartsOptions;
   setLoaderOptions: (options: FetchQuickstartsOptions) => void;

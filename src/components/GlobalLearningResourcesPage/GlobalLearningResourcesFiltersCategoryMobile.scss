@@ -1,0 +1,12 @@
+.lr-c-global-learning-resources-page__filters-mobile {
+  
+  &--wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  &--icon {
+    width: var(--pf-v5-global--icon--FontSize--lg);
+    height: var(--pf-v5-global--icon--FontSize--lg);
+  }
+}

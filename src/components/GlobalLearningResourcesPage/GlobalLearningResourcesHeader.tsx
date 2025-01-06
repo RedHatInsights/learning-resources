@@ -13,7 +13,7 @@ export const GlobalLearningResourcesHeader = () => {
   return (
     <div className="lr-c-global-learning-resources-page__header">
       <img
-        className="pf-v5-u-ml-lg pf-v5-u-mr-lg"
+        className="pf-v5-u-ml-lg pf-v5-u-mr-lg lr-c-global-learning-resources-page__header--image"
         width="48px"
         height="48px"
         src="/apps/frontend-assets/learning-resources/LearningResources.svg"

@@ -10,6 +10,7 @@ import {
 } from '@patternfly/react-core';
 import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
 import { Filter } from '../../utils/filtersInterface';
+import { updateCategory } from '../../utils/filtersInterface';
 
 const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
   categoryId,
@@ -22,23 +23,6 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
 
   const onToggle = (_event: React.MouseEvent, isExpanded: boolean) => {
     setIsExpanded(isExpanded);
-  };
-
-  const updateCategory = (
-    isChecked: boolean,
-    filterId: string,
-    currentCategory: string | string[] | undefined
-  ) => {
-    if (isChecked) {
-      return [
-        ...(Array.isArray(currentCategory) ? currentCategory : []),
-        filterId,
-      ];
-    } else if (Array.isArray(currentCategory)) {
-      return currentCategory.filter((id) => id !== filterId);
-    }
-
-    return currentCategory;
   };
 
   const updateLoaderOptions = (filter: Filter, isChecked: boolean) => {
@@ -86,7 +70,9 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
                           alt={item.filterLabel}
                         />
                       ) : null}
-                      {item.filterLabel}
+                      <span className="lr-c-global-learning-resources-page__filters--checkbox-text">
+                        {item.filterLabel}
+                      </span>
                     </div>
                   }
                   id={item.id}
