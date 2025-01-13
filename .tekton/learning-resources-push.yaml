@@ -22,7 +22,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/hcc-platex-services-tenant/learning-resources/learning-resources:{{revision}}
+    value: quay.io/redhat-user-workloads/hcc-platex-services-tenant/learning-resources:{{revision}}
   - name: dockerfile
     value: ./Dockerfile
   pipelineSpec:
