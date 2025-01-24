@@ -19,11 +19,11 @@ import { loaderOptionsFalllback } from '../../utils/fetchQuickstarts';
 import type { GlobalLearningResourcesFiltersProps } from './GlobalLearningResourcesFilters';
 import GlobalLearningResourcesFiltersCategoryMobile from './GlobalLearningResourcesFiltersCategoryMobile';
 import AppliedFilters from './AppliedFilters';
-import { MenuHeights } from '../../utils/filtersInterface';
+import { MenuHeights, SortOrder } from '../../utils/filtersInterface';
 
 export const GlobalLearningResourcesFiltersMobile: React.FC<
   GlobalLearningResourcesFiltersProps
-> = ({ loader, loaderOptions, setLoaderOptions }) => {
+> = ({ loader, loaderOptions, setLoaderOptions, setSortOrder }) => {
   const chrome = useChrome();
   const [filters] = loader(chrome.auth.getUser);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -117,6 +117,11 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
             <Button
               variant="plain"
               className="lr-c-global-learning-resources-page__filters--sort"
+              onClick={() =>
+                setSortOrder((prev: SortOrder) =>
+                  prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'
+                )
+              }
             >
               <SortAmountDownAltIcon />
             </Button>
