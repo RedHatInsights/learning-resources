@@ -20,7 +20,11 @@ export interface FiltersCategory {
   categoryName: string;
   categoryData: CategoryGroup[];
   loaderOptions: FetchQuickstartsOptions;
-  setLoaderOptions: (options: FetchQuickstartsOptions) => void;
+  setLoaderOptions: (
+    options: (
+      prevLoaderOptions: FetchQuickstartsOptions
+    ) => FetchQuickstartsOptions
+  ) => void;
 }
 
 export const FiltersCategoryMetadata: Record<CategoryID, string> = {

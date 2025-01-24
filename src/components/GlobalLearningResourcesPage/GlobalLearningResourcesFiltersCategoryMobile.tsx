@@ -29,10 +29,10 @@ const GlobalLearningResourcesFiltersCategoryMobile: React.FC<
       currentCategory
     );
 
-    setLoaderOptions({
-      ...loaderOptions,
+    setLoaderOptions((prevLoaderOptions) => ({
+      ...prevLoaderOptions,
       [categoryId]: updatedCategory,
-    });
+    }));
   };
 
   const isFilterChecked = (filterId: string) => {

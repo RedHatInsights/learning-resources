@@ -19,16 +19,18 @@ import {
   FetchQuickstartsOptions,
   loaderOptionsFalllback,
 } from '../../utils/fetchQuickstarts';
+import { SortOrder } from '../../utils/filtersInterface';
 
-export interface GlobalLearningResourcesFiltersProps {
+interface GlobalLearningResourcesFiltersProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
   loaderOptions: FetchQuickstartsOptions;
   setLoaderOptions: (options: FetchQuickstartsOptions) => void;
+  setSortOrder: (order: SortOrder) => void;
 }
 
 const GlobalLearningResourcesFilters: React.FC<
   GlobalLearningResourcesFiltersProps
-> = ({ loader, loaderOptions, setLoaderOptions }) => {
+> = ({ loader, loaderOptions, setLoaderOptions, setSortOrder }) => {
   const chrome = useChrome();
 
   const [filters] = loader(chrome.auth.getUser);
@@ -61,7 +63,14 @@ const GlobalLearningResourcesFilters: React.FC<
             </TextInputGroup>
           </SplitItem>
           <SplitItem>
-            <Button variant="plain">
+            <Button
+              variant="plain"
+              onClick={() =>
+                setSortOrder((prev: SortOrder) =>
+                  prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'
+                )
+              }
+            >
               <SortAmountDownAltIcon />
             </Button>
           </SplitItem>
