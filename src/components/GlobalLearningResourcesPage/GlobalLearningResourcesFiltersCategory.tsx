@@ -9,8 +9,7 @@ import {
   TextVariants,
 } from '@patternfly/react-core';
 import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
-import { Filter } from '../../utils/filtersInterface';
-import { updateCategory } from '../../utils/filtersInterface';
+import { Filter, updateCategory } from '../../utils/filtersInterface';
 
 const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
   categoryId,
@@ -31,12 +30,13 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
     const updatedCategory = updateCategory(
       isChecked,
       filter.id,
-      currentCategory
+      currentCategory,
+      categoryId
     );
 
     setLoaderOptions({
       ...loaderOptions,
-      [categoryId]: updatedCategory,
+      ...updatedCategory,
     });
   };
 

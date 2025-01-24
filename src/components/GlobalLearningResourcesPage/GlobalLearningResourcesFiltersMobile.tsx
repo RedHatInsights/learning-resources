@@ -21,7 +21,7 @@ import GlobalLearningResourcesFiltersCategoryMobile from './GlobalLearningResour
 import AppliedFilters from './AppliedFilters';
 import { MenuHeights } from '../../utils/filtersInterface';
 
-const GlobalLearningResourcesFiltersMobile: React.FC<
+export const GlobalLearningResourcesFiltersMobile: React.FC<
   GlobalLearningResourcesFiltersProps
 > = ({ loader, loaderOptions, setLoaderOptions }) => {
   const chrome = useChrome();

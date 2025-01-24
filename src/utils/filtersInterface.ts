@@ -1,3 +1,4 @@
+import { FetchQuickstartsOptions } from './fetchQuickstarts';
 import { TagsEnum } from './tagsEnum';
 
 export interface Filter {
@@ -20,6 +21,8 @@ export type ValidTags = {
   [TagsEnum.UseCase]: Filter[];
 };
 
+export type SortOrder = 'asc' | 'desc' | null;
+
 export type MenuHeights = {
   [key: string]: number;
 };
@@ -27,16 +30,16 @@ export type MenuHeights = {
 export const updateCategory = (
   isChecked: boolean,
   filterId: string,
-  currentCategory: string | string[] | undefined
-) => {
-  if (isChecked) {
-    return [
-      ...(Array.isArray(currentCategory) ? currentCategory : []),
-      filterId,
-    ];
-  } else if (Array.isArray(currentCategory)) {
-    return currentCategory.filter((id) => id !== filterId);
-  }
+  currentCategory: string | string[] | undefined,
+  categoryKey: keyof FetchQuickstartsOptions
+): FetchQuickstartsOptions => {
+  const updatedCategory = isChecked
+    ? [...(Array.isArray(currentCategory) ? currentCategory : []), filterId]
+    : Array.isArray(currentCategory)
+    ? currentCategory.filter((id) => id !== filterId)
+    : [];
 
-  return currentCategory;
+  return {
+    [categoryKey]: updatedCategory,
+  };
 };

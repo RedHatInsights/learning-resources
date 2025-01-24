@@ -1,5 +1,17 @@
 import React, { useEffect, useMemo } from 'react';
-import { GalleryItem, TabContent } from '@patternfly/react-core';
+import {
+  Bullseye,
+  Button,
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateBody,
+  EmptyStateFooter,
+  EmptyStateHeader,
+  EmptyStateIcon,
+  GalleryItem,
+  TabContent,
+} from '@patternfly/react-core';
+import CubesIcon from '@patternfly/react-icons/dist/dynamic/icons/cubes-icon';
 import './GlobalLearningResourcesContent.scss';
 import { Gallery } from '@patternfly/react-core';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
@@ -12,20 +24,26 @@ import {
   ExtendedQuickstart,
   FetchQuickstartsOptions,
 } from '../../utils/fetchQuickstarts';
-import { Filter, FilterMap, ValidTags } from '../../utils/filtersInterface';
+import {
+  Filter,
+  FilterMap,
+  SortOrder,
+  ValidTags,
+} from '../../utils/filtersInterface';
 import { TagsEnum } from '../../utils/tagsEnum';
-import EmptyStateComponent from './EmptyState';
 
 interface GlobalLearningResourcesContentProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
   loaderOptions: FetchQuickstartsOptions;
   purgeCache: () => void;
+  sortOrder: SortOrder;
 }
 
 interface GalleryQuickstartProps {
   quickStarts: ExtendedQuickstart[];
   purgeCache: () => void;
   filterMap: FilterMap;
+  sortOrder: SortOrder;
 }
 
 function isValidTagType(
@@ -66,17 +84,25 @@ const GalleryQuickstart: React.FC<GalleryQuickstartProps> = ({
   quickStarts,
   purgeCache,
   filterMap,
+  sortOrder,
 }) => {
-  if (quickStarts.length === 0) {
-    return <EmptyStateComponent />;
-  }
+  const sortedQuickStarts = useMemo(() => {
+    if (!sortOrder) return quickStarts;
+    return [...quickStarts].sort((a, b) => {
+      const nameA = a.spec.displayName.toLowerCase();
+      const nameB = b.spec.displayName.toLowerCase();
+      return sortOrder === 'asc'
+        ? nameA.localeCompare(nameB)
+        : nameB.localeCompare(nameA);
+    });
+  }, [quickStarts, sortOrder]);
 
   return (
     <Gallery
       hasGutter
       className="lr-c-global-learning-resources-page__content--gallery"
     >
-      {quickStarts.map((quickStart) => {
+      {sortedQuickStarts.map((quickStart) => {
         const quickStartTags = findQuickstartFilterTags(filterMap, quickStart);
         return (
           <GalleryItem
@@ -100,23 +126,61 @@ const GalleryBookmarkedQuickstart: React.FC<GalleryQuickstartProps> = ({
   quickStarts,
   purgeCache,
   filterMap,
+  sortOrder,
 }) => {
-  const bookmarkedItemsCount = quickStarts.reduce(
+  const [, setSearchParams] = useSearchParams();
+  const sortedBookmarkedQuickStarts = useMemo(() => {
+    const bookmarked = quickStarts.filter((item) => item.metadata.favorite);
+    if (!sortOrder) return bookmarked; // No sorting by default
+
+    return [...bookmarked].sort((a, b) => {
+      const nameA = a.spec.displayName.toLowerCase();
+      const nameB = b.spec.displayName.toLowerCase();
+      return sortOrder === 'asc'
+        ? nameA.localeCompare(nameB)
+        : nameB.localeCompare(nameA);
+    });
+  }, [quickStarts, sortOrder]);
+
+  const bookmarkedItemsCount = sortedBookmarkedQuickStarts.reduce(
     (acc, quickStart) => (quickStart.metadata.favorite ? acc + 1 : acc),
     0
   );
   if (bookmarkedItemsCount === 0) {
-    return <EmptyStateComponent />;
+    return (
+      <Bullseye>
+        <EmptyState className="lr-c-global-learning-resources-page__content--empty">
+          <EmptyStateHeader
+            titleText="No resources bookmarked"
+            headingLevel="h4"
+            icon={<EmptyStateIcon icon={CubesIcon} />}
+          />
+          <EmptyStateBody>
+            You don&apos;t have any bookmarked learning resources. Click the
+            icon in cards on the &apos;All learning resources&apos; tab to
+            bookmark a resource.
+          </EmptyStateBody>
+          <EmptyStateFooter>
+            <EmptyStateActions>
+              <Button
+                variant="link"
+                onClick={() => setSearchParams({ tab: TabsEnum.All })}
+              >
+                Go to the &apos;All learning resources&apos; tab
+              </Button>
+            </EmptyStateActions>
+          </EmptyStateFooter>
+        </EmptyState>
+      </Bullseye>
+    );
   }
-  const bookmarkedQuickStarts = quickStarts.filter(
-    (item) => item.metadata.favorite
-  );
+
   return (
     <Gallery
       hasGutter
       className="lr-c-global-learning-resources-page__content--gallery"
     >
-      {bookmarkedQuickStarts.map((quickStart) => {
+      {sortedBookmarkedQuickStarts.map((quickStart) => {
         if (quickStart.metadata.favorite) {
           const quickStartTags = findQuickstartFilterTags(
             filterMap,
@@ -143,7 +207,7 @@ const GalleryBookmarkedQuickstart: React.FC<GalleryQuickstartProps> = ({
 
 const GlobalLearningResourcesContent: React.FC<
   GlobalLearningResourcesContentProps
-> = ({ loader, loaderOptions, purgeCache }) => {
+> = ({ loader, loaderOptions, purgeCache, sortOrder }) => {
   const chrome = useChrome();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -188,6 +252,7 @@ const GlobalLearningResourcesContent: React.FC<
           quickStarts={quickStarts}
           filterMap={filterMap}
           purgeCache={purgeCache}
+          sortOrder={sortOrder}
         />
       </TabContent>
       <TabContent
@@ -198,6 +263,7 @@ const GlobalLearningResourcesContent: React.FC<
           quickStarts={quickStarts}
           purgeCache={purgeCache}
           filterMap={filterMap}
+          sortOrder={sortOrder}
         />
       </TabContent>
     </div>

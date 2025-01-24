@@ -26,12 +26,13 @@ const GlobalLearningResourcesFiltersCategoryMobile: React.FC<
     const updatedCategory = updateCategory(
       isChecked,
       filter.id,
-      currentCategory
+      currentCategory,
+      categoryId
     );
 
     setLoaderOptions((prevLoaderOptions) => ({
       ...prevLoaderOptions,
-      [categoryId]: updatedCategory,
+      ...updatedCategory,
     }));
   };
 

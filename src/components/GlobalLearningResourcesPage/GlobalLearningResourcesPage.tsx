@@ -9,12 +9,14 @@ import fetchAllData, { loaderOptionsDefault } from '../../utils/fetchAllData';
 import { FetchQuickstartsOptions } from '../../utils/fetchQuickstarts';
 import GlobalLearningResourcesFiltersFallback from './GlobalLearningResourcesFiltersFallback';
 import GlobalLearningResourcesContentFallback from './GlobalLearningResourcesContentFallback';
-import GlobalLearningResourcesFiltersMobile from './GlobalLearningResourcesFiltersMobile';
+import { SortOrder } from '../../utils/filtersInterface';
+import { GlobalLearningResourcesFiltersMobile } from './GlobalLearningResourcesFiltersMobile';
 
 export const GlobalLearningResourcesPage = () => {
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
   const [loaderOptions, setLoaderOptions] =
     useState<FetchQuickstartsOptions>(loaderOptionsDefault);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
 
   return (
     <div className="lr-c-global-learning-resources-page">
@@ -34,6 +36,7 @@ export const GlobalLearningResourcesPage = () => {
               loader={loader}
               loaderOptions={loaderOptions}
               setLoaderOptions={setLoaderOptions}
+              setSortOrder={setSortOrder}
             />
           </Suspense>
           <Suspense fallback={<GlobalLearningResourcesFiltersFallback />}>
@@ -41,6 +44,7 @@ export const GlobalLearningResourcesPage = () => {
               loader={loader}
               loaderOptions={loaderOptions}
               setLoaderOptions={setLoaderOptions}
+              setSortOrder={setSortOrder}
             />
           </Suspense>
         </div>
@@ -49,6 +53,7 @@ export const GlobalLearningResourcesPage = () => {
             loader={loader}
             loaderOptions={loaderOptions}
             purgeCache={purgeCache}
+            sortOrder={sortOrder}
           />
         </Suspense>
       </div>
