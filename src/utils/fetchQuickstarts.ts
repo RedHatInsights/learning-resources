@@ -19,10 +19,10 @@ export interface ExtendedQuickstart extends QuickStart {
 }
 
 export type FetchQuickstartsOptions = {
-  'product-families'?: string[] | undefined;
-  content?: string[] | undefined;
-  'use-case'?: string[] | undefined;
-  'display-name'?: string | undefined;
+  'product-families'?: string[];
+  content?: string[];
+  'use-case'?: string[];
+  'display-name'?: string;
 };
 
 export const loaderOptionsFalllback: FetchQuickstartsOptions = {
