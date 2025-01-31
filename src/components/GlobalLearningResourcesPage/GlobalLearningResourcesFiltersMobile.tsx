@@ -128,6 +128,7 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
             <Button
               variant="plain"
               className="lr-c-global-learning-resources-page__filters--clear"
+              onClick={() => setLoaderOptions({})}
             >
               <TextContent className="lr-c-global-learning-resources-page__filters-text">
                 <Text component={TextVariants.small}>Clear Filters</Text>
