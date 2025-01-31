@@ -13,16 +13,11 @@ import {
   FiltersMetadata,
 } from '../../utils/FiltersCategoryInterface';
 
-type SetLoaderOptions = (options: FetchQuickstartsOptions) => void;
-type PreviousSetLoaderOptions = (
-  options: (
-    prevLoaderOptions: FetchQuickstartsOptions
-  ) => FetchQuickstartsOptions
-) => void;
-
 const AppliedFilters: React.FC<{
   loaderOptions: FetchQuickstartsOptions;
-  setLoaderOptions: SetLoaderOptions | PreviousSetLoaderOptions;
+  setLoaderOptions: React.Dispatch<
+    React.SetStateAction<FetchQuickstartsOptions>
+  >;
 }> = ({ loaderOptions, setLoaderOptions }) => {
   // Handle removing a single filter
   const removeFilter = (categoryId: CategoryID, filterId: string) => {
