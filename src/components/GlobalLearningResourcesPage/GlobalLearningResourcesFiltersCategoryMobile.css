@@ -1,8 +1,0 @@
-.lr-c-global-learning-resources-page__filters-mobile--wrapper {
-  display: flex;
-  align-items: center;
-}
-.lr-c-global-learning-resources-page__filters-mobile--icon {
-  width: var(--pf-v5-global--icon--FontSize--lg);
-  height: var(--pf-v5-global--icon--FontSize--lg);
-}

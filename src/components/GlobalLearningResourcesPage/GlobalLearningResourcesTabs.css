@@ -1,9 +1,0 @@
-.lr-c-global-learning-resources-tabs {
-  background-color: var(--pf-v5-global--BackgroundColor--100);
-}
-.lr-c-global-learning-resources-tabs__title {
-  color: var(--pf-v5-c-tabs__link--Color);
-}
-.lr-c-global-learning-resources-tabs__link:hover {
-  text-decoration: none;
-}
