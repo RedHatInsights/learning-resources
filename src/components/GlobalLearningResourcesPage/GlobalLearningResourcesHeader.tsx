@@ -43,7 +43,7 @@ export const GlobalLearningResourcesHeader = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Developers.RedHat.com
+                developers.redhat.com
               </Text>
               ,{' '}
               <Text
@@ -52,7 +52,7 @@ export const GlobalLearningResourcesHeader = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Cloud.RedHat.com
+                cloud.redhat.com
               </Text>
               , and on{' '}
               <Text
@@ -61,7 +61,7 @@ export const GlobalLearningResourcesHeader = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                RedHat.com
+                redhat.com
               </Text>
               .
             </Text>
