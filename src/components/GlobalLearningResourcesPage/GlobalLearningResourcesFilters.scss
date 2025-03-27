@@ -30,6 +30,19 @@
     margin-top: -52px;
   }
 
+  &--link {
+    font-size: var(--pf-v5-global--FontSize--sm); // Ensures it matches TextVariants.small size
+    vertical-align: middle;
+    line-height: 1.25;
+    display: inline-block;
+    vertical-align: middle;
+    text-decoration: none;
+  }
+
+  &--disabled {
+    cursor: default;
+  }
+
   // Styles for Fallback component
   &--item {
     $heights: 65px, 25px, 30px, 35px, 40px, 45px, 50px, 55px, 
