@@ -31,7 +31,7 @@ export const GlobalLearningResourcesHeader = () => {
       <TextContent>
         <Stack className="pf-v5-u-m-lg">
           <StackItem>
-            <Text component={TextVariants.h1}>All Learning Resources</Text>
+            <Text component={TextVariants.h1}>All learning resources</Text>
           </StackItem>
           <StackItem>
             <Text component={TextVariants.p}>
