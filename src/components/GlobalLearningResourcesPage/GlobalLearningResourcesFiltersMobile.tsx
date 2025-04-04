@@ -15,14 +15,28 @@ import { FilterIcon, SortAmountDownAltIcon } from '@patternfly/react-icons';
 import './GlobalLearningResourcesFilters.scss';
 import './GlobalLearningResourcesFiltersMobile.scss';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
-import { loaderOptionsFalllback } from '../../utils/fetchQuickstarts';
-import type { GlobalLearningResourcesFiltersProps } from './GlobalLearningResourcesFilters';
+import { UnwrappedLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
+import {
+  FetchQuickstartsOptions,
+  loaderOptionsFalllback,
+} from '../../utils/fetchQuickstarts';
 import GlobalLearningResourcesFiltersCategoryMobile from './GlobalLearningResourcesFiltersCategoryMobile';
 import AppliedFilters from './AppliedFilters';
-import { MenuHeights, SortOrder } from '../../utils/filtersInterface';
+import { MenuHeights } from '../../utils/filtersInterface';
+import fetchAllData from '../../utils/fetchAllData';
+import { SortByDirection } from '@patternfly/react-table';
+
+interface GlobalLearningResourcesFiltersMobileProps {
+  loader: UnwrappedLoader<typeof fetchAllData>;
+  loaderOptions: FetchQuickstartsOptions;
+  setLoaderOptions: React.Dispatch<
+    React.SetStateAction<FetchQuickstartsOptions>
+  >;
+  setSortOrder: React.Dispatch<React.SetStateAction<SortByDirection>>;
+}
 
 export const GlobalLearningResourcesFiltersMobile: React.FC<
-  GlobalLearningResourcesFiltersProps
+  GlobalLearningResourcesFiltersMobileProps
 > = ({ loader, loaderOptions, setLoaderOptions, setSortOrder }) => {
   const chrome = useChrome();
   const [filters] = loader(chrome.auth.getUser);
@@ -118,8 +132,10 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
               variant="plain"
               className="lr-c-global-learning-resources-page__filters--sort"
               onClick={() =>
-                setSortOrder((prev: SortOrder) =>
-                  prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'
+                setSortOrder((prev: SortByDirection) =>
+                  prev === SortByDirection.asc
+                    ? SortByDirection.desc
+                    : SortByDirection.asc
                 )
               }
             >

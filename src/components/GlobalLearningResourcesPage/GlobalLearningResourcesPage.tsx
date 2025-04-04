@@ -9,14 +9,16 @@ import fetchAllData, { loaderOptionsDefault } from '../../utils/fetchAllData';
 import { FetchQuickstartsOptions } from '../../utils/fetchQuickstarts';
 import GlobalLearningResourcesFiltersFallback from './GlobalLearningResourcesFiltersFallback';
 import GlobalLearningResourcesContentFallback from './GlobalLearningResourcesContentFallback';
-import { SortOrder } from '../../utils/filtersInterface';
 import { GlobalLearningResourcesFiltersMobile } from './GlobalLearningResourcesFiltersMobile';
+import { SortByDirection } from '@patternfly/react-table';
 
 export const GlobalLearningResourcesPage = () => {
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
   const [loaderOptions, setLoaderOptions] =
     useState<FetchQuickstartsOptions>(loaderOptionsDefault);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
+  const [sortOrder, setSortOrder] = useState<SortByDirection>(
+    SortByDirection.asc
+  );
 
   return (
     <div className="lr-c-global-learning-resources-page">
@@ -36,6 +38,7 @@ export const GlobalLearningResourcesPage = () => {
               loader={loader}
               loaderOptions={loaderOptions}
               setLoaderOptions={setLoaderOptions}
+              sortOrder={sortOrder}
               setSortOrder={setSortOrder}
             />
           </Suspense>

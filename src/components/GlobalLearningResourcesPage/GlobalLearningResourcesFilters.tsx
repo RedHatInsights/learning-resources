@@ -13,7 +13,11 @@ import {
   TextInputGroupMain,
   TextVariants,
 } from '@patternfly/react-core';
-import { FilterIcon, SortAmountDownAltIcon } from '@patternfly/react-icons';
+import {
+  FilterIcon,
+  LongArrowAltDownIcon,
+  LongArrowAltUpIcon,
+} from '@patternfly/react-icons';
 import './GlobalLearningResourcesFilters.scss';
 import GlobalLearningResourcesFiltersCategory from './GlobalLearningResourcesFiltersCategory';
 import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
@@ -24,20 +28,21 @@ import {
   FetchQuickstartsOptions,
   loaderOptionsFalllback,
 } from '../../utils/fetchQuickstarts';
-import { SortOrder } from '../../utils/filtersInterface';
+import { SortByDirection } from '@patternfly/react-table';
 
-export interface GlobalLearningResourcesFiltersProps {
+interface GlobalLearningResourcesFiltersProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
   loaderOptions: FetchQuickstartsOptions;
   setLoaderOptions: React.Dispatch<
     React.SetStateAction<FetchQuickstartsOptions>
   >;
-  setSortOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
+  sortOrder: SortByDirection;
+  setSortOrder: React.Dispatch<React.SetStateAction<SortByDirection>>;
 }
 
 const GlobalLearningResourcesFilters: React.FC<
   GlobalLearningResourcesFiltersProps
-> = ({ loader, loaderOptions, setLoaderOptions, setSortOrder }) => {
+> = ({ loader, loaderOptions, setLoaderOptions, sortOrder, setSortOrder }) => {
   const chrome = useChrome();
 
   const [filters] = loader(chrome.auth.getUser);
@@ -75,12 +80,18 @@ const GlobalLearningResourcesFilters: React.FC<
               className="lr-c-global-learning-resources-page__filters--sort"
               variant="plain"
               onClick={() =>
-                setSortOrder((prev: SortOrder) =>
-                  prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'
+                setSortOrder((prev: SortByDirection) =>
+                  prev === SortByDirection.asc
+                    ? SortByDirection.desc
+                    : SortByDirection.asc
                 )
               }
             >
-              <SortAmountDownAltIcon />
+              {sortOrder === SortByDirection.asc ? (
+                <LongArrowAltUpIcon />
+              ) : (
+                <LongArrowAltDownIcon />
+              )}
             </Button>
           </SplitItem>
         </Split>

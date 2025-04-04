@@ -24,26 +24,22 @@ import {
   ExtendedQuickstart,
   FetchQuickstartsOptions,
 } from '../../utils/fetchQuickstarts';
-import {
-  Filter,
-  FilterMap,
-  SortOrder,
-  ValidTags,
-} from '../../utils/filtersInterface';
+import { Filter, FilterMap, ValidTags } from '../../utils/filtersInterface';
 import { TagsEnum } from '../../utils/tagsEnum';
+import { SortByDirection } from '@patternfly/react-table';
 
 interface GlobalLearningResourcesContentProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
   loaderOptions: FetchQuickstartsOptions;
   purgeCache: () => void;
-  sortOrder: SortOrder;
+  sortOrder: SortByDirection;
 }
 
 interface GalleryQuickstartProps {
   quickStarts: ExtendedQuickstart[];
   purgeCache: () => void;
   filterMap: FilterMap;
-  sortOrder: SortOrder;
+  sortOrder: SortByDirection;
 }
 
 function isValidTagType(

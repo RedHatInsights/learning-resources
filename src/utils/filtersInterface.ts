@@ -21,8 +21,6 @@ export type ValidTags = {
   [TagsEnum.UseCase]: Filter[];
 };
 
-export type SortOrder = 'asc' | 'desc' | null;
-
 export type MenuHeights = {
   [key: string]: number;
 };
