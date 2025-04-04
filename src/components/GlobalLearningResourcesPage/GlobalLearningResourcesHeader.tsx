@@ -31,7 +31,7 @@ export const GlobalLearningResourcesHeader = () => {
       <TextContent>
         <Stack className="pf-v5-u-m-lg">
           <StackItem>
-            <Text component={TextVariants.h1}>All Learning Resources</Text>
+            <Text component={TextVariants.h1}>All learning resources</Text>
           </StackItem>
           <StackItem>
             <Text component={TextVariants.p}>
@@ -39,29 +39,29 @@ export const GlobalLearningResourcesHeader = () => {
               Cloud Console. Find additional resources on{' '}
               <Text
                 component={TextVariants.a}
-                href="https://developers.redhat.com/"
+                href="https://developers.redhat.com/learn"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Developers.RedHat.com
+                developers.redhat.com
               </Text>
               ,{' '}
               <Text
                 component={TextVariants.a}
-                href="https://cloud.redhat.com/"
+                href="https://cloud.redhat.com/learn"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Cloud.RedHat.com
+                cloud.redhat.com
               </Text>
               , and on{' '}
               <Text
                 component={TextVariants.a}
-                href="https://www.redhat.com/"
+                href="https://www.redhat.com/en/resources"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                RedHat.com
+                redhat.com
               </Text>
               .
             </Text>
