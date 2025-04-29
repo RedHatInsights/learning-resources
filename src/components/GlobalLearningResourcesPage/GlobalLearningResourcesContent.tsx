@@ -22,9 +22,10 @@ import {
   ExtendedQuickstart,
   FetchQuickstartsOptions,
 } from '../../utils/fetchQuickstarts';
-import { Filter, FilterMap, ValidTags } from '../../utils/filtersInterface';
-import { TagsEnum } from '../../utils/tagsEnum';
+import { FilterMap } from '../../utils/filtersInterface';
 import { SortByDirection } from '@patternfly/react-table';
+import findQuickstartFilterTags from '../../utils/findQuickstartFilterTags';
+import useFilterMap from '../../hooks/useFilterMap';
 
 interface GlobalLearningResourcesContentProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
@@ -39,40 +40,6 @@ interface GalleryQuickstartProps {
   filterMap: FilterMap;
   sortOrder: SortByDirection;
 }
-
-function isValidTagType(
-  key: string,
-  storage: ValidTags
-): key is keyof ValidTags {
-  return Object.prototype.hasOwnProperty.call(storage, key);
-}
-
-const findQuickstartFilterTags = (
-  filterMap: FilterMap,
-  QuickStart: ExtendedQuickstart
-) => {
-  const modifiedTags = QuickStart.metadata.tags.reduce<{
-    [TagsEnum.ProductFamilies]: Filter[];
-    [TagsEnum.UseCase]: Filter[];
-  }>(
-    (acc, curr) => {
-      const key = curr.kind;
-      if (isValidTagType(key, acc)) {
-        const newEntry = filterMap[curr.kind][curr.value];
-        if (newEntry) {
-          acc[key].push(newEntry);
-        }
-      }
-      return acc;
-    },
-    {
-      [TagsEnum.ProductFamilies]: [],
-      [TagsEnum.UseCase]: [],
-    }
-  );
-
-  return modifiedTags;
-};
 
 const GalleryQuickstart: React.FC<GalleryQuickstartProps> = ({
   quickStarts,
@@ -211,33 +178,10 @@ const GlobalLearningResourcesContent: React.FC<
 
   const [filters, quickStarts] = loader(chrome.auth.getUser, loaderOptions);
 
-  const filterMap = useMemo(() => {
-    const filterMap: FilterMap = {};
-
-    filters.data.categories.forEach((category) => {
-      const categoryId = category.categoryId;
-
-      // Initialize the category object if it doesn't exist
-      if (!filterMap[categoryId]) {
-        filterMap[categoryId] = {};
-      }
-
-      category.categoryData.forEach((dataGroup) => {
-        dataGroup.data.forEach((filter) => {
-          filterMap[categoryId][filter.id] = {
-            id: filter.id,
-            cardLabel: filter.cardLabel,
-            filterLabel: filter.filterLabel,
-            ...(filter.icon && { icon: filter.icon }), // Only include the icon if it exists
-          };
-        });
-      });
-    });
-    return filterMap;
-  }, [filters]);
+  const filterMap = useFilterMap(filters);
 
   return (
-    <div className="pf-v5-u-p-md">
+    <div className="pf-v6-u-p-md">
       <TabContent
         id="refTabResources"
         hidden={searchParams.get('tab') !== TabsEnum.All}

@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react';
+import React, { Suspense } from 'react';
 import {
   Content,
   ContentVariants,
@@ -7,7 +7,6 @@ import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import { Link } from 'react-router-dom';
 import { Label } from '@patternfly/react-core/dist/dynamic/components/Label';
 import LearningResourcesEmptyState from './EmptyState';
-import useQuickStarts from '../../hooks/useQuickStarts';
 import {
   Bullseye,
   Flex,
@@ -18,8 +17,13 @@ import {
 import ExternalLinkAltIcon from '@patternfly/react-icons/dist/js/icons/external-link-alt-icon';
 
 import './LearningResourcesWidget.scss';
-import { QuickStart } from '@patternfly/quickstarts';
 import { ObjectMetadata } from '@patternfly/quickstarts/dist/ConsoleInternal/module/k8s/types';
+import {
+  UnwrappedLoader,
+  suspenseLoader as useSuspenseLoader,
+} from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
+import fetchAllData from '../../utils/fetchAllData';
+import useQuickStarts from '../../hooks/useQuickStarts';
 
 export const API_BASE = '/api/quickstarts/v1';
 export const QUICKSTARTS = '/quickstarts';
@@ -43,12 +47,15 @@ const constructQuickStartUrl: (metadata: ObjectMetadata) => string = ({
 };
 
 const LearningResourcesWidget: React.FunctionComponent<{
-  bookmarks: QuickStart[];
-}> = ({ bookmarks }) => {
+  loader: UnwrappedLoader<typeof fetchAllData>;
+}> = ({ loader }) => {
+  const { auth, quickStarts } = useChrome();
+
+  const [, quickstartsData] = loader(auth.getUser);
+  const { bookmarks } = useQuickStarts(quickstartsData);
   const getPathName = (url: string) => {
     return new URL(url).host;
   };
-  const { quickStarts } = useChrome();
 
   return (
     <div className="learning-resources-widget">
@@ -106,17 +113,17 @@ const LearningResourcesWidget: React.FunctionComponent<{
 };
 
 const LearningResourcesWidgetWrapper = () => {
-  const { bookmarks, contentReady } = useQuickStarts();
+  const { loader } = useSuspenseLoader(fetchAllData);
   return (
-    <Fragment>
-      {!contentReady ? (
-        <Bullseye>
+    <Suspense
+      fallback={
+        <Bullseye className="lrn-widg-l-loader">
           <Spinner />
         </Bullseye>
-      ) : (
-        <LearningResourcesWidget bookmarks={bookmarks} />
-      )}
-    </Fragment>
+      }
+    >
+      <LearningResourcesWidget loader={loader} />
+    </Suspense>
   );
 };
 

@@ -7,16 +7,21 @@ import {
   PageSection,
   Title,
 } from '@patternfly/react-core';
-import { QuickStart, QuickStartSpec } from '@patternfly/quickstarts';
+import { QuickStartSpec } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
-import { ItemKind, metaForKind } from './components/creator/meta';
+import {
+  CreatorWizardStage,
+  ItemKind,
+  metaForKind,
+} from './components/creator/meta';
 import CreatorPreview from './components/creator/CreatorPreview';
 import './Creator.scss';
-import { CreatorWizardStage } from './components/creator/schema';
 import useSuspenseLoader, {
   UnwrappedLoader,
 } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader/useSuspenseLoader';
 import fetchFilters from './utils/fetchFilters';
+import { ExtendedQuickstart } from './utils/fetchQuickstarts';
+import useFilterMap from './hooks/useFilterMap';
 
 const BASE_METADATA = {
   name: 'test-quickstart',
@@ -24,8 +29,8 @@ const BASE_METADATA = {
 
 function makeDemoQuickStart(
   kind: ItemKind | null,
-  baseQuickStart: QuickStart
-): QuickStart {
+  baseQuickStart: ExtendedQuickstart
+): ExtendedQuickstart {
   const kindMeta = kind !== null ? metaForKind(kind) : null;
 
   return {
@@ -47,10 +52,12 @@ const CreatorInternal = ({
 }) => {
   const { data: filterData } = filterLoader();
   const [rawKind, setRawKind] = useState<ItemKind | null>(null);
+  const filterMap = useFilterMap({ data: filterData });
 
-  const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
+  const [rawQuickStart, setRawQuickStart] = useState<ExtendedQuickstart>({
     metadata: {
       name: 'test-quickstart',
+      tags: [],
     },
     spec: {
       displayName: '',
@@ -87,7 +94,7 @@ const CreatorInternal = ({
       const meta = metaForKind(newKind);
 
       setRawQuickStart((old) => {
-        const updates: Partial<QuickStart> = {};
+        const updates: Partial<ExtendedQuickstart> = {};
 
         updates.spec = { ...old.spec };
 
@@ -112,7 +119,20 @@ const CreatorInternal = ({
         if (!meta.fields.url) updates.spec.link = undefined;
         if (!meta.fields.duration) updates.spec.durationMinutes = undefined;
 
-        updates.metadata = { ...BASE_METADATA, ...meta.extraMetadata };
+        const allTags = bundles.toSorted().map((bundle) => ({
+          kind: 'bundle',
+          value: bundle,
+        }));
+        Object.entries(tags).forEach(([kind, values]) => {
+          values.forEach((value) => {
+            allTags.push({ kind, value });
+          });
+        });
+        updates.metadata = {
+          tags: allTags,
+          ...BASE_METADATA,
+          ...meta.extraMetadata,
+        };
 
         return { ...old, ...updates };
       });
@@ -216,6 +236,7 @@ const CreatorInternal = ({
                 kindMeta={selectedKind?.meta ?? null}
                 quickStart={quickStart}
                 currentStage={currentStage}
+                filterMap={filterMap}
               />
             </GridItem>
           ) : null}

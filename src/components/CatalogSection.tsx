@@ -1,9 +1,4 @@
 import {
-  AllQuickStartStates,
-  QuickStart,
-  getQuickStartStatus,
-} from '@patternfly/quickstarts';
-import {
   Badge,
   Button,
   Content,
@@ -18,10 +13,12 @@ import {
 } from '@patternfly/react-core';
 import React, { PropsWithChildren, useState } from 'react';
 import { AngleRightIcon } from '@patternfly/react-icons';
-import { useFlag } from '@unleash/proxy-client-react';
 
 import './CatalogSection.scss';
-import WrappedQuickStartTile from './WrappedQuickStartTile';
+import { FilterMap } from '../utils/filtersInterface';
+import GlobalLearningResourcesQuickstartItem from './GlobalLearningResourcesPage/GlobalLearningResourcesQuickstartItem';
+import findQuickstartFilterTags from '../utils/findQuickstartFilterTags';
+import { ExtendedQuickstart } from '../utils/fetchQuickstarts';
 
 const CatalogWrapper: React.FC<
   PropsWithChildren<{
@@ -93,26 +90,23 @@ const CatalogSection = ({
   sectionCount,
   sectionQuickStarts,
   isExpandable = true,
-  activeQuickStartID,
-  allQuickStartStates,
   rightTitle,
   emptyBody,
-  toggleFavorite,
   sectionName,
+  filterMap,
+  purgeCache,
 }: PropsWithChildren<{
   sectionTitle: React.ReactNode;
   sectionCount: number;
-  sectionQuickStarts: QuickStart[];
+  sectionQuickStarts: ExtendedQuickstart[];
   emptyBody?: React.ReactNode;
   rightTitle?: React.ReactNode;
   sectionDescription?: React.ReactNode;
   isExpandable?: boolean;
-  activeQuickStartID?: string;
-  allQuickStartStates?: AllQuickStartStates;
   sectionName: string;
-  toggleFavorite: (name: string, favorite: boolean) => Promise<void>;
+  filterMap: FilterMap;
+  purgeCache: () => void;
 }>) => {
-  const showBookmarks = useFlag('platform.learning-resources.bookmarks');
   // Expandable section does not support disabled sections
   if (sectionCount === 0 && isExpandable) {
     return (
@@ -159,27 +153,21 @@ const CatalogSection = ({
       )}
       {sectionCount ? (
         <Gallery hasGutter>
-          {sectionQuickStarts.map((quickStart) => (
-            <GalleryItem key={quickStart.metadata.name}>
-              <WrappedQuickStartTile
-                quickStart={quickStart}
-                bookmarks={
-                  showBookmarks
-                    ? {
-                        isFavorite: quickStart.metadata.favorite,
-                        setFavorite: (newState) =>
-                          toggleFavorite(quickStart.metadata.name, newState),
-                      }
-                    : null
-                }
-                isActive={quickStart.metadata.name === activeQuickStartID}
-                status={getQuickStartStatus(
-                  allQuickStartStates || {},
-                  quickStart.metadata.name
-                )}
-              />
-            </GalleryItem>
-          ))}
+          {sectionQuickStarts.map((quickStart) => {
+            const quickStartTags = findQuickstartFilterTags(
+              filterMap,
+              quickStart
+            );
+            return (
+              <GalleryItem key={quickStart.metadata.name}>
+                <GlobalLearningResourcesQuickstartItem
+                  purgeCache={purgeCache}
+                  quickStart={quickStart}
+                  quickStartTags={quickStartTags}
+                />
+              </GalleryItem>
+            );
+          })}
         </Gallery>
       ) : (
         emptyBody

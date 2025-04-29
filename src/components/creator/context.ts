@@ -1,6 +1,6 @@
 import React from 'react';
-import { CreatorWizardStage } from './schema';
 import { CreatorFiles } from './types';
+import { CreatorWizardStage } from './meta';
 
 export const CreatorWizardContext = React.createContext<{
   files: CreatorFiles;

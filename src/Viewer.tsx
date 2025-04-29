@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import {
-  LoadingBox,
-  QuickStartContext,
-  QuickStartContextValues,
-} from '@patternfly/quickstarts';
-import {
   Divider,
   EmptyState,
-  Icon,
   PageGroup,
   PageSection,
   Pagination,
@@ -21,28 +15,39 @@ import CatalogHeader from './components/CatalogHeader';
 import CatalogFilter from './components/CatalogFilter';
 import CatalogSection from './components/CatalogSection';
 import TableOfContents from './components/TableOfContents';
-import { BookmarkIcon, OutlinedBookmarkIcon } from '@patternfly/react-icons';
 import { useFlag } from '@unleash/proxy-client-react';
 import useQuickStarts from './hooks/useQuickStarts';
+import {
+  BookmarkedIcon,
+  OutlinedBookmarkedIcon,
+} from './components/common/BookmarkIcon';
+import useFilterMap from './hooks/useFilterMap';
+import { UnwrappedLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader/useSuspenseLoader';
+import fetchAllData from './utils/fetchAllData';
 
-export const Viewer = ({ bundle }: { bundle: string }) => {
+export const Viewer = ({
+  bundle,
+  loader,
+  purgeCache,
+}: {
+  bundle: string;
+  loader: UnwrappedLoader<typeof fetchAllData>;
+  purgeCache: () => void;
+}) => {
   const chrome = useChrome();
-  const { activeQuickStartID, allQuickStartStates, setFilter, loading } =
-    React.useContext<QuickStartContextValues>(QuickStartContext);
+  const [localFilter, setFilter] = useState('');
   const showBookmarks = useFlag('platform.learning-resources.bookmarks');
 
   const [size, setSize] = useState(window.innerHeight);
   const targetBundle = bundle || 'settings';
+  const [filters, allQuickStarts] = loader(chrome.auth.getUser, {
+    bundle: targetBundle,
+  });
 
-  const {
-    contentReady,
-    documentation,
-    learningPaths,
-    other,
-    quickStarts,
-    bookmarks,
-    toggleFavorite,
-  } = useQuickStarts(targetBundle);
+  const filterMap = useFilterMap(filters);
+
+  const { documentation, learningPaths, other, bookmarks, quickStarts } =
+    useQuickStarts(allQuickStarts, localFilter);
   const [pagination, setPagination] = useState({
     count: bookmarks.length,
     perPage: 20,
@@ -61,7 +66,7 @@ export const Viewer = ({ bundle }: { bundle: string }) => {
   }, []);
 
   const onSearchInputChange = (searchValue: string) => {
-    setFilter('keyword', searchValue);
+    setFilter(searchValue);
   };
 
   React.useLayoutEffect(() => {
@@ -76,10 +81,6 @@ export const Viewer = ({ bundle }: { bundle: string }) => {
     updateSize();
     return () => window.removeEventListener('resize', updateSize);
   }, []);
-
-  if (!contentReady || loading) {
-    return <LoadingBox />;
-  }
 
   return (
     <PageGroup id="learning-resources-wrapper" style={{ height: `${size}px` }}>
@@ -105,28 +106,25 @@ export const Viewer = ({ bundle }: { bundle: string }) => {
           <Sidebar id="content-wrapper" isPanelRight hasGutter>
             <SidebarContent
               id="quick-starts"
-              className="pf-v5-u-background-color-200"
+              className="pf-v6-u-background-color-200"
             >
               {showBookmarks && (
                 <React.Fragment>
                   <CatalogSection
+                    purgeCache={purgeCache}
                     sectionName="bookmarks"
-                    toggleFavorite={toggleFavorite}
+                    filterMap={filterMap}
                     sectionCount={bookmarks.length}
                     emptyBody={
                       <EmptyState className="lr-c-empty_bookmarks">
                         No bookmarked resources yet. Click the{' '}
-                        <Icon className="lr-c-bookmark__icon">
-                          <OutlinedBookmarkIcon />
-                        </Icon>
+                        <OutlinedBookmarkedIcon className="pf-v6-u-mr-sm" />
                         icon to pin it to your bookmarks here.
                       </EmptyState>
                     }
                     sectionTitle={
                       <span>
-                        <Icon className="lr-c-bookmark__icon pf-v5-u-ml-sm pf-v5-u-pr-md">
-                          <BookmarkIcon />
-                        </Icon>
+                        <BookmarkedIcon className="pf-v6-u-mr-sm" />
                         Bookmarks
                       </span>
                     }
@@ -156,54 +154,48 @@ export const Viewer = ({ bundle }: { bundle: string }) => {
                       (pagination.page - 1) * pagination.perPage,
                       pagination.page * (pagination.perPage - 1) + 1
                     )}
-                    activeQuickStartID={activeQuickStartID}
-                    allQuickStartStates={allQuickStartStates}
                   />
                   <Divider className="pf-v6-u-mt-lg pf-v6-u-mb-lg" />
                 </React.Fragment>
               )}
               <CatalogSection
+                purgeCache={purgeCache}
+                filterMap={filterMap}
                 sectionName="documentation"
-                toggleFavorite={toggleFavorite}
                 sectionCount={documentation.length}
                 sectionTitle="Documentation"
                 sectionDescription="Technical information for using the service"
                 sectionQuickStarts={documentation}
-                activeQuickStartID={activeQuickStartID}
-                allQuickStartStates={allQuickStartStates}
               />
               <Divider className="pf-v6-u-mt-lg pf-v6-u-mb-lg" />
               <CatalogSection
                 sectionName="quick-starts"
-                toggleFavorite={toggleFavorite}
+                purgeCache={purgeCache}
+                filterMap={filterMap}
                 sectionCount={quickStarts.length}
                 sectionTitle="Quick starts"
                 sectionDescription="Step-by-step instructions and tasks"
                 sectionQuickStarts={quickStarts}
-                activeQuickStartID={activeQuickStartID}
-                allQuickStartStates={allQuickStartStates}
               />
               <Divider className="pf-v6-u-mt-lg pf-v6-u-mb-lg" />
               <CatalogSection
                 sectionName="learning-paths"
-                toggleFavorite={toggleFavorite}
+                purgeCache={purgeCache}
+                filterMap={filterMap}
                 sectionCount={learningPaths.length}
                 sectionTitle="Learning paths"
                 sectionDescription="Collections of learning materials contributing to a common use case"
                 sectionQuickStarts={learningPaths}
-                activeQuickStartID={activeQuickStartID}
-                allQuickStartStates={allQuickStartStates}
               />
               <Divider className="pf-v6-u-mt-lg pf-v6-u-mb-lg" />
               <CatalogSection
                 sectionName="other-content-types"
-                toggleFavorite={toggleFavorite}
+                purgeCache={purgeCache}
+                filterMap={filterMap}
                 sectionCount={other.length}
                 sectionTitle="Other content types"
                 sectionDescription="Tutorials, videos, e-books, and more to help you build your skills"
                 sectionQuickStarts={other}
-                activeQuickStartID={activeQuickStartID}
-                allQuickStartStates={allQuickStartStates}
               />
             </SidebarContent>
             <SidebarPanel
