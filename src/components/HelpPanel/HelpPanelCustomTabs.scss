@@ -1,0 +1,19 @@
+.lr-c-help-panel-custom-tab {
+  &.persistent-tab {
+    // the disabled close tab action does not hide the action button
+    // has to be hidden by CSS and the width has to be adjusted
+    .pf-v6-c-tabs__item-action {
+      visibility: hidden;
+      width: 0;
+    }
+  }
+}
+
+.lr-c-help-panel-custom-tabs.pf-v6-c-tabs {
+  .pf-v6-c-tabs__item.pf-m-overflow {
+    .pf-v6-c-tabs__link-toggle-icon {
+      // fixes strange alignment of the expand/collapse icon
+      align-self: auto;
+    }
+  }
+}
