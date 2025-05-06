@@ -12,8 +12,14 @@ import {
 import BookMarkEmptyState from './Bookmarks_empty-state.svg';
 
 import './empty-state.scss';
+import { useNavigate } from 'react-router-dom';
+import { useFlag } from '@unleash/proxy-client-react';
 
 const LearningResourcesEmptyState: React.FunctionComponent = () => {
+  const navigate = useNavigate();
+  const enableGlobalLearningResourcesPage = useFlag(
+    'platform.learning-resources.global-learning-resources'
+  );
   return (
     <EmptyState variant={EmptyStateVariant.lg} className="pf-v5-u-py-md">
       <EmptyStateHeader
@@ -33,7 +39,19 @@ const LearningResourcesEmptyState: React.FunctionComponent = () => {
         <Button
           variant="secondary"
           component="a"
-          href="settings/learning-resources#documentation"
+          href={
+            enableGlobalLearningResourcesPage
+              ? '/learning-resources'
+              : '/settings/learning-resources'
+          }
+          onClick={(e) => {
+            e.preventDefault();
+            navigate(
+              enableGlobalLearningResourcesPage
+                ? '/learning-resources'
+                : '/settings/learning-resources'
+            );
+          }}
         >
           View all learning resources
         </Button>
