@@ -1,7 +1,11 @@
 const path = require('path');
 
 module.exports = {
-  appUrl: ['/settings/learning-resources', '/openshift/learning-resources', "/staging/global-learning-resources-page"],
+  appUrl: [
+    '/settings/learning-resources',
+    '/openshift/learning-resources',
+    '/staging/global-learning-resources-page',
+  ],
   debug: true,
   useProxy: true,
   proxyVerbose: true,
@@ -38,4 +42,5 @@ module.exports = {
       },
     ],
   },
+  frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),
 };
