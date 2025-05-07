@@ -22,7 +22,7 @@ export const GlobalLearningResourcesContentFallback = () => {
   ];
 
   return (
-    <Gallery hasGutter className="pf-v5-u-m-lg">
+    <Gallery hasGutter className="pf-v6-u-m-lg">
       {Array.from({ length: cardsCount }).map((_, index) => (
         <GalleryItem key={index}>
           <Card>
@@ -32,7 +32,7 @@ export const GlobalLearningResourcesContentFallback = () => {
                   key={skeletonIndex}
                   width={width}
                   height="20px"
-                  className="pf-v5-u-mb-sm"
+                  className="pf-v6-u-mb-sm"
                 />
               ))}
             </CardBody>

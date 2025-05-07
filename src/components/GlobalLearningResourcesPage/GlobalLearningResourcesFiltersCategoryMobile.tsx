@@ -1,11 +1,11 @@
 import React from 'react';
 import {
   Checkbox,
+  Content,
+  ContentVariants,
   Divider,
   DrilldownMenu,
   MenuItem,
-  Text,
-  TextVariants,
 } from '@patternfly/react-core';
 import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
 import { Filter, updateCategory } from '../../utils/filtersInterface';
@@ -54,15 +54,15 @@ const GlobalLearningResourcesFiltersCategoryMobile: React.FC<
           <Divider component="li" />
           {/* Render all filters in a flat structure */}
           {categoryData.map((group, index) => (
-            <div key={index} className="pf-v5-u-mt-md">
+            <div key={index} className="pf-v6-u-mt-md">
               {/* Render group title if available */}
               {group.group && (
-                <Text
-                  component={TextVariants.small}
-                  className="pf-v5-u-ml-md pf-v5-u-font-weight-bold"
+                <Content
+                  component={ContentVariants.small}
+                  className="pf-v6-u-ml-md pf-v6-u-font-weight-bold"
                 >
                   {group.group}
-                </Text>
+                </Content>
               )}
               {/* Render filters */}
               {group.data.map((item) => (
@@ -75,12 +75,12 @@ const GlobalLearningResourcesFiltersCategoryMobile: React.FC<
                       <div className="lr-c-global-learning-resources-page__filters-mobile--wrapper">
                         {item.icon ? (
                           <img
-                            className="lr-c-global-learning-resources-page__filters-mobile--icon pf-v5-u-mr-sm"
+                            className="lr-c-global-learning-resources-page__filters-mobile--icon pf-v6-u-mr-sm"
                             src={item.icon}
                             alt={item.filterLabel}
                           />
                         ) : null}
-                        <Text>{item.filterLabel}</Text>
+                        <Content component="p">{item.filterLabel}</Content>
                       </div>
                     }
                     id={item.id}

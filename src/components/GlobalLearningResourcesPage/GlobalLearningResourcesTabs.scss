@@ -1,13 +1,8 @@
 .lr-c-global-learning-resources-tabs {
-  background-color: var(--pf-v5-global--BackgroundColor--100);
-  
-  &__title {
-    color: var(--pf-v5-c-tabs__link--Color);
-  }
-
-  &__link {
-    &:hover {
-      text-decoration: none;
+  .pf-v6-c-tabs__item {
+    a {
+       text-decoration: none;
+       color: var(--pf-vv-c-tabs__link--Color);
     }
   }
 }

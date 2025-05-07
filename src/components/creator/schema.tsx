@@ -3,7 +3,7 @@ import {
   Schema,
   componentTypes,
 } from '@data-driven-forms/react-form-renderer';
-import { ALL_ITEM_KINDS, metaForKind } from './meta';
+import { ALL_ITEM_KINDS, CreatorWizardStage, metaForKind } from './meta';
 import { ChromeAPI } from '@redhat-cloud-services/types';
 import {
   WizardButtonsProps,
@@ -66,15 +66,6 @@ const CustomButtons = (props: WizardButtonsProps) => {
 };
 
 const STEP_TITLE_PANEL_PARENT = 'Create panel';
-
-export type CreatorWizardStage =
-  | { type: 'card' }
-  | { type: 'panel-overview' }
-  | {
-      type: 'task';
-      index: number;
-    }
-  | { type: 'download' };
 
 export function stageFromStepName(name: string): CreatorWizardStage {
   if (isKindStep(name) || isDetailsStep(name)) return { type: 'card' };

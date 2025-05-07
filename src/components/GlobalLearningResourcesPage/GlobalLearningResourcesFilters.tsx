@@ -1,17 +1,16 @@
 import React from 'react';
 import {
   Button,
+  Content,
+  ContentVariants,
   Flex,
   FlexItem,
   Split,
   SplitItem,
   Stack,
   StackItem,
-  Text,
-  TextContent,
   TextInputGroup,
   TextInputGroupMain,
-  TextVariants,
 } from '@patternfly/react-core';
 import {
   FilterIcon,
@@ -29,6 +28,7 @@ import {
   loaderOptionsFalllback,
 } from '../../utils/fetchQuickstarts';
 import { SortByDirection } from '@patternfly/react-table';
+import classnames from 'classnames';
 
 interface GlobalLearningResourcesFiltersProps {
   loader: UnwrappedLoader<typeof fetchAllData>;
@@ -64,7 +64,7 @@ const GlobalLearningResourcesFilters: React.FC<
   return (
     <Stack
       hasGutter
-      className="lr-c-global-learning-resources-page__filters pf-v5-u-p-lg"
+      className="lr-c-global-learning-resources-page__filters pf-v6-u-p-lg"
     >
       <StackItem>
         <Split className="lr-c-global-learning-resources-page__filters--wrap">
@@ -81,6 +81,13 @@ const GlobalLearningResourcesFilters: React.FC<
           </SplitItem>
           <SplitItem>
             <Button
+              icon={
+                sortOrder === SortByDirection.asc ? (
+                  <LongArrowAltUpIcon />
+                ) : (
+                  <LongArrowAltDownIcon />
+                )
+              }
               className="lr-c-global-learning-resources-page__filters--sort"
               variant="plain"
               onClick={() =>
@@ -90,13 +97,7 @@ const GlobalLearningResourcesFilters: React.FC<
                     : SortByDirection.asc
                 )
               }
-            >
-              {sortOrder === SortByDirection.asc ? (
-                <LongArrowAltUpIcon />
-              ) : (
-                <LongArrowAltDownIcon />
-              )}
-            </Button>
+            />
           </SplitItem>
         </Split>
       </StackItem>
@@ -104,20 +105,25 @@ const GlobalLearningResourcesFilters: React.FC<
       <StackItem className="lr-c-global-learning-resources-page__filters--clear-filters">
         <Flex justifyContent={{ default: 'justifyContentFlexEnd' }}>
           <FlexItem>
-            <Button variant="plain" onClick={() => setLoaderOptions({})}>
-              <TextContent>
-                <Text
-                  component={hasActiveFilters ? 'a' : TextVariants.small}
-                  className={`lr-c-global-learning-resources-page__filters--link ${
-                    hasActiveFilters
-                      ? 'pf-m-link'
-                      : 'pf-u-text-muted lr-c-global-learning-resources-page__filters--disabled'
-                  }`}
+            <Button
+              icon={
+                <Content
+                  className={classnames(
+                    'lr-c-global-learning-resources-page__filters--link',
+                    {
+                      'pf-m-link': hasActiveFilters,
+                      'pf-u-text-muted lr-c-global-learning-resources-page__filters--disabled':
+                        !hasActiveFilters,
+                    }
+                  )}
+                  component={hasActiveFilters ? 'a' : ContentVariants.small}
                 >
                   Clear filters
-                </Text>
-              </TextContent>
-            </Button>
+                </Content>
+              }
+              variant="plain"
+              onClick={() => setLoaderOptions({})}
+            />
           </FlexItem>
         </Flex>
       </StackItem>

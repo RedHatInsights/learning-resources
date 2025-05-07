@@ -6,11 +6,10 @@ import {
   CardBody,
   CardFooter,
   CardTitle,
+  Content,
+  ContentVariants,
   Icon,
   Label,
-  Text,
-  TextContent,
-  TextVariants,
 } from '@patternfly/react-core';
 import { TagIcon } from '@patternfly/react-icons';
 import { API_BASE, FAVORITES } from '../../hooks/useQuickStarts';
@@ -68,7 +67,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
 
   return (
     <Card className="lr-c-global-learning-resources-quickstart__card">
-      <TextContent className="lr-c-global-learning-resources-quickstart__card--content">
+      <Content className="lr-c-global-learning-resources-quickstart__card--content">
         <CardTitle
           component="div"
           className="lr-c-global-learning-resources-quickstart__card--title"
@@ -81,11 +80,14 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           }}
         >
           <div className="lr-c-global-learning-resources-quickstart__card--title-container">
-            <Text component={TextVariants.h4}>
+            <Content component={ContentVariants.h4}>
               {quickStart.spec.displayName}
-            </Text>
+            </Content>
           </div>
           <Button
+            icon={
+              isBookmarked ? <BookmarkedIcon /> : <OutlinedBookmarkedIcon />
+            }
             onClick={(e) => {
               e.stopPropagation(); // Prevent the event from propagating to the Title's onClick
               handleBookmark(e);
@@ -96,60 +98,58 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
                 ? 'Unbookmark learning resource'
                 : 'Bookmark learning resource'
             }
-          >
-            {isBookmarked ? <BookmarkedIcon /> : <OutlinedBookmarkedIcon />}
-          </Button>
+          />
         </CardTitle>
         <CardBody
           component="div"
           className="lr-c-global-learning-resources-quickstart__card--cardbody"
         >
-          <div className="lr-c-global-learning-resources-quickstart__card--body pf-v5-u-mb-md">
-            <Label isCompact color={labelColor} className="pf-v5-u-mr-sm">
+          <div className="lr-c-global-learning-resources-quickstart__card--body pf-v6-u-mb-md">
+            <Label isCompact color={labelColor} className="pf-v6-u-mr-sm">
               {quickStart.spec.type?.text}
             </Label>
-            <Text
-              component={TextVariants.small}
+            <Content
+              component={ContentVariants.small}
               className="lr-c-global-learning-resources-quickstart__card--hostname"
             >
               {quickStartURL.hostname}
-            </Text>
+            </Content>
           </div>
-          <Text
-            component={TextVariants.p}
+          <Content
+            component={ContentVariants.p}
             className="lr-c-global-learning-resources-quickstart__card--description"
           >
             {quickStart.spec.description}
-          </Text>
+          </Content>
         </CardBody>
         <CardFooter className="lr-c-global-learning-resources-quickstart__card--footer">
-          <Text component={TextVariants.small} className="pf-v5-u-mb-sm">
+          <Content component={ContentVariants.small} className="pf-v6-u-mb-sm">
             {quickStartTags[TagsEnum.ProductFamilies].map((item, index) => (
               <span
                 key={index}
-                className="pf-v5-u-mr-xs lr-c-global-learning-resources-quickstart__card--footer-span"
+                className="pf-v6-u-mr-xs lr-c-global-learning-resources-quickstart__card--footer-span"
               >
                 <img
                   src={item.icon}
                   alt={item.cardLabel}
-                  className="lr-c-global-learning-resources-quickstart__card--footer-icon pf-v5-u-mr-xs"
+                  className="lr-c-global-learning-resources-quickstart__card--footer-icon pf-v6-u-mr-xs"
                 />
                 {item.cardLabel}
               </span>
             ))}
-          </Text>
-          <Text component={TextVariants.small}>
+          </Content>
+          <Content component={ContentVariants.small}>
             {quickStartTags[TagsEnum.UseCase].length > 0 ? (
-              <Icon className="pf-v5-u-mr-sm">
+              <Icon className="pf-v6-u-mr-sm">
                 <TagIcon />
               </Icon>
             ) : undefined}
             {quickStartTags[TagsEnum.UseCase]
               .map((item) => item?.cardLabel)
               .join(', ')}
-          </Text>
+          </Content>
         </CardFooter>
-      </TextContent>
+      </Content>
     </Card>
   );
 };
