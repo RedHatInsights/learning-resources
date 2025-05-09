@@ -14,6 +14,7 @@ module.exports = {
   /**
    * Add additional webpack plugins
    */
+  frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),
   plugins: [],
   moduleFederation: {
     exposes: {

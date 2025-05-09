@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import {
   Button,
+  Content,
+  ContentVariants,
   Menu,
   MenuContent,
   MenuList,
   MenuToggle,
-  Text,
-  TextContent,
   TextInputGroup,
   TextInputGroupMain,
-  TextVariants,
 } from '@patternfly/react-core';
 import { FilterIcon, SortAmountDownAltIcon } from '@patternfly/react-icons';
 import './GlobalLearningResourcesFilters.scss';
@@ -105,7 +104,7 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
   );
 
   return (
-    <div className="lr-c-global-learning-resources-page__filters-mobile pf-v5-u-p-md">
+    <div className="lr-c-global-learning-resources-page__filters-mobile pf-v6-u-p-md">
       <div className="lr-c-global-learning-resources-page__filters-container">
         {/* Input Row, MenuToggle, and Buttons */}
         <div className="lr-c-global-learning-resources-page__filters-row">
@@ -129,6 +128,7 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
               <FilterIcon />
             </MenuToggle>
             <Button
+              icon={<SortAmountDownAltIcon />}
               variant="plain"
               className="lr-c-global-learning-resources-page__filters--sort"
               onClick={() =>
@@ -138,18 +138,20 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
                     : SortByDirection.asc
                 )
               }
-            >
-              <SortAmountDownAltIcon />
-            </Button>
+            />
             <Button
+              icon={
+                <Content
+                  component={ContentVariants.small}
+                  className="lr-c-global-learning-resources-page__filters-text"
+                >
+                  Clear Filters
+                </Content>
+              }
               variant="plain"
               className="lr-c-global-learning-resources-page__filters--clear"
               onClick={() => setLoaderOptions({})}
-            >
-              <TextContent className="lr-c-global-learning-resources-page__filters-text">
-                <Text component={TextVariants.small}>Clear Filters</Text>
-              </TextContent>
-            </Button>
+            />
           </div>
         </div>
 

@@ -18,22 +18,6 @@ objects:
         paths:
           - /apps/learning-resources
       image: ${IMAGE}:${IMAGE_TAG}
-      navItems:
-        - appId: learningResources
-          title: Learning Resources
-          href: "/openshift/learning-resources"
-        - appId: learningResources
-          title: Learning Resources
-          href: "/ansible/learning-resources"
-        - appId: learningResources
-          title: Learning Resources
-          href: "/insights/learning-resources"
-        - appId: learningResources
-          title: Learning Resources
-          href: "/edge/learning-resources"
-        - appId: learningResources
-          title: Learning Resources
-          href: "/iam/learning-resources"
       module:
         manifestLocation: /apps/learningResources/fed-mods.json
         modules:

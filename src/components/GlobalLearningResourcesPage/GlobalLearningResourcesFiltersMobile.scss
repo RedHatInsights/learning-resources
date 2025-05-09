@@ -1,7 +1,7 @@
 .lr-c-global-learning-resources-page__filters {
   &-mobile {
     display: none;
-    background-color: var(--pf-v5-global--BackgroundColor--100);
+    background-color: var(--pf-t--color--white);
   }
 
   &-container {
@@ -12,7 +12,7 @@
   &-row {
     display: flex;
     align-items: center;
-    gap: var(--pf-v5-global--spacer--sm);
+    gap: var(--pf-t--global--spacer--sm);
     flex-wrap: nowrap; /* Ensure elements remain in one row */
     width: 100%; /* Allow row to take up the full width */
 
@@ -64,7 +64,7 @@
     }
 
     &--icon, &--sort, &--clear {
-      padding-inline-start: var(--pf-v5-global--spacer--sm);
+      padding-inline-start: var(--pf-t--global--spacer--sm);
     }
 
     &--applied {

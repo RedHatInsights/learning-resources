@@ -6,8 +6,6 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
-  EmptyStateIcon,
 } from '@patternfly/react-core';
 import CubesIcon from '@patternfly/react-icons/dist/dynamic/icons/cubes-icon';
 import { useSearchParams } from 'react-router-dom';
@@ -19,12 +17,12 @@ const EmptyStateComponent: React.FC = () => {
 
   return (
     <Bullseye>
-      <EmptyState className="lr-c-global-learning-resources-page__content--empty">
-        <EmptyStateHeader
-          titleText="No resources bookmarked"
-          headingLevel="h4"
-          icon={<EmptyStateIcon icon={CubesIcon} />}
-        />
+      <EmptyState
+        headingLevel="h4"
+        icon={CubesIcon}
+        titleText="No resources bookmarked"
+        className="lr-c-global-learning-resources-page__content--empty"
+      >
         <EmptyStateBody>
           You don&apos;t have any bookmarked learning resources. Click the icon
           in cards on the &apos;All learning resources&apos; tab to bookmark a

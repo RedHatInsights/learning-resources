@@ -9,7 +9,7 @@
 @container (width > 700px) {
   .lrn-widg-l-flex-row {
     flex-direction: row;
-    padding: var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--sm) var(--pf-v5-global--spacer--md);
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
     width: 100%;
     .item-1 {
       width: 50%;
@@ -28,24 +28,28 @@
 }
 @container (width < 700px) { 
   .lrn-widg-l-flex-row {
-    padding-left: var(--pf-v5-global--spacer--sm);
+    padding-left: var(--pf-t--global--spacer--sm);
     flex-direction: column;
     gap: 4px;
   }
   .item-1 {
-    padding-left: var(--pf-v5-global--spacer--md);
-    padding-top: var(--pf-v5-global--spacer--sm);
+    padding-left: var(--pf-t--global--spacer--md);
+    padding-top: var(--pf-t--global--spacer--sm);
     width: 100%;
   }
   .group {
-    padding-bottom: var(--pf-v5-global--spacer--sm);
+    padding-bottom: var(--pf-t--global--spacer--sm);
     flex-direction: row;
     .item-2 {
-      padding-left: var(--pf-v5-global--spacer--md);
+      padding-left: var(--pf-t--global--spacer--md);
       margin-right: 0;
     }
     .item-3 {
-      padding-left: var(--pf-v5-global--spacer--md);
+      padding-left: var(--pf-t--global--spacer--md);
     }
   }
+}
+
+.lrn-widg-l-loader {
+  width: 100%;
 }

@@ -7,16 +7,21 @@ import {
   PageSection,
   Title,
 } from '@patternfly/react-core';
-import { QuickStart, QuickStartSpec } from '@patternfly/quickstarts';
+import { QuickStartSpec } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
-import { ItemKind, metaForKind } from './components/creator/meta';
+import {
+  CreatorWizardStage,
+  ItemKind,
+  metaForKind,
+} from './components/creator/meta';
 import CreatorPreview from './components/creator/CreatorPreview';
 import './Creator.scss';
-import { CreatorWizardStage } from './components/creator/schema';
 import useSuspenseLoader, {
   UnwrappedLoader,
 } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader/useSuspenseLoader';
 import fetchFilters from './utils/fetchFilters';
+import { ExtendedQuickstart } from './utils/fetchQuickstarts';
+import useFilterMap from './hooks/useFilterMap';
 
 const BASE_METADATA = {
   name: 'test-quickstart',
@@ -24,8 +29,8 @@ const BASE_METADATA = {
 
 function makeDemoQuickStart(
   kind: ItemKind | null,
-  baseQuickStart: QuickStart
-): QuickStart {
+  baseQuickStart: ExtendedQuickstart
+): ExtendedQuickstart {
   const kindMeta = kind !== null ? metaForKind(kind) : null;
 
   return {
@@ -47,10 +52,12 @@ const CreatorInternal = ({
 }) => {
   const { data: filterData } = filterLoader();
   const [rawKind, setRawKind] = useState<ItemKind | null>(null);
+  const filterMap = useFilterMap({ data: filterData });
 
-  const [rawQuickStart, setRawQuickStart] = useState<QuickStart>({
+  const [rawQuickStart, setRawQuickStart] = useState<ExtendedQuickstart>({
     metadata: {
       name: 'test-quickstart',
+      tags: [],
     },
     spec: {
       displayName: '',
@@ -87,7 +94,7 @@ const CreatorInternal = ({
       const meta = metaForKind(newKind);
 
       setRawQuickStart((old) => {
-        const updates: Partial<QuickStart> = {};
+        const updates: Partial<ExtendedQuickstart> = {};
 
         updates.spec = { ...old.spec };
 
@@ -112,7 +119,20 @@ const CreatorInternal = ({
         if (!meta.fields.url) updates.spec.link = undefined;
         if (!meta.fields.duration) updates.spec.durationMinutes = undefined;
 
-        updates.metadata = { ...BASE_METADATA, ...meta.extraMetadata };
+        const allTags = bundles.toSorted().map((bundle) => ({
+          kind: 'bundle',
+          value: bundle,
+        }));
+        Object.entries(tags).forEach(([kind, values]) => {
+          values.forEach((value) => {
+            allTags.push({ kind, value });
+          });
+        });
+        updates.metadata = {
+          tags: allTags,
+          ...BASE_METADATA,
+          ...meta.extraMetadata,
+        };
 
         return { ...old, ...updates };
       });
@@ -172,7 +192,7 @@ const CreatorInternal = ({
 
   return (
     <PageGroup>
-      <PageSection className="rc-header">
+      <PageSection hasBodyWrapper={false} className="rc-header">
         <Title headingLevel="h1" size="2xl">
           Add new learning resource
         </Title>
@@ -189,8 +209,12 @@ const CreatorInternal = ({
         </p>
       </PageSection>
 
-      <PageSection isFilled padding={{ default: 'noPadding' }}>
-        <Grid hasGutter className="pf-v5-u-h-100 pf-v5-u-w-100">
+      <PageSection
+        hasBodyWrapper={false}
+        isFilled
+        padding={{ default: 'noPadding' }}
+      >
+        <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
           <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
             <CreatorWizard
               onChangeTags={setTags}
@@ -207,11 +231,12 @@ const CreatorInternal = ({
           </GridItem>
 
           {isDownloadStage ? (
-            <GridItem span={12} lg={6} className="pf-v5-u-pt-md-on-lg">
+            <GridItem span={12} lg={6} className="pf-v6-u-pt-md-on-lg">
               <CreatorPreview
                 kindMeta={selectedKind?.meta ?? null}
                 quickStart={quickStart}
                 currentStage={currentStage}
+                filterMap={filterMap}
               />
             </GridItem>
           ) : null}
