@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
+import { useFlags } from '@unleash/proxy-client-react';
 
 type TabDefinition = {
   id: string;
@@ -23,6 +24,7 @@ type TabDefinition = {
 
 type SubTab = Omit<TabDefinition, 'id'> & {
   tabType: TabType;
+  featureFlag?: string;
 };
 
 const baseTabs: TabDefinition[] = [
@@ -46,6 +48,7 @@ const subTabs: SubTab[] = [
   {
     title: 'Knowledge base',
     tabType: TabType.kb,
+    featureFlag: 'platform.help-panel.kb',
   },
   {
     title: 'APIs',
@@ -134,6 +137,15 @@ const SubTabs = ({
   activeSubTabKey: TabType;
   setActiveSubTabKey: (key: TabType) => void;
 }>) => {
+  const flags = useFlags();
+  const filteredSubTabs = useMemo(() => {
+    return subTabs.filter((tab) => {
+      if (typeof tab.featureFlag === 'string') {
+        return !!flags.find(({ name }) => name === tab.featureFlag)?.enabled;
+      }
+      return true;
+    });
+  }, [flags, subTabs]);
   return (
     <>
       <Tabs
@@ -147,7 +159,7 @@ const SubTabs = ({
           }
         }}
       >
-        {subTabs.map((tab) => (
+        {filteredSubTabs.map((tab) => (
           <Tab
             eventKey={tab.tabType}
             key={tab.tabType}
