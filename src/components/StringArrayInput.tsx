@@ -56,9 +56,9 @@ const StringArrayInput = (props: UseFieldApiConfig) => {
       title={rest.label ?? 'Array'}
       id={effectiveId}
       name={input.name}
-      className="pf-v5-u-m-0"
+      className="pf-v6-u-m-0"
     >
-      <div className="pf-v5-c-form pf-m-horizontal">
+      <div className="pf-v6-c-form pf-m-horizontal">
         {value.map((element, index) => {
           const elementId = `${id}-${index}-title`;
 

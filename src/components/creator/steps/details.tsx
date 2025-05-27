@@ -113,7 +113,7 @@ export function makeDetailsStep({
       component: 'lr-number-input',
       name: NAME_DURATION,
       label: 'Duration',
-      unit: <span className="pf-v5-u-text-nowrap">minutes</span>,
+      unit: <span className="pf-v6-u-text-nowrap">minutes</span>,
       dataType: dataTypes.NUMBER,
       initialValue: 0,
       minValue: 0,

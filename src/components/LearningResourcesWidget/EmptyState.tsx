@@ -4,7 +4,6 @@ import {
   EmptyState,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
   EmptyStateVariant,
   Stack,
   StackItem,
@@ -21,12 +20,13 @@ const LearningResourcesEmptyState: React.FunctionComponent = () => {
     'platform.learning-resources.global-learning-resources'
   );
   return (
-    <EmptyState variant={EmptyStateVariant.lg} className="pf-v5-u-py-md">
-      <EmptyStateHeader
-        titleText="No bookmarked learning resources"
-        icon={<img src={BookMarkEmptyState} />}
-        headingLevel="h4"
-      />
+    <EmptyState
+      variant={EmptyStateVariant.lg}
+      title="No bookmarked learning resources"
+      headingLevel="h4"
+      icon={() => <img src={BookMarkEmptyState}></img>}
+      className="pf-v6-u-py-md"
+    >
       <EmptyStateBody>
         <Stack>
           <StackItem>
@@ -35,7 +35,7 @@ const LearningResourcesEmptyState: React.FunctionComponent = () => {
           </StackItem>
         </Stack>
       </EmptyStateBody>
-      <EmptyStateFooter className="pf-v5-u-mt-sm">
+      <EmptyStateFooter className="pf-v6-u-mt-sm">
         <Button
           variant="secondary"
           component="a"

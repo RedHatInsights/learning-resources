@@ -15,9 +15,11 @@ module.exports = {
    */
   interceptChromeConfig: false,
   hotReload: true,
+  __unstableHotReload: true,
   /**
    * Add additional webpack plugins
    */
+  frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),
   plugins: [],
   moduleFederation: {
     exposes: {
@@ -31,6 +33,7 @@ module.exports = {
         './src/components/GlobalLearningResourcesPage/GlobalLearningResourcesPage'
       ),
       './Creator': path.resolve(__dirname, './src/Creator.tsx'),
+      './HelpPanel': path.resolve(__dirname, './src/components/HelpPanel/index.ts'),
     },
     exclude: ['react-router-dom'],
     shared: [

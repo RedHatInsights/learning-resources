@@ -1,12 +1,12 @@
 .rc-header {
-  background-color: var(--pf-v5-global--BackgroundColor--dark-300);
-  color: var(--pf-v5-global--Color--light-100);
+  background-color: var(--pf-t--color--gray--70);
+  color: var(--pf-t--color--white);
 }
 
 .rc-header a {
-  color: var(--pf-v5-global--link--Color--light);
+  color: var(--pf-t--color--blue--30);
 }
 
 .rc-header a:hover {
-  color: var(--pf-v5-global--link--Color--light--hover);
+  color: var(--pf-t--color--blue--20);
 }

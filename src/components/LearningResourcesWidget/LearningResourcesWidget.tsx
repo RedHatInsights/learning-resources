@@ -1,14 +1,12 @@
-import React, { Fragment } from 'react';
+import React, { Suspense } from 'react';
 import {
-  Text,
-  TextContent,
-  TextVariants,
-} from '@patternfly/react-core/dist/dynamic/components/Text';
+  Content,
+  ContentVariants,
+} from '@patternfly/react-core/dist/dynamic/components/Content';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
 import { Link } from 'react-router-dom';
 import { Label } from '@patternfly/react-core/dist/dynamic/components/Label';
 import LearningResourcesEmptyState from './EmptyState';
-import useQuickStarts from '../../hooks/useQuickStarts';
 import {
   Bullseye,
   Flex,
@@ -19,8 +17,13 @@ import {
 import ExternalLinkAltIcon from '@patternfly/react-icons/dist/js/icons/external-link-alt-icon';
 
 import './LearningResourcesWidget.scss';
-import { QuickStart } from '@patternfly/quickstarts';
 import { ObjectMetadata } from '@patternfly/quickstarts/dist/ConsoleInternal/module/k8s/types';
+import {
+  UnwrappedLoader,
+  suspenseLoader as useSuspenseLoader,
+} from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
+import fetchAllData from '../../utils/fetchAllData';
+import useQuickStarts from '../../hooks/useQuickStarts';
 
 export const API_BASE = '/api/quickstarts/v1';
 export const QUICKSTARTS = '/quickstarts';
@@ -44,12 +47,15 @@ const constructQuickStartUrl: (metadata: ObjectMetadata) => string = ({
 };
 
 const LearningResourcesWidget: React.FunctionComponent<{
-  bookmarks: QuickStart[];
-}> = ({ bookmarks }) => {
+  loader: UnwrappedLoader<typeof fetchAllData>;
+}> = ({ loader }) => {
+  const { auth, quickStarts } = useChrome();
+
+  const [, quickstartsData] = loader(auth.getUser);
+  const { bookmarks } = useQuickStarts(quickstartsData);
   const getPathName = (url: string) => {
     return new URL(url).host;
   };
-  const { quickStarts } = useChrome();
 
   return (
     <div className="learning-resources-widget">
@@ -60,7 +66,7 @@ const LearningResourcesWidget: React.FunctionComponent<{
           {bookmarks.map(({ spec, metadata }, index) => (
             <Flex key={index} className="lrn-widg-l-flex-row">
               <FlexItem className="item-1">
-                <TextContent>
+                <Content>
                   {metadata.tags.find(
                     ({ kind }: { kind: string }) => kind === 'content'
                   )?.value === 'quickstart' ? (
@@ -75,12 +81,12 @@ const LearningResourcesWidget: React.FunctionComponent<{
                   ) : (
                     <a href={spec.link?.href} target="_blank" rel="noreferrer">
                       {spec.displayName}
-                      <Icon className="pf-v5-u-ml-sm" size="sm" isInline>
+                      <Icon className="pf-v6-u-ml-sm" size="sm" isInline>
                         <ExternalLinkAltIcon />
                       </Icon>
                     </a>
                   )}
-                </TextContent>
+                </Content>
               </FlexItem>
               <Flex className="group">
                 <FlexItem className="item-2">
@@ -91,11 +97,11 @@ const LearningResourcesWidget: React.FunctionComponent<{
                   )}
                 </FlexItem>
                 <FlexItem className="item-3">
-                  <TextContent>
-                    <Text component={TextVariants.small}>
+                  <Content>
+                    <Content component={ContentVariants.small}>
                       {spec.link?.href ? getPathName(spec.link?.href) : ''}
-                    </Text>
-                  </TextContent>
+                    </Content>
+                  </Content>
                 </FlexItem>
               </Flex>
             </Flex>
@@ -107,17 +113,17 @@ const LearningResourcesWidget: React.FunctionComponent<{
 };
 
 const LearningResourcesWidgetWrapper = () => {
-  const { bookmarks, contentReady } = useQuickStarts();
+  const { loader } = useSuspenseLoader(fetchAllData);
   return (
-    <Fragment>
-      {!contentReady ? (
-        <Bullseye>
+    <Suspense
+      fallback={
+        <Bullseye className="lrn-widg-l-loader">
           <Spinner />
         </Bullseye>
-      ) : (
-        <LearningResourcesWidget bookmarks={bookmarks} />
-      )}
-    </Fragment>
+      }
+    >
+      <LearningResourcesWidget loader={loader} />
+    </Suspense>
   );
 };
 

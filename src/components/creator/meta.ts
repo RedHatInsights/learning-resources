@@ -23,7 +23,7 @@ const rawItemKindMeta = Object.freeze({
   },
   learningPath: {
     displayName: 'Learning path',
-    tagColor: 'cyan',
+    tagColor: 'teal',
     fields: {
       url: true,
     },
@@ -42,6 +42,15 @@ const rawItemKindMeta = Object.freeze({
     },
   },
 } as const);
+
+export type CreatorWizardStage =
+  | { type: 'card' }
+  | { type: 'panel-overview' }
+  | {
+      type: 'task';
+      index: number;
+    }
+  | { type: 'download' };
 
 export type ItemMeta = {
   displayName: string;

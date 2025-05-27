@@ -1,11 +1,12 @@
 import React from 'react';
 import {
-  Chip,
-  ChipGroup,
+  Label,
+  LabelGroup,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
 } from '@patternfly/react-core';
+
 import { FetchQuickstartsOptions } from '../../utils/fetchQuickstarts';
 import {
   CategoryID,
@@ -33,7 +34,7 @@ const AppliedFilters: React.FC<{
 
   // Render applied filters dynamically
   return (
-    <Toolbar className="pf-v5-u-mt-md">
+    <Toolbar className="pf-v6-u-mt-md">
       <ToolbarContent>
         {Object.keys(loaderOptions).map((categoryId) => {
           const categoryKey = categoryId as CategoryID;
@@ -47,16 +48,17 @@ const AppliedFilters: React.FC<{
 
           return (
             <ToolbarItem key={categoryId}>
-              <ChipGroup categoryName={categoryName}>
+              <LabelGroup categoryName={categoryName}>
                 {filters.map((filterId: string) => (
-                  <Chip
+                  <Label
+                    variant="outline"
                     key={filterId}
-                    onClick={() => removeFilter(categoryKey, filterId)}
+                    onClose={() => removeFilter(categoryKey, filterId)}
                   >
                     {FiltersMetadata[filterId]}
-                  </Chip>
+                  </Label>
                 ))}
-              </ChipGroup>
+              </LabelGroup>
             </ToolbarItem>
           );
         })}

@@ -23,7 +23,7 @@ const GlobalLearningResourcesFiltersFallback: React.FC = () => {
   return (
     <Stack
       hasGutter
-      className="lr-c-global-learning-resources-page__filters pf-v5-u-p-lg"
+      className="lr-c-global-learning-resources-page__filters pf-v6-u-p-lg"
     >
       {/* Dynamic StackItems */}
       {skeletonWidths.map((width, index) => (

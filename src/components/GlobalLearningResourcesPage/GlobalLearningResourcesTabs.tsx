@@ -33,20 +33,19 @@ const GlobalLearningResourcesTabs: React.FC<
     <Tabs
       aria-label="Tab"
       role="region"
-      className="lr-c-global-learning-resources-tabs pf-v5-u-pt-md pf-v5-u-pl-xl"
+      className="lr-c-global-learning-resources-tabs pf-v6-u-pt-md pf-v6-u-pl-xl"
       activeKey={searchParams.get('tab')!}
     >
       <Tab
         eventKey="all"
         title={
           <Link
-            className="lr-c-global-learning-resources-tabs__link"
             to={{
               pathname: '.',
               search: `?tab=${TabsEnum.All}`,
             }}
           >
-            <TabTitleText className="lr-c-global-learning-resources-tabs__title">
+            <TabTitleText>
               All learning resources (
               {!loader ? <Spinner size="md" /> : quickStarts.length})
             </TabTitleText>
@@ -58,13 +57,12 @@ const GlobalLearningResourcesTabs: React.FC<
         eventKey="bookmarks"
         title={
           <Link
-            className="lr-c-global-learning-resources-tabs__link"
             to={{
               pathname: '.',
               search: `?tab=${TabsEnum.Bookmarks}`,
             }}
           >
-            <TabTitleText className="lr-c-global-learning-resources-tabs__title">
+            <TabTitleText>
               My bookmarked resources (
               {!loader ? <Spinner size="md" /> : bookmarkedResourcesCount})
             </TabTitleText>

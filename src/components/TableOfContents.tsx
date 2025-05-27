@@ -51,6 +51,7 @@ const TableOfContents: React.FC<{
             key={id}
             onClick={() => onJumpLinkClick(id)}
             isActive={activeItem === id}
+            href="#"
           >
             {label}
           </JumpLinksItem>

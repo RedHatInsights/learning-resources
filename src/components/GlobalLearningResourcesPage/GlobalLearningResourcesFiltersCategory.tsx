@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import {
   Checkbox,
+  Content,
+  ContentVariants,
   ExpandableSection,
   Stack,
   StackItem,
-  Text,
-  TextContent,
-  TextVariants,
 } from '@patternfly/react-core';
 import { FiltersCategory } from '../../utils/FiltersCategoryInterface';
 import { Filter, updateCategory } from '../../utils/filtersInterface';
@@ -55,26 +54,29 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
       {categoryData.map((subCategory, index) => (
         <Stack
           component="div"
-          className="pf-v5-u-mb-md pf-v5-u-mt-0"
+          className="pf-v6-u-mb-md pf-v6-u-mt-0"
           key={index}
         >
-          <TextContent>
+          <Content>
             {subCategory.group ? (
-              <Text component={TextVariants.small} className="pf-v5-u-mb-sm">
+              <Content
+                component={ContentVariants.small}
+                className="pf-v6-u-mb-sm"
+              >
                 {subCategory.group}
-              </Text>
+              </Content>
             ) : null}
             {subCategory.data.map((item) => (
               <StackItem
-                key={categoryId}
-                className="pf-v5-u-display-flex pf-v5-u-align-items-center"
+                key={`${categoryId}-${item.id}`}
+                className="pf-v6-u-display-flex pf-v6-u-align-items-center"
               >
                 <Checkbox
                   label={
-                    <div className="lr-c-global-learning-resources-page__filters--checkbox pf-v5-u-display-flex pf-v5-u-align-items-flex-start ">
+                    <div className="lr-c-global-learning-resources-page__filters--checkbox pf-v6-u-display-flex pf-v6-u-align-items-flex-start ">
                       {item.icon ? (
                         <img
-                          className="lr-c-global-learning-resources-page__filters--checkbox-icon pf-v5-u-mr-sm"
+                          className="lr-c-global-learning-resources-page__filters--checkbox-icon pf-v6-u-mr-sm"
                           src={item.icon}
                           alt={item.filterLabel}
                         />
@@ -92,7 +94,7 @@ const GlobalLearningResourcesFiltersCategory: React.FC<FiltersCategory> = ({
                 />
               </StackItem>
             ))}
-          </TextContent>
+          </Content>
         </Stack>
       ))}
     </ExpandableSection>

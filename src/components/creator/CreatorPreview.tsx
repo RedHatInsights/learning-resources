@@ -1,26 +1,28 @@
 import {
   AllQuickStartStates,
-  QuickStart,
   QuickStartContext,
   QuickStartDrawer,
-  QuickStartStatus,
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import { Flex, FlexItem, Title } from '@patternfly/react-core';
-import WrappedQuickStartTile from '../WrappedQuickStartTile';
 import React, { useContext, useMemo, useState } from 'react';
-import { ItemMeta } from './meta';
+import { CreatorWizardStage, ItemMeta } from './meta';
 import './CreatorPreview.scss';
-import { CreatorWizardStage } from './schema';
+import GlobalLearningResourcesQuickstartItem from '../GlobalLearningResourcesPage/GlobalLearningResourcesQuickstartItem';
+import findQuickstartFilterTags from '../../utils/findQuickstartFilterTags';
+import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
+import { FilterMap } from '../../utils/filtersInterface';
 
 const CreatorPreview = ({
   kindMeta,
   quickStart,
   currentStage,
+  filterMap,
 }: {
   kindMeta: ItemMeta | null;
-  quickStart: QuickStart;
+  quickStart: ExtendedQuickstart;
   currentStage: CreatorWizardStage;
+  filterMap: FilterMap;
 }) => {
   const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
@@ -68,14 +70,15 @@ const CreatorPreview = ({
     }
   }
 
+  const quickStartTags = findQuickstartFilterTags(filterMap, quickStart);
   return (
     <Flex
       direction={{ default: 'column' }}
       gap={{ default: 'gapNone' }}
-      className="pf-v5-u-h-100"
+      className="pf-v6-u-h-100"
     >
       <FlexItem>
-        <Title headingLevel="h2" size="xl" className="pf-v5-u-mb-md">
+        <Title headingLevel="h2" size="xl" className="pf-v6-u-mb-md">
           Live {showPanel ? kindMeta.displayName : 'card'} preview
         </Title>
       </FlexItem>
@@ -86,11 +89,11 @@ const CreatorPreview = ({
             <section>
               {!showPanel ? (
                 <div className="rc-tile-preview-wrapper">
-                  <WrappedQuickStartTile
+                  <GlobalLearningResourcesQuickstartItem
                     quickStart={quickStart}
-                    bookmarks={null}
-                    isActive={false}
-                    status={QuickStartStatus.NOT_STARTED}
+                    // we do not reload any data in creator
+                    purgeCache={() => {}}
+                    quickStartTags={quickStartTags}
                   />
                 </div>
               ) : null}

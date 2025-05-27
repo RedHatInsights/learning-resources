@@ -12,6 +12,10 @@ export interface Tag {
 
 export interface TaggedMetadata extends ObjectMetadata {
   tags: Tag[];
+  favorite?: boolean;
+  externalDocumentation?: boolean;
+  otherResource?: boolean;
+  learningPath?: boolean;
 }
 
 export interface ExtendedQuickstart extends QuickStart {
@@ -23,6 +27,7 @@ export type FetchQuickstartsOptions = {
   content?: string[];
   'use-case'?: string[];
   'display-name'?: string;
+  bundle?: string;
 };
 
 export const loaderOptionsFalllback: FetchQuickstartsOptions = {

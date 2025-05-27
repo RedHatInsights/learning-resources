@@ -3,27 +3,27 @@
     // No PF variable exists for this
     padding-left: 28px;
   }
-  .pf-v5-c-expandable-section__toggle {
+  .pf-v6-c-expandable-section__toggle {
     display: flex;
     align-items: center;
     padding-top: 0;
   }
-  .pf-v5-c-expandable-section__content {
+  .pf-v6-c-expandable-section__content {
     margin-top: 0;
   }
   h3 {
-    color: var(--pf-v5-global--palette--black-900);
+    color: var(--pf-t--color--gray--95);
     span {
       vertical-align: middle;
     }
   }
 
-  & > .pf-v5-l-split {
-    margin-bottom: var(--pf-v5-global--spacer--md);
+  & > .pf-v6-l-split {
+    margin-bottom: var(--pf-t--global--spacer--md);
   }
 
-  .pf-v5-c-badge {
-    --pf-v5-c-badge--m-unread--BackgroundColor: var(--pf-v5-global--primary-color--100);
-    --pf-v5-c-badge--m-read--BackgroundColor: var(--pf-v5-global--primary-color--100);
+  .pf-v6-c-badge {
+    --pf-v6-c-badge--m-unread--BackgroundColor: var(--pf-t--color--blue--50);
+    --pf-v6-c-badge--m-read--BackgroundColor: var(--pf-t--color--blue--50);
   }
 }

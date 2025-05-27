@@ -12,10 +12,10 @@ const SimpleButton = ({
     <button
       {...rest}
       type={type}
-      className={`pf-v5-u-background-color-200 ${rest.className ?? ''}`}
+      className={`pf-v6-u-background-color-200 ${rest.className ?? ''}`}
       style={{ border: 'none', ...(rest.style ?? {}) }}
     >
-      <span className={icon !== undefined ? 'pf-v5-u-mr-sm' : ''}>
+      <span className={icon !== undefined ? 'pf-v6-u-mr-sm' : ''}>
         {children}
       </span>
       {icon}

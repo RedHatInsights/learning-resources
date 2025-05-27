@@ -3,17 +3,17 @@ import {
   Button,
   ClipboardCopy,
   ClipboardCopyVariant,
+  Content,
   Flex,
   FlexItem,
   Stack,
   StackItem,
-  Text,
   Title,
 } from '@patternfly/react-core';
 import CheckCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/check-circle-icon';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
-import React, { useContext, useEffect, useMemo } from 'react';
-import { ItemKind, isItemKind, metaForKind } from './meta';
+import React, { Fragment, useContext, useEffect, useMemo } from 'react';
+import { CreatorWizardStage, ItemKind, isItemKind, metaForKind } from './meta';
 import { QuickStartSpec, QuickStartTask } from '@patternfly/quickstarts';
 import {
   AnyObject,
@@ -22,7 +22,7 @@ import {
 } from '@data-driven-forms/react-form-renderer';
 import DdfWizardContext from '@data-driven-forms/react-form-renderer/wizard-context';
 import pf4ComponentMapper from '@data-driven-forms/pf4-component-mapper/component-mapper';
-import { CreatorWizardStage, makeSchema, stageFromStepName } from './schema';
+import { makeSchema, stageFromStepName } from './schema';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 import SimpleButton from '../SimpleButton';
@@ -200,7 +200,7 @@ const FileDownload = () => {
 
   return (
     <div>
-      <Banner screenReaderText="Files successfully generated!" variant="green">
+      <Banner screenReaderText="Files successfully generated!" color="green">
         <Flex spaceItems={{ default: 'spaceItemsSm' }}>
           <FlexItem>
             <CheckCircleIcon />
@@ -209,9 +209,9 @@ const FileDownload = () => {
         </Flex>
       </Banner>
 
-      <Stack hasGutter className="pf-v5-u-m-lg">
+      <Stack hasGutter className="pf-v6-u-m-lg">
         <StackItem>
-          <Text>
+          <Content component="p">
             Download these files and use them to create the learning resource PR
             in the{' '}
             <a
@@ -223,7 +223,7 @@ const FileDownload = () => {
               correct repo
             </a>
             .
-          </Text>
+          </Content>
         </StackItem>
 
         <StackItem>
@@ -240,7 +240,7 @@ const FileDownload = () => {
           <StackItem key={file.name}>
             <SimpleButton
               icon={<DownloadIcon />}
-              className="pf-v5-u-mb-sm"
+              className="pf-v6-u-mb-sm"
               onClick={() => doDownload(file)}
             >
               {file.name}
@@ -331,7 +331,7 @@ const CreatorWizard = ({
         {({ formFields }) => (
           <form
             onSubmit={(e) => e.preventDefault()}
-            className="pf-v5-c-form lrn-creator-form"
+            className="pf-v6-c-form lrn-creator-form"
           >
             <FormSpy subscription={{ values: true }}>
               {/*
@@ -356,7 +356,8 @@ const CreatorWizard = ({
                 />
               )}
             </FormSpy>
-            <>{formFields}</>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Fragment>{formFields as any}</Fragment>
           </form>
         )}
       </FormRenderer>

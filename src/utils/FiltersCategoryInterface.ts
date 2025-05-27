@@ -30,6 +30,7 @@ export const FiltersCategoryMetadata: Record<CategoryID, string> = {
   content: 'Content type',
   'use-case': 'Use case',
   'display-name': 'Display name',
+  bundle: '',
 };
 
 export const FiltersMetadata: Record<string, string> = {

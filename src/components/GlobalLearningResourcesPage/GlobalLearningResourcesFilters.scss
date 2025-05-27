@@ -1,6 +1,5 @@
 .lr-c-global-learning-resources-page__filters {
   box-sizing: border-box;
-  background-color: var(--pf-v5-global--BackgroundColor--100);
   min-width: 200px;
 
   &--checkbox {
@@ -10,18 +9,18 @@
 
   
     &-icon {
-      width: var(--pf-v5-global--icon--FontSize--lg);
-      height: var(--pf-v5-global--icon--FontSize--lg);
-      margin-bottom: var(--pf-v5-global--spacer--xs);
+      width: var(--pf-t--global--icon--size--font--2xl);
+      height: var(--pf-t--global--icon--size--font--2xl);
+      margin-bottom: var(--pf-t--global--spacer--xs);
     }
   }
 
-  &--expandable .pf-v5-c-expandable-section__toggle {
-    margin-bottom: var(--pf-v5-global--spacer--xs);
-    padding-bottom: var(--pf-v5-global--spacer--xs);
+  &--expandable .pf-v6-c-expandable-section__toggle {
+    margin-bottom: var(--pf-t--global--spacer--xs);
+    padding-bottom: var(--pf-t--global--spacer--xs);
   }
 
-  &--expandable .pf-v5-c-expandable-section__content {
+  &--expandable .pf-v6-c-expandable-section__content {
     margin-top: 0;
     padding-top: 0;
   }
@@ -31,7 +30,7 @@
   }
 
   &--link {
-    font-size: var(--pf-v5-global--FontSize--sm); // Ensures it matches TextVariants.small size
+    font-size: var(--pf-t--global--font--size--sm); // Ensures it matches TextVariants.small size
     vertical-align: middle;
     line-height: 1.25;
     display: inline-block;
@@ -77,7 +76,7 @@
     }
 
     &--sort {
-      padding-left: var(--pf-v5-global--spacer--sm);
+      padding-left: var(--pf-t--global--spacer--sm);
     }
 
     &--clear-filters {
