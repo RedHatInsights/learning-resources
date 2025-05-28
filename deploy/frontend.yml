@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/RedHatInsights/frontend-components/refs/heads/master/packages/config-utils/src/feo/spec/frontend-crd.schema.json
 apiVersion: v1
 kind: Template
 metadata:
@@ -18,8 +19,52 @@ objects:
         paths:
           - /apps/learning-resources
       image: ${IMAGE}:${IMAGE_TAG}
+      feoConfigEnabled: true
+      bundleSegments:
+        - segmentId: learning-resources-openshift
+          bundleId: openshift
+          position: 2000
+          navItems:
+            - id: learningResourcesOpenShift
+              title: Learning Resources
+              href: /openshift/learning-resources
+        - segmentId: learning-resources-ansible
+          bundleId: ansible
+          position: 2000
+          navItems:
+            - id: learningResourcesAnsible
+              title: Learning Resources
+              href: /ansible/learning-resources
+        - segmentId: learning-resources-insights
+          bundleId: insights
+          position: 2000
+          navItems:
+            - id: learningResourcesInsights
+              title: Learning Resources
+              href: /insights/learning-resources
+        - segmentId: learning-resources-edge
+          bundleId: edge
+          position: 2000
+          navItems:
+            - id: learningResourcesEdge
+              title: Learning Resources
+              href: /edge/learning-resources
+        - segmentId: learning-resources-iam
+          bundleId: iam
+          position: 2000
+          navItems:
+            - id: learningResourcesIAM
+              title: Learning Resources
+              href: /iam/learning-resources
+        - segmentId: learning-resources-settings
+          bundleId: settings
+          position: 2000
+          navItems:
+            - id: learningResourcesSettings
+              title: Learning Resources
+              href: /settings/learning-resources
       module:
-        manifestLocation: /apps/learningResources/fed-mods.json
+        manifestLocation: /apps/learning-resources/fed-mods.json
         modules:
           - id: learningResources
             module: ./RootApp
@@ -42,7 +87,13 @@ objects:
               - pathname: "/iam/learning-resources"
                 props:
                   bundle: iam
-        moduleID: learning-resources
+      searchEntries:
+        - id: learning-resources
+          title: All Learning Resources
+          href: /learning-resources
+          description: Access product documentation, tutorials, and other learning materials to support your Red Hat product use.
+          alt_title:
+            - Learning Resources
 parameters:
   - name: ENV_NAME
     required: true
