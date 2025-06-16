@@ -7,6 +7,7 @@ import {
   EmptyStateBody,
   EmptyStateVariant,
   Icon,
+  Pagination,
   Stack,
   StackItem,
   Title,
@@ -33,7 +34,7 @@ type Case = {
   id: string;
   caseNumber: string;
   summary: string;
-  lastModifiedById: string;
+  lastModifiedDate: string;
   status: string;
 };
 
@@ -67,6 +68,25 @@ const SupportPanel: React.FunctionComponent = () => {
   const chrome = useChrome();
   const [isLoading, setIsLoading] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+
+  const onSetPage = (
+    _event: React.MouseEvent | React.KeyboardEvent | MouseEvent,
+    newPage: number
+  ) => {
+    setPage(newPage);
+  };
+
+  const onPerPageSelect = (
+    _event: React.MouseEvent | React.KeyboardEvent | MouseEvent,
+    newPerPage: number,
+    newPage: number
+  ) => {
+    setPerPage(newPerPage);
+    setPage(newPage);
+  };
+
   const getUrl = (env: string) =>
     `https://api.access${
       env === 'stage' || env === 'frhStage' ? '.stage' : ''
@@ -90,6 +110,13 @@ const SupportPanel: React.FunctionComponent = () => {
     try {
       const response = await fetch(getUrl(chrome.getEnvironment()), options);
       const { cases } = await response.json();
+
+      cases.sort(
+        (a: { lastModifiedDate: number }, b: { lastModifiedDate: number }) =>
+          new Date(b.lastModifiedDate).getTime() -
+          new Date(a.lastModifiedDate).getTime()
+      );
+
       setCases(cases || []);
       setIsLoading(false);
     } catch (error) {
@@ -173,6 +200,15 @@ const SupportPanel: React.FunctionComponent = () => {
                 </Tr>
               ))}
             </Tbody>
+            <Pagination
+              itemCount={cases.length}
+              perPage={perPage}
+              page={page}
+              onSetPage={onSetPage}
+              widgetId="compact-example"
+              onPerPageSelect={onPerPageSelect}
+              isCompact
+            />
           </Table>
         </>
       )}
