@@ -180,19 +180,12 @@ const SupportPanel: React.FunctionComponent = () => {
             <Tbody>
               {cases.map((c) => (
                 <Tr key={c.id}>
-                  <Td
-                    dataLabel={columnNames.summary}
-                    className="pf-v6-u-text-wrap"
-                  >
-                    <Button
-                      variant="link"
-                      icon={<ExternalLinkAltIcon />}
-                      iconPosition="end"
-                      component="a"
+                  <Td dataLabel={columnNames.summary} modifier="wrap">
+                    <a
                       href={`https://access.redhat.com/support/cases/#/case/${c.caseNumber}`}
                     >
-                      {c.summary}
-                    </Button>
+                      {c.summary} <ExternalLinkAltIcon key="icon" />
+                    </a>
                   </Td>
                   <Td dataLabel={columnNames.status}>
                     {statusIcons(c.status)}
@@ -200,16 +193,16 @@ const SupportPanel: React.FunctionComponent = () => {
                 </Tr>
               ))}
             </Tbody>
-            <Pagination
-              itemCount={cases.length}
-              perPage={perPage}
-              page={page}
-              onSetPage={onSetPage}
-              widgetId="compact-example"
-              onPerPageSelect={onPerPageSelect}
-              isCompact
-            />
           </Table>
+          <Pagination
+            itemCount={cases.length}
+            perPage={perPage}
+            page={page}
+            onSetPage={onSetPage}
+            widgetId="compact-example"
+            onPerPageSelect={onPerPageSelect}
+            isCompact
+          />
         </>
       )}
     </>
