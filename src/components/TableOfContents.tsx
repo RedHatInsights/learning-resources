@@ -1,6 +1,8 @@
 import { JumpLinks, JumpLinksItem } from '@patternfly/react-core';
 import * as React from 'react';
 
+const SCROLL_ANIMATION_DURATION = 1000; // ms to wait for scroll animation completion
+
 const TableOfContents: React.FC<{
   defaultActive: string;
   linkItems: { id: string; label: React.ReactNode }[];
@@ -88,7 +90,8 @@ const TableOfContents: React.FC<{
 
       if (!scrollContainer) {
         const targetRect = targetElement.getBoundingClientRect();
-        const scrollOffset = window.scrollY + targetRect.top - 100;
+        const scrollOffset =
+          window.scrollY + targetRect.top - window.innerHeight * 0.1;
 
         window.scrollTo({
           top: scrollOffset,
@@ -111,7 +114,7 @@ const TableOfContents: React.FC<{
       // Reset flag after scroll animation completes
       setTimeout(() => {
         isClickingRef.current = false; // Re-enable intersection observer
-      }, 1000);
+      }, SCROLL_ANIMATION_DURATION);
 
       // Update URL hash for browser history
       window.history.replaceState(
