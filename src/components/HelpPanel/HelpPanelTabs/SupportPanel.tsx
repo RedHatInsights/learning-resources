@@ -109,18 +109,26 @@ const SupportPanel: React.FunctionComponent = () => {
 
     try {
       const response = await fetch(getUrl(chrome.getEnvironment()), options);
-      const { cases } = await response.json();
+      const data = await response.json();
+      const { cases } = data;
 
-      cases.sort(
-        (a: { lastModifiedDate: number }, b: { lastModifiedDate: number }) =>
-          new Date(b.lastModifiedDate).getTime() -
-          new Date(a.lastModifiedDate).getTime()
-      );
 
-      setCases(cases || []);
+      if (cases && Array.isArray(cases)) {
+        cases.sort(
+          (a: { lastModifiedDate: number }, b: { lastModifiedDate: number }) =>
+            new Date(b.lastModifiedDate).getTime() -
+            new Date(a.lastModifiedDate).getTime()
+        );
+        setCases(cases);
+      } else {
+        setCases([]);
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Unable to fetch support cases', error);
+      setCases([]);
+      setIsLoading(false);
     }
   };
 
