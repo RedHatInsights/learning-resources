@@ -1,27 +1,27 @@
-import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import {
-  Stack,
-  StackItem,
-  Content,
   Button,
-  Select,
-  SelectOption,
-  SelectList,
-  MenuToggle,
-  MenuToggleElement,
   Checkbox,
-  Label,
+  Content,
+  DataList,
+  DataListCell,
+  DataListItem,
+  DataListItemCells,
+  DataListItemRow,
   Flex,
   FlexItem,
+  Label,
+  MenuToggle,
+  MenuToggleElement,
+  Pagination,
+  Select,
+  SelectList,
+  SelectOption,
+  Spinner,
+  Stack,
+  StackItem,
   ToggleGroup,
   ToggleGroupItem,
-  Spinner,
-  DataList,
-  DataListItem,
-  DataListItemRow,
-  DataListItemCells,
-  DataListCell,
-  Pagination,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
@@ -30,7 +30,10 @@ import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome'
 import { suspenseLoader as useSuspenseLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
 import fetchAllData from '../../../utils/fetchAllData';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
-import { BookmarkedIcon, OutlinedBookmarkedIcon } from '../../common/BookmarkIcon';
+import {
+  BookmarkedIcon,
+  OutlinedBookmarkedIcon,
+} from '../../common/BookmarkIcon';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import axios from 'axios';
 import { API_BASE, FAVORITES } from '../../../hooks/useQuickStarts';
@@ -46,8 +49,9 @@ const CONTENT_TYPE_OPTIONS = [
 // Bundle name mapping to get abbreviated names
 const getBundleDisplayName = (bundleValue: string): string => {
   const fullName = FiltersMetadata[bundleValue];
-  if (!fullName) return bundleValue.charAt(0).toUpperCase() + bundleValue.slice(1);
-  
+  if (!fullName)
+    return bundleValue.charAt(0).toUpperCase() + bundleValue.slice(1);
+
   // Extract abbreviated name by taking the part before parentheses
   return fullName.split(' (')[0];
 };
@@ -63,14 +67,14 @@ const LearningResourceItem: React.FC<{
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     try {
       const user = await chrome.auth.getUser();
       if (!user) {
         throw new Error('User not logged in');
       }
       const account = user.identity.internal?.account_id;
-      
+
       setIsBookmarked(!isBookmarked);
       await axios.post(`${API_BASE}/${FAVORITES}?account=${account}`, {
         quickstartName: resource.metadata.name,
@@ -90,10 +94,14 @@ const LearningResourceItem: React.FC<{
     }
   };
 
-  const bundleTags = resource.metadata.tags?.filter((tag: any) => tag.kind === 'bundle') || [];
+  const bundleTags =
+    resource.metadata.tags?.filter((tag) => tag.kind === 'bundle') || [];
 
   return (
-    <Flex alignItems={{ default: 'alignItemsFlexStart' }} spaceItems={{ default: 'spaceItemsSm' }}>
+    <Flex
+      alignItems={{ default: 'alignItemsFlexStart' }}
+      spaceItems={{ default: 'spaceItemsSm' }}
+    >
       <FlexItem>
         <Button
           variant="plain"
@@ -102,12 +110,12 @@ const LearningResourceItem: React.FC<{
             isBookmarked ? (
               <BookmarkedIcon />
             ) : (
-                <OutlinedBookmarkedIcon className="pf-v6-t-color-100" />
+              <OutlinedBookmarkedIcon className="pf-v6-t-color-100" />
             )
           }
         />
       </FlexItem>
-      
+
       <FlexItem flex={{ default: 'flex_1' }}>
         <Stack hasGutter={false}>
           <StackItem>
@@ -118,22 +126,24 @@ const LearningResourceItem: React.FC<{
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
             >
               {resource.spec.displayName}
-              {resource.spec.link?.href && resource.spec.type?.text !== 'Quick start' && (
-                <ExternalLinkAltIcon className="pf-v6-u-ml-xs" />
-              )}
+              {resource.spec.link?.href &&
+                resource.spec.type?.text !== 'Quick start' && (
+                  <ExternalLinkAltIcon className="pf-v6-u-ml-xs" />
+                )}
             </Button>
           </StackItem>
           <StackItem>
-            <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+            <Flex
+              justifyContent={{ default: 'justifyContentSpaceBetween' }}
+              alignItems={{ default: 'alignItemsCenter' }}
+            >
               <FlexItem>
-                <Content component="small">
-                  {resource.spec.type?.text}
-                </Content>
+                <Content component="small">{resource.spec.type?.text}</Content>
               </FlexItem>
               {bundleTags.length > 0 && (
                 <FlexItem>
                   <Flex spaceItems={{ default: 'spaceItemsXs' }}>
-                    {bundleTags.map((tag: any, index: number) => (
+                    {bundleTags.map((tag, index: number) => (
                       <FlexItem key={index}>
                         <Label color="grey" variant="filled" isCompact>
                           {getBundleDisplayName(tag.value)}
@@ -157,14 +167,18 @@ const LearnPanelContent: React.FC<{
   const chrome = useChrome();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
   const [isContentTypeOpen, setIsContentTypeOpen] = useState(false);
-  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(
+    []
+  );
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [bundleTitle, setBundleTitle] = useState<string>('');
   const [bundleId, setBundleId] = useState<string>('');
-  const [allQuickStarts, setAllQuickStarts] = useState<ExtendedQuickstart[]>([]);
+  const [allQuickStarts, setAllQuickStarts] = useState<ExtendedQuickstart[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Pagination state
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -177,7 +191,8 @@ const LearnPanelContent: React.FC<{
         // FIXME: Add missing type to the types lib
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        const { bundleTitle: currentBundleTitle, bundleId: currentBundleId } = chrome.getBundleData();
+        const { bundleTitle: currentBundleTitle, bundleId: currentBundleId } =
+          chrome.getBundleData();
         setBundleTitle(currentBundleTitle);
         setBundleId(currentBundleId);
 
@@ -195,7 +210,10 @@ const LearnPanelContent: React.FC<{
   }, [chrome, loader]);
 
   // Check if we're on the home page (no specific bundle context)
-  const isHomePage = !bundleTitle || bundleTitle.toLowerCase() === 'home' || bundleTitle.toLowerCase() === 'landing';
+  const isHomePage =
+    !bundleTitle ||
+    bundleTitle.toLowerCase() === 'home' ||
+    bundleTitle.toLowerCase() === 'landing';
 
   const displayBundleName = bundleId ? getBundleDisplayName(bundleId) : '';
 
@@ -207,7 +225,9 @@ const LearnPanelContent: React.FC<{
     if (activeToggle === 'bundle' && !isHomePage) {
       const currentBundleId = bundleId;
       filtered = filtered.filter((resource: ExtendedQuickstart) => {
-        const bundleTag = resource.metadata.tags?.find((tag: any) => tag.kind === 'bundle');
+        const bundleTag = resource.metadata.tags?.find(
+          (tag) => tag.kind === 'bundle'
+        );
         return bundleTag?.value === currentBundleId;
       });
     }
@@ -215,19 +235,30 @@ const LearnPanelContent: React.FC<{
     // Filter by content type
     if (selectedContentTypes.length > 0) {
       filtered = filtered.filter((resource: ExtendedQuickstart) => {
-        if (selectedContentTypes.includes('documentation') && resource.metadata.externalDocumentation) {
+        if (
+          selectedContentTypes.includes('documentation') &&
+          resource.metadata.externalDocumentation
+        ) {
           return true;
         }
-        if (selectedContentTypes.includes('learningPath') && resource.metadata.learningPath) {
+        if (
+          selectedContentTypes.includes('learningPath') &&
+          resource.metadata.learningPath
+        ) {
           return true;
         }
-        if (selectedContentTypes.includes('otherResource') && resource.metadata.otherResource) {
+        if (
+          selectedContentTypes.includes('otherResource') &&
+          resource.metadata.otherResource
+        ) {
           return true;
         }
-        if (selectedContentTypes.includes('quickstart') && 
-            !resource.metadata.externalDocumentation && 
-            !resource.metadata.learningPath && 
-            !resource.metadata.otherResource) {
+        if (
+          selectedContentTypes.includes('quickstart') &&
+          !resource.metadata.externalDocumentation &&
+          !resource.metadata.learningPath &&
+          !resource.metadata.otherResource
+        ) {
           return true;
         }
         return false;
@@ -236,11 +267,20 @@ const LearnPanelContent: React.FC<{
 
     // Filter by bookmark status
     if (showBookmarkedOnly) {
-      filtered = filtered.filter((resource: ExtendedQuickstart) => resource.metadata.favorite);
+      filtered = filtered.filter(
+        (resource: ExtendedQuickstart) => resource.metadata.favorite
+      );
     }
 
     return filtered;
-  }, [allQuickStarts, activeToggle, selectedContentTypes, showBookmarkedOnly, isHomePage, bundleId]);
+  }, [
+    allQuickStarts,
+    activeToggle,
+    selectedContentTypes,
+    showBookmarkedOnly,
+    isHomePage,
+    bundleId,
+  ]);
 
   // Paginated resources
   const paginatedResources = useMemo(() => {
@@ -254,7 +294,10 @@ const LearnPanelContent: React.FC<{
     setPage(1);
   }, [activeToggle, selectedContentTypes, showBookmarkedOnly, bundleId]);
 
-  const handleSetPage = (_event: React.MouseEvent | React.KeyboardEvent | MouseEvent, newPage: number) => {
+  const handleSetPage = (
+    _event: React.MouseEvent | React.KeyboardEvent | MouseEvent,
+    newPage: number
+  ) => {
     setPage(newPage);
   };
 
@@ -287,15 +330,23 @@ const LearnPanelContent: React.FC<{
   };
 
   const handleRemoveContentType = (contentType: string) => {
-    setSelectedContentTypes((prev) => prev.filter((item) => item !== contentType));
+    setSelectedContentTypes((prev) =>
+      prev.filter((item) => item !== contentType)
+    );
   };
 
-  const handleBookmarkToggle = (_event: React.FormEvent<HTMLInputElement>, checked: boolean) => {
+  const handleBookmarkToggle = (
+    _event: React.FormEvent<HTMLInputElement>,
+    checked: boolean
+  ) => {
     setShowBookmarkedOnly(checked);
   };
 
   const handleToggleChange = (
-    _event: React.MouseEvent<any, MouseEvent> | React.KeyboardEvent<Element> | MouseEvent,
+    _event:
+      | React.MouseEvent<MouseEvent>
+      | React.KeyboardEvent<Element>
+      | MouseEvent,
     isSelected: boolean,
     value: string
   ) => {
@@ -316,7 +367,10 @@ const LearnPanelContent: React.FC<{
   };
 
   const getContentTypeLabel = (value: string) => {
-    return CONTENT_TYPE_OPTIONS.find(option => option.value === value)?.label || value;
+    return (
+      CONTENT_TYPE_OPTIONS.find((option) => option.value === value)?.label ||
+      value
+    );
   };
 
   const contentTypeToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
@@ -326,7 +380,10 @@ const LearnPanelContent: React.FC<{
       isExpanded={isContentTypeOpen}
       style={{ width: '100%' }}
     >
-      <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+      <Flex
+        alignItems={{ default: 'alignItemsCenter' }}
+        spaceItems={{ default: 'spaceItemsSm' }}
+      >
         <FlexItem>Content type</FlexItem>
         {selectedContentTypes.length > 0 && (
           <FlexItem>
@@ -351,8 +408,8 @@ const LearnPanelContent: React.FC<{
     <Stack hasGutter className="pf-v6-u-h-100">
       <StackItem>
         <Content>
-          Find product documentation, quick starts, learning paths, and more. For a
-          more detailed view, browse the{' '}
+          Find product documentation, quick starts, learning paths, and more.
+          For a more detailed view, browse the{' '}
           <Button
             variant="link"
             component="a"
@@ -403,11 +460,14 @@ const LearnPanelContent: React.FC<{
               </FlexItem>
             </Flex>
           </StackItem>
-          
+
           {/* Filter chips directly below dropdown */}
           {selectedContentTypes.length > 0 && (
             <StackItem className="pf-v6-u-mt-sm">
-              <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsXs' }}>
+              <Flex
+                alignItems={{ default: 'alignItemsCenter' }}
+                spaceItems={{ default: 'spaceItemsXs' }}
+              >
                 {selectedContentTypes.map((contentType) => (
                   <FlexItem key={contentType}>
                     <Label
@@ -439,27 +499,29 @@ const LearnPanelContent: React.FC<{
         <Toolbar id="learning-resources-results-toolbar">
           <ToolbarContent>
             <ToolbarItem>
-                  <Content>
-                    Learning resources ({filteredResources.length})
-                  </Content>
-                </ToolbarItem>
-                <ToolbarItem>
-                {!isHomePage && (
-                    <ToggleGroup aria-label="Filter by scope">
-                      <ToggleGroupItem
-                        text="All"
-                        buttonId="all-toggle"
-                        isSelected={activeToggle === 'all'}
-                        onChange={(event, isSelected) => handleToggleChange(event, isSelected, 'all')}
-                      />
-                      <ToggleGroupItem
-                        text={displayBundleName}
-                        buttonId="bundle-toggle"
-                        isSelected={activeToggle === 'bundle'}
-                        onChange={(event, isSelected) => handleToggleChange(event, isSelected, 'bundle')}
-                      />
-                    </ToggleGroup>
-                )}
+              <Content>Learning resources ({filteredResources.length})</Content>
+            </ToolbarItem>
+            <ToolbarItem>
+              {!isHomePage && (
+                <ToggleGroup aria-label="Filter by scope">
+                  <ToggleGroupItem
+                    text="All"
+                    buttonId="all-toggle"
+                    isSelected={activeToggle === 'all'}
+                    onChange={(event, isSelected) =>
+                      handleToggleChange(event, isSelected, 'all')
+                    }
+                  />
+                  <ToggleGroupItem
+                    text={displayBundleName}
+                    buttonId="bundle-toggle"
+                    isSelected={activeToggle === 'bundle'}
+                    onChange={(event, isSelected) =>
+                      handleToggleChange(event, isSelected, 'bundle')
+                    }
+                  />
+                </ToggleGroup>
+              )}
             </ToolbarItem>
           </ToolbarContent>
         </Toolbar>
