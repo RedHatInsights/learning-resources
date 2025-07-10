@@ -112,7 +112,6 @@ const SupportPanel: React.FunctionComponent = () => {
       const data = await response.json();
       const { cases } = data;
 
-
       if (cases && Array.isArray(cases)) {
         cases.sort(
           (a: { lastModifiedDate: number }, b: { lastModifiedDate: number }) =>
@@ -123,7 +122,7 @@ const SupportPanel: React.FunctionComponent = () => {
       } else {
         setCases([]);
       }
-      
+
       setIsLoading(false);
     } catch (error) {
       console.error('Unable to fetch support cases', error);
