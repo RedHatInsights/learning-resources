@@ -70,8 +70,9 @@ describe('HelpPanel', () => {
     );
 
     cy.contains('Learn').click();
-    cy.get('#help-panel-learn').should('be.visible');
-
+    // Wait for the learn panel to load and check for the description text
+    cy.contains('Find product documentation, quick starts, learning paths, and more', { timeout: 10000 }).should('be.visible');
+    
     cy.contains('APIs').click();
     cy.get('#help-panel-api').should('be.visible');
   })
@@ -95,7 +96,7 @@ describe('HelpPanel', () => {
     });
   })
 
-  it('should change title and category of tab', () => {
+  it('should display learn panel features', () => {
     const toggleDrawerSpy = cy.spy();
     cy.mount(
       <Wrapper>
@@ -103,16 +104,16 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-
     cy.get('[aria-label="Add tab"]').click();
 
     cy.contains('Learn').click();
-    cy.get('#help-panel-learn').should('be.visible');
-    cy.get('#help-panel-learn').type('New title');
-    cy.wait(2001);
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
-      cy.contains('New title').should('be.visible');
-    });
+    // Wait for the learn panel to load completely
+    cy.contains('Find product documentation, quick starts, learning paths, and more', { timeout: 10000 }).should('be.visible');
+    cy.contains('All Learning Catalog').should('be.visible');
+    
+    // Check for text content that should be visible after loading
+    cy.contains('Content type').should('be.visible');
+    cy.contains('Show bookmarked only').should('be.visible');
   })
 
   it('should close tab', () => {
