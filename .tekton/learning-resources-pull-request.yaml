@@ -38,7 +38,7 @@ spec:
       
       npm install
       npm run lint
-      npm test --  --runInBand --no-cache
+      npm test
   pipelineRef:
     name: docker-build
   taskRunTemplate:
