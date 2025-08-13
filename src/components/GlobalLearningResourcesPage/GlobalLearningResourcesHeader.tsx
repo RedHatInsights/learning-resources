@@ -15,7 +15,7 @@ export const GlobalLearningResourcesHeader = () => {
         className="pf-v6-u-ml-lg pf-v6-u-mr-lg lr-c-global-learning-resources-page__header--image"
         width="48px"
         height="48px"
-        src="/apps/frontend-assets/learning-resources/LearningResources.svg"
+        src="/apps/frontend-assets/technology-icons/learning-resources.svg"
         alt="Learning resources icon"
       />
       <Divider
