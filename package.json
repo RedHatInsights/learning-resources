@@ -16,7 +16,6 @@
     "patch:hosts": "fec patch-etc-hosts",
     "start": "fec dev-proxy",
     "static": "fec static",
-    "test": "TZ=UTC jest --verbose --no-cache --passWithNoTests",
     "verify": "npm-run-all build lint test",
     "postinstall": "ts-patch install"
   },
@@ -41,6 +40,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.12",
     "@redhat-cloud-services/frontend-components-config": "^6.7.4",
     "@redhat-cloud-services/tsc-transform-imports": "^1.0.26",
