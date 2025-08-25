@@ -214,6 +214,7 @@ test.describe('all learning resources', async () => {
 
     const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     expect(cards.length).toEqual(actualCount);
+
     for (const card of cards) {
         await expect(card.getByText('Observability')).toBeVisible();
     }
