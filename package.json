@@ -15,8 +15,9 @@
     "lint:js:fix": "eslint src --fix",
     "patch:hosts": "fec patch-etc-hosts",
     "start": "fec dev-proxy",
+    "start:konflux": "HOT=true fec dev --clouddotEnv=stage",
     "static": "fec static",
-    "test": "TZ=UTC jest --verbose --no-cache --passWithNoTests",
+    "test:konflux": "npx cypress run --env CLOUDDOT_ENV=stage --spec cypress/e2e/release-gate/**/*",
     "verify": "npm-run-all build lint test",
     "postinstall": "ts-patch install"
   },
