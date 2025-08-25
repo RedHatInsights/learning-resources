@@ -12,12 +12,12 @@ export default defineConfig({
 
   e2e: {
     blockHosts: ['consent.trustarc.com'],
-    baseUrl: process.env.CYPRESS_BASE_URL || "http://stage.foo.redhat.com:1337",
+    baseUrl: process.env.CYPRESS_BASE_URL || "https://stage.foo.redhat.com:1337",
     env: {
       E2E_USER: process.env.E2E_USER,
       E2E_PASSWORD: process.env.E2E_PASSWORD,
     },
-    // To avoid any flaky issues we set the timeouts to be extra gracious
+    // To avoid any flaky issues, we set the timeouts to be extra gracious
     // Slow tests are faster than rerunning flaky tests
     defaultCommandTimeout: 60000,
     requestTimeout: 60000,
@@ -27,9 +27,12 @@ export default defineConfig({
     // required for the SSO redirect
     chromeWebSecurity: false,
     video: false,
+    // setupNodeEvents(on, config) {
+    //   require('cypress-localstorage-commands/plugin')(on, config);
+    //   return config;
+    //   // implement node event listeners here
+    // },
     setupNodeEvents(on, config) {
-      require('cypress-localstorage-commands/plugin')(on, config);
-      return config;
       // implement node event listeners here
     },
   },

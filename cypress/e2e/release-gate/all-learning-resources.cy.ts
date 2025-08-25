@@ -4,10 +4,15 @@ describe('All Learning Resources', () => {
 
   it('appears in the help menu and the link works', () => {});
   it('appears in search results', () => {});
-  it('loads when navigated to', () => {});
+  it('loads when navigated to', () => {
+   cy.visit('/learning-resources');
+  });
 
   it('has the appropriate number of items on the tab', () => {
-    // go to all learning resources page
+    // go to All Learning Resources page
+    cy.login();
+    cy.visit('/learning-resources');
+
     // confirm that 50 items appear on the 'All learning resources' tab
 
   });
