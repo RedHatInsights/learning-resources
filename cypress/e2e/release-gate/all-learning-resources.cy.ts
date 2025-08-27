@@ -2,10 +2,10 @@
 
 describe('All Learning Resources', () => {
 
-  it('appears in the help menu and the link works', () => {});
-  it('appears in search results', () => {});
-  it('loads when navigated to', () => {
-   cy.visit('/learning-resources');
+  it('appears in the help menu and the link works', () => {
+    cy.login();
+    cy.get('#HelpMenu').click().contains('All learning resources').click();
+    cy.url().should('include','/learning-resources');
   });
 
   it('has the appropriate number of items on the tab', () => {
@@ -28,16 +28,20 @@ describe('All Learning Resources', () => {
     })
   });
 
-  it('performs basic filtering by name', () => {});
+  // == The following tests are prio 2 and can be implemented at a later time
 
-  it('filters by product family', () => {});
+  it.skip('appears in search results', () => {});
 
-  it('filters by console-wide services', () => {});
+  it.skip('performs basic filtering by name', () => {});
 
-  it('filters by content type', () => {});
+  it.skip('filters by product family', () => {});
 
-  it('filters by use case', () => {});
+  it.skip('filters by console-wide services', () => {});
 
-  it('displays bookmarked resources', () => {});
+  it.skip('filters by content type', () => {});
+
+  it.skip('filters by use case', () => {});
+
+  it.skip('displays bookmarked resources', () => {});
 
 })
