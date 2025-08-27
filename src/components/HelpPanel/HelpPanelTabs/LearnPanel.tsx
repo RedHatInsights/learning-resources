@@ -202,7 +202,6 @@ const LearnPanelContent: React.FC<{
         setIsLoading(false);
       } catch (error) {
         console.error('Failed to load learning resources data:', error);
-        setIsLoading(false);
       }
     };
 
@@ -400,10 +399,6 @@ const LearnPanelContent: React.FC<{
     setSelectedContentTypes([]);
   };
 
-  if (isLoading) {
-    return <Spinner size="lg" />;
-  }
-
   return (
     <Stack hasGutter className="pf-v6-u-h-100">
       <StackItem>
@@ -494,81 +489,94 @@ const LearnPanelContent: React.FC<{
         </Stack>
       </StackItem>
 
-      {/* Toolbar with results count and toggle group */}
-      <StackItem>
-        <Toolbar id="learning-resources-results-toolbar">
-          <ToolbarContent>
-            <ToolbarItem>
-              <Content>Learning resources ({filteredResources.length})</Content>
-            </ToolbarItem>
-            <ToolbarItem>
-              {!isHomePage && (
-                <ToggleGroup aria-label="Filter by scope">
-                  <ToggleGroupItem
-                    text="All"
-                    buttonId="all-toggle"
-                    isSelected={activeToggle === 'all'}
-                    onChange={(event, isSelected) =>
-                      handleToggleChange(event, isSelected, 'all')
-                    }
-                  />
-                  <ToggleGroupItem
-                    text={displayBundleName}
-                    buttonId="bundle-toggle"
-                    isSelected={activeToggle === 'bundle'}
-                    onChange={(event, isSelected) =>
-                      handleToggleChange(event, isSelected, 'bundle')
-                    }
-                  />
-                </ToggleGroup>
-              )}
-            </ToolbarItem>
-          </ToolbarContent>
-        </Toolbar>
-      </StackItem>
-
-      {/* Learning resources list with PatternFly List component */}
-      <StackItem isFilled className="pf-v6-u-overflow-hidden">
-        <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
-          {filteredResources.length > 0 ? (
-            <DataList aria-label="Learning resources">
-              {paginatedResources.map((resource: ExtendedQuickstart) => (
-                <DataListItem key={resource.metadata.name}>
-                  <DataListItemRow>
-                    <DataListItemCells
-                      dataListCells={[
-                        <DataListCell key="resource-content" isFilled>
-                          <LearningResourceItem
-                            resource={resource}
-                            onBookmarkToggle={handleBookmarkItemToggle}
-                          />
-                        </DataListCell>,
-                      ]}
-                    />
-                  </DataListItemRow>
-                </DataListItem>
-              ))}
-            </DataList>
-          ) : (
-            <Content>
-              <p>No learning resources found matching your criteria.</p>
-            </Content>
-          )}
-        </div>
-      </StackItem>
-
-      {/* Pagination */}
-      {filteredResources.length > 0 && (
-        <StackItem>
-          <Pagination
-            itemCount={filteredResources.length}
-            perPage={perPage}
-            page={page}
-            onSetPage={handleSetPage}
-            onPerPageSelect={handlePerPageSelect}
-            isCompact
-          />
+      {isLoading ? (
+        <StackItem
+          isFilled
+          className="pf-v6-u-display-flex pf-v6-u-justify-content-center pf-v6-u-align-items-center"
+        >
+          <Spinner size="lg" />
         </StackItem>
+      ) : (
+        <>
+          {/* Toolbar with results count and toggle group */}
+          <StackItem>
+            <Toolbar id="learning-resources-results-toolbar">
+              <ToolbarContent>
+                <ToolbarItem>
+                  <Content>
+                    Learning resources ({filteredResources.length})
+                  </Content>
+                </ToolbarItem>
+                <ToolbarItem>
+                  {!isHomePage && (
+                    <ToggleGroup aria-label="Filter by scope">
+                      <ToggleGroupItem
+                        text="All"
+                        buttonId="all-toggle"
+                        isSelected={activeToggle === 'all'}
+                        onChange={(event, isSelected) =>
+                          handleToggleChange(event, isSelected, 'all')
+                        }
+                      />
+                      <ToggleGroupItem
+                        text={displayBundleName}
+                        buttonId="bundle-toggle"
+                        isSelected={activeToggle === 'bundle'}
+                        onChange={(event, isSelected) =>
+                          handleToggleChange(event, isSelected, 'bundle')
+                        }
+                      />
+                    </ToggleGroup>
+                  )}
+                </ToolbarItem>
+              </ToolbarContent>
+            </Toolbar>
+          </StackItem>
+
+          {/* Learning resources list with PatternFly List component */}
+          <StackItem isFilled className="pf-v6-u-overflow-hidden">
+            <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
+              {filteredResources.length > 0 ? (
+                <DataList aria-label="Learning resources">
+                  {paginatedResources.map((resource: ExtendedQuickstart) => (
+                    <DataListItem key={resource.metadata.name}>
+                      <DataListItemRow>
+                        <DataListItemCells
+                          dataListCells={[
+                            <DataListCell key="resource-content" isFilled>
+                              <LearningResourceItem
+                                resource={resource}
+                                onBookmarkToggle={handleBookmarkItemToggle}
+                              />
+                            </DataListCell>,
+                          ]}
+                        />
+                      </DataListItemRow>
+                    </DataListItem>
+                  ))}
+                </DataList>
+              ) : (
+                <Content>
+                  <p>No learning resources found matching your criteria.</p>
+                </Content>
+              )}
+            </div>
+          </StackItem>
+
+          {/* Pagination */}
+          {filteredResources.length > 0 && (
+            <StackItem>
+              <Pagination
+                itemCount={filteredResources.length}
+                perPage={perPage}
+                page={page}
+                onSetPage={handleSetPage}
+                onPerPageSelect={handlePerPageSelect}
+                isCompact
+              />
+            </StackItem>
+          )}
+        </>
       )}
     </Stack>
   );
