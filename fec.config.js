@@ -4,6 +4,12 @@ module.exports = {
   appUrl: [
     '/settings/learning-resources',
     '/openshift/learning-resources',
+    '/ansible/learning-resources',
+    '/insights/learning-resources',
+    '/edge/learning-resources',
+    '/iam/learning-resources',
+    '/learning-resources',
+    '/learning-resources/creator',
     '/staging/global-learning-resources-page',
   ],
   debug: true,
@@ -45,5 +51,4 @@ module.exports = {
       },
     ],
   },
-  frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),
 };
