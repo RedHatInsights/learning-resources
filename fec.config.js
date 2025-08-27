@@ -10,7 +10,6 @@ module.exports = {
     '/iam/learning-resources',
     '/learning-resources',
     '/learning-resources/creator',
-    '/staging/global-learning-resources-page',
   ],
   debug: true,
   useProxy: true,
