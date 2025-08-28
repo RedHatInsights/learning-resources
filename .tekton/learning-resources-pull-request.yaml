@@ -44,7 +44,7 @@ spec:
       #!/usr/bin/env bash
       set -ex
       npm i >/dev/null 2>&1
-      KONFLUX_RUN=$KONFLUX_RUN npm run dev:beta &
+      npm run start:konflux &
       until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
         sleep 5
