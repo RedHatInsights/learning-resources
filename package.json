@@ -15,6 +15,7 @@
     "lint:js:fix": "eslint src --fix",
     "patch:hosts": "fec patch-etc-hosts",
     "start": "HOT=true fec dev",
+    "start:konflux": "HOT=true fec dev --clouddotEnv=stage",
     "static": "fec static",
     "test": "TZ=UTC jest --verbose --no-cache --passWithNoTests",
     "verify": "npm-run-all build lint test",
