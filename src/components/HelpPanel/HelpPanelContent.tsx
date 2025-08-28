@@ -18,7 +18,9 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           Help
           <Button
             variant="link"
-            onClick={() => window.open('https://status.redhat.com/', '_blank')}
+            component="a"
+            href="https://status.redhat.com/"
+            target="_blank"
             isInline
             className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md"
             icon={<ExternalLinkAltIcon />}
