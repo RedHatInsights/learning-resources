@@ -50,11 +50,18 @@ spec:
         sleep 5
       done
       echo "Dev server ready!"
-      KONFLUX_RUN=$KONFLUX_RUN NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npx cypress run --spec "cypress/e2e/**/*"
+      KONFLUX_RUN=1 NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npm run test:konflux
   pipelineRef:
     name: docker-build
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
+    podTemplate:
+      hostAliases:
+        # Webpack explicitly binds to this address; don't remove or change this without careful consideration
+        - ip: "127.0.0.1"
+          hostnames:
+            - "stage.foo.redhat.com"
+            - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
