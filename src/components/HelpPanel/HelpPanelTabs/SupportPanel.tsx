@@ -194,7 +194,10 @@ const SupportPanel: React.FunctionComponent = () => {
                       {c.summary} <ExternalLinkAltIcon key="icon" />
                     </a>
                   </Td>
-                  <Td dataLabel={columnNames.status}>
+                  <Td
+                    dataLabel={columnNames.status}
+                    className="pf-v6-u-text-nowrap"
+                  >
                     {statusIcons(c.status)}
                   </Td>
                 </Tr>
