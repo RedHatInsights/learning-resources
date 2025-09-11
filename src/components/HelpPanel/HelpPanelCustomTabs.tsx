@@ -40,6 +40,7 @@ const subTabs: SubTab[] = [
   {
     title: 'Search',
     tabType: TabType.search,
+    featureFlag: 'platform.chrome.help-panel_search',
   },
   {
     title: 'Learn',
@@ -48,7 +49,7 @@ const subTabs: SubTab[] = [
   {
     title: 'Knowledge base',
     tabType: TabType.kb,
-    featureFlag: 'platform.help-panel.kb',
+    featureFlag: 'platform.chrome.help-panel_knowledge-base',
   },
   {
     title: 'APIs',

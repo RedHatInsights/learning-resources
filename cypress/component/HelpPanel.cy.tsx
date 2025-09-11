@@ -4,7 +4,7 @@ import * as chrome from '@redhat-cloud-services/frontend-components/useChrome';
 import HelpPanel from '../../src/components/HelpPanel';
 
 const defaultFlags: IConfig['bootstrap'] = [{
-      name: 'platform.help-panel.kb',
+      name: 'platform.chrome.help-panel_knowledge-base',
       enabled: true,
       impressionData: false,
       variant: {name: 'disabled', enabled: false},
