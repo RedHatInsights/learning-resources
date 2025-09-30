@@ -9,27 +9,34 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
+import { AskRedHatIcon } from '../common/AskRedHatIcon';
 
 const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
   return (
     <>
       <DrawerHead>
-        <Title headingLevel="h2">
-          Help
+        <Title headingLevel="h2">Help</Title>
+        <Button
+          variant="link"
+          component="a"
+          href="https://status.redhat.com/"
+          target="_blank"
+          isInline
+          className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal"
+          icon={<ExternalLinkAltIcon />}
+          iconPosition="end"
+        >
+          Red Hat status page
+        </Button>
+        <DrawerActions>
           <Button
             variant="link"
-            component="a"
-            href="https://status.redhat.com/"
-            target="_blank"
-            isInline
-            className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md"
-            icon={<ExternalLinkAltIcon />}
-            iconPosition="end"
+            className="pf-v6-u-align-items-flex-start"
+            href="#"
+            icon={<AskRedHatIcon width={20} height={20} />}
           >
-            Red Hat status page
+            Ask Red Hat
           </Button>
-        </Title>
-        <DrawerActions>
           <DrawerCloseButton onClick={toggleDrawer} />
         </DrawerActions>
       </DrawerHead>

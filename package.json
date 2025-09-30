@@ -14,7 +14,7 @@
     "lint:js": "eslint src",
     "lint:js:fix": "eslint src --fix",
     "patch:hosts": "fec patch-etc-hosts",
-    "start": "HOT=true fec dev",
+    "start": "fec dev-proxy",
     "static": "fec static",
     "test": "TZ=UTC jest --verbose --no-cache --passWithNoTests",
     "verify": "npm-run-all build lint test",
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.3",
-    "@redhat-cloud-services/frontend-components-config": "^6.6.0",
+    "@redhat-cloud-services/frontend-components-config": "^6.7.1",
     "@redhat-cloud-services/tsc-transform-imports": "^1.0.24",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.1.2",
