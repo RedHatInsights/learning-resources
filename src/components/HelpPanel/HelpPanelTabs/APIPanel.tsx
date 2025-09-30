@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Content,
@@ -23,33 +23,44 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import {
+  fetchBundleInfo,
+  fetchBundles,
+} from '../../../utils/fetchBundleInfoAPI';
 
-// This is a mock interface and data.
 interface APIDoc {
   name: string;
   services: string[];
   url: string;
 }
 
-const mockApiDocs: APIDoc[] = [
-  {
-    name: 'Provisioning API',
-    services: ['RHEL', 'Ansible'],
-    url: 'https://developers.redhat.com/api-catalog/provisioning',
-  },
-  {
-    name: 'Cost Management API',
-    services: ['OpenShift'],
-    url: 'https://developers.redhat.com/api-catalog/cost-management',
-  },
-  {
-    name: 'User Access API',
-    services: ['RHEL', 'Settings'],
-    url: 'https://developers.redhat.com/api-catalog/user-access',
-  },
-];
+const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
+  try {
+    const [bundleInfoList, bundles] = await Promise.all([
+      fetchBundleInfo(),
+      fetchBundles(),
+    ]);
 
-// API Item Component
+    return bundleInfoList.map((bundleInfo) => {
+      const services = bundleInfo.bundleLabels.map((bundleLabel) => {
+        const matchingBundle = bundles.find(
+          (bundle) => bundle.id === bundleLabel
+        );
+        return matchingBundle ? matchingBundle.title : bundleLabel;
+      });
+
+      return {
+        name: bundleInfo.frontendName,
+        services,
+        url: bundleInfo.url,
+      };
+    });
+  } catch (error) {
+    console.error('Error mapping bundle info with titles:', error);
+    return [];
+  }
+};
+
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const handleResourceClick = () => {
     window.open(resource.url, '_blank');
@@ -101,6 +112,16 @@ const APIPanelContent: React.FC = () => {
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [apiDocs, setApiDocs] = useState<APIDoc[]>([]);
+
+  useEffect(() => {
+    const loadApiDocs = async () => {
+      const docs = await mapBundleInfoWithTitles();
+      setApiDocs(docs);
+    };
+
+    loadApiDocs();
+  }, []);
 
   const {
     bundleId = '',
@@ -121,12 +142,12 @@ const APIPanelContent: React.FC = () => {
 
   const filteredResources = useMemo(() => {
     if (activeToggle === 'bundle' && !isHomePage) {
-      return mockApiDocs.filter((resource) =>
+      return apiDocs.filter((resource) =>
         resource.services.includes(displayBundleName)
       );
     }
-    return mockApiDocs;
-  }, [activeToggle, isHomePage, displayBundleName]);
+    return apiDocs;
+  }, [activeToggle, isHomePage, displayBundleName, apiDocs]);
 
   const paginatedResources = useMemo(() => {
     const startIndex = (page - 1) * perPage;
