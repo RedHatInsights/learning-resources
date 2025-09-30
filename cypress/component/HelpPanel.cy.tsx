@@ -86,6 +86,38 @@ describe('HelpPanel', () => {
 
   it('should display API panel features', () => {
     const toggleDrawerSpy = cy.spy();
+    
+    cy.intercept('GET', '/api/chrome-service/v1/static/api-specs-generated.json', {
+      statusCode: 200,
+      body: [
+        {
+          bundleLabels: ['rhel', 'ansible'],
+          frontendName: 'Provisioning API',
+          url: 'https://developers.redhat.com/api-catalog/provisioning',
+        },
+        {
+          bundleLabels: ['openshift'],
+          frontendName: 'Cost Management API',
+          url: 'https://developers.redhat.com/api-catalog/cost-management',
+        },
+        {
+          bundleLabels: ['rhel', 'settings'],
+          frontendName: 'User Access API',
+          url: 'https://developers.redhat.com/api-catalog/user-access',
+        },
+      ],
+    });
+
+    cy.intercept('GET', '/api/chrome-service/v1/static/bundles-generated.json', {
+      statusCode: 200,
+      body: [
+        { id: 'rhel', title: 'RHEL', navItems: [] },
+        { id: 'ansible', title: 'Ansible', navItems: [] },
+        { id: 'openshift', title: 'OpenShift', navItems: [] },
+        { id: 'settings', title: 'Settings', navItems: [] },
+      ],
+    });
+
     cy.stub(chrome, 'useChrome').returns({
       getBundleData: () => ({
         bundleId: 'rhel',
@@ -93,6 +125,7 @@ describe('HelpPanel', () => {
       }),
       getAvailableBundles: () => [{ id: 'rhel', title: 'RHEL' }],
     } as any);
+
     cy.mount(
       <Wrapper>
         <HelpPanel toggleDrawer={toggleDrawerSpy} />
@@ -102,13 +135,11 @@ describe('HelpPanel', () => {
     cy.contains('APIs').click();
     cy.contains('API Documentation').should('be.visible');
 
-    // Check for initial state
-    cy.contains('API Documentation (3)').should('be.visible');
+    cy.contains('API Documentation (3)', { timeout: 10000 }).should('be.visible');
     cy.contains('Provisioning API').should('be.visible');
     cy.contains('Cost Management API').should('be.visible');
     cy.contains('User Access API').should('be.visible');
 
-    // Check for bundle services
     cy.contains('RHEL').should('be.visible');
     cy.contains('Ansible').should('be.visible');
     cy.contains('OpenShift').should('be.visible');
