@@ -37,7 +37,6 @@ export const fetchBundles = async () => {
     const response = await axios.get<Bundle[]>(
       '/api/chrome-service/v1/static/bundles-generated.json'
     );
-    console.log(response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching bundles:', error);
