@@ -25,7 +25,6 @@ export const fetchBundleInfo = async () => {
     const response = await axios.get<BundleInfo[]>(
       '/api/chrome-service/v1/static/api-specs-generated.json'
     );
-    console.log(response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching bundle info:', error);
