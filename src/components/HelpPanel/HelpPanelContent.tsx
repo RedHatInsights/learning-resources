@@ -8,26 +8,34 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { useFlag } from '@unleash/proxy-client-react';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
 
 const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
+  const searchFlag = useFlag('platform.chrome.help-panel_search');
+  const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
+
+  const showStatusPageInHeader = searchFlag && kbFlag;
+
   return (
     <>
       <DrawerHead>
         <Title headingLevel="h2">
           Help
-          <Button
-            variant="link"
-            component="a"
-            href="https://status.redhat.com/"
-            target="_blank"
-            isInline
-            className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md"
-            icon={<ExternalLinkAltIcon />}
-            iconPosition="end"
-          >
-            Red Hat status page
-          </Button>
+          {showStatusPageInHeader && (
+            <Button
+              variant="link"
+              component="a"
+              href="https://status.redhat.com/"
+              target="_blank"
+              isInline
+              className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md"
+              icon={<ExternalLinkAltIcon />}
+              iconPosition="end"
+            >
+              Red Hat status page
+            </Button>
+          )}
         </Title>
         <DrawerActions>
           <DrawerCloseButton onClick={toggleDrawer} />

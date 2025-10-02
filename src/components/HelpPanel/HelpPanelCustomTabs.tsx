@@ -1,4 +1,10 @@
-import { Tab, TabTitleText, Tabs, debounce } from '@patternfly/react-core';
+import {
+  Button,
+  Tab,
+  TabTitleText,
+  Tabs,
+  debounce,
+} from '@patternfly/react-core';
 import React, {
   PropsWithChildren,
   ReactNode,
@@ -13,7 +19,8 @@ import classNames from 'classnames';
 import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
-import { useFlags } from '@unleash/proxy-client-react';
+import { useFlag, useFlags } from '@unleash/proxy-client-react';
+import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 
 type TabDefinition = {
   id: string;
@@ -147,6 +154,11 @@ const SubTabs = ({
       return true;
     });
   }, [flags, subTabs]);
+
+  const searchFlag = useFlag('platform.chrome.help-panel_search');
+  const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
+
+  const showStatusPageButton = !searchFlag && !kbFlag;
   return (
     <>
       <Tabs
@@ -160,13 +172,29 @@ const SubTabs = ({
           }
         }}
       >
-        {filteredSubTabs.map((tab) => (
-          <Tab
-            eventKey={tab.tabType}
-            key={tab.tabType}
-            title={<TabTitleText>{tab.title}</TabTitleText>}
-          />
-        ))}
+        <>
+          {filteredSubTabs.map((tab) => (
+            <Tab
+              eventKey={tab.tabType}
+              key={tab.tabType}
+              title={<TabTitleText>{tab.title}</TabTitleText>}
+            />
+          ))}
+          {showStatusPageButton && (
+            <Button
+              variant="link"
+              component="a"
+              href="https://status.redhat.com/"
+              target="_blank"
+              isInline
+              className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md lr-c-status-page-button"
+              icon={<ExternalLinkAltIcon />}
+              iconPosition="end"
+            >
+              Red Hat status page
+            </Button>
+          )}
+        </>
       </Tabs>
       {children}
     </>
