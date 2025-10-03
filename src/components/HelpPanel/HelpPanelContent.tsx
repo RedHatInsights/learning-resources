@@ -10,6 +10,7 @@ import {
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useFlag } from '@unleash/proxy-client-react';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
+import { AskRedHatIcon } from '../common/AskRedHatIcon';
 
 const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
   const searchFlag = useFlag('platform.chrome.help-panel_search');
@@ -38,6 +39,14 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           )}
         </Title>
         <DrawerActions>
+          <Button
+            variant="link"
+            className="pf-v6-u-align-items-flex-start"
+            href="#"
+            icon={<AskRedHatIcon width={20} height={20} />}
+          >
+            Ask Red Hat
+          </Button>
           <DrawerCloseButton onClick={toggleDrawer} />
         </DrawerActions>
       </DrawerHead>
