@@ -42,7 +42,9 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           <Button
             variant="link"
             className="pf-v6-u-align-items-flex-start"
-            href="#"
+            href="https://access.redhat.com/ask"
+            target="_blank"
+            rel="noopener noreferrer"
             icon={<AskRedHatIcon width={20} height={20} />}
           >
             Ask Red Hat
