@@ -21,6 +21,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           component="a"
           href="https://status.redhat.com/"
           target="_blank"
+          rel="noopener noreferrer"
           isInline
           className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal"
           icon={<ExternalLinkAltIcon />}
@@ -32,7 +33,9 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           <Button
             variant="link"
             className="pf-v6-u-align-items-flex-start"
-            href="#"
+            href="https://access.redhat.com/ask"
+            target="_blank"
+            rel="noopener noreferrer"
             icon={<AskRedHatIcon width={20} height={20} />}
           >
             Ask Red Hat
