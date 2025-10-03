@@ -41,6 +41,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
         <DrawerActions>
           <Button
             variant="link"
+            component="a"
             className="pf-v6-u-align-items-flex-start"
             href="https://access.redhat.com/ask"
             target="_blank"
