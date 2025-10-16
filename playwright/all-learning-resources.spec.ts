@@ -3,17 +3,19 @@ import { Page, test, expect } from '@playwright/test';
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
-  await page.getByLabel('Red Hat login').fill(user);
+  await page.getByLabel('Red Hat login').first().fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByLabel('Password').fill(password);
+  await page.getByLabel('Password').first().fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
+  // TODO: check for failed login
 }
 
 
 test('appears in the help menu and the link works', async({page}) => {
     await page.goto('https://console.stage.redhat.com');
-    const user = process.env.TEST_USER || 'test';
-    const password = process.env.TEST_PASSWORD || 'test';
+    const user = process.env.E2E_USER || 'test';
+    const password = process.env.E2E_PASSWORD || 'test';
     await login(page, user, password);
+    await page.waitForLoadState("load");
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
 });
