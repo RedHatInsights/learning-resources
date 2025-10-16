@@ -2,7 +2,7 @@ import { Page, test, expect } from '@playwright/test';
 
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
-  expect(page.locator("text=Lockdown"), 'proxy config incorrect').to_have_count(0)
+  await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
   await page.getByLabel('Red Hat login').fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Password').fill(password);
