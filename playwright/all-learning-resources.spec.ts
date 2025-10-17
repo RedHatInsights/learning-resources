@@ -19,14 +19,11 @@ test.describe('all learning resources', async () => {
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     await login(page, user, password);
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText('Invalid login')).not.toBeVisible();
   });
 
   test('appears in the help menu and the link works', async({page}) => {
-    const pageTextContent = await page.locator('body').textContent();
-    // Log the text content to the console
-    console.log('Page Text Content:', pageTextContent);
-
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 });
