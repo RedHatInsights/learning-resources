@@ -13,9 +13,10 @@ async function login(page: Page, user: string, password: string): Promise<void> 
 
 test('appears in the help menu and the link works', async({page}) => {
     await page.goto('https://console.stage.redhat.com');
-    const user = process.env.E2E_USER || 'test';
-    const password = process.env.E2E_PASSWORD || 'test';
+    const user = process.env.E2E_USER || 'misconfigured';
+    const password = process.env.E2E_PASSWORD || 'misconfigured';
     await login(page, user, password);
     await page.waitForLoadState("load");
+    await expect(page.getByText('Invalid login')).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
 });
