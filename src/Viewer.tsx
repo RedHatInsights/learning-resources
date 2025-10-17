@@ -60,7 +60,7 @@ export const Viewer = ({
     learningPaths.length +
     other.length;
 
-  chrome.updateDocumentTitle('Learning Resources');
+  chrome.updateDocumentTitle('LEARNING Resources');
   useEffect(() => {
     chrome.hideGlobalFilter(true);
   }, []);
@@ -184,7 +184,7 @@ export const Viewer = ({
                 filterMap={filterMap}
                 sectionCount={learningPaths.length}
                 sectionTitle="Learning paths"
-                sectionDescription="Collections of learning materials contributing to a common use case"
+                sectionDescription="Collections of LEARNING materials contributing to a common use case"
                 sectionQuickStarts={learningPaths}
               />
               <Divider className="pf-v6-u-mt-lg pf-v6-u-mb-lg" />
@@ -219,7 +219,7 @@ export const Viewer = ({
                   },
                   {
                     id: 'learning-paths',
-                    label: `Learning paths (${learningPaths.length})`,
+                    label: `LEARNING paths (${learningPaths.length})`,
                   },
                   {
                     id: 'other-content-types',
