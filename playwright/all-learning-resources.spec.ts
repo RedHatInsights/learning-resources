@@ -23,6 +23,10 @@ test.describe('all learning resources', async () => {
   });
 
   test('appears in the help menu and the link works', async({page}) => {
+    const pageTextContent = await page.locator('body').textContent();
+    // Log the text content to the console
+    console.log('Page Text Content:', pageTextContent);
+
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 });
