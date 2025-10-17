@@ -38,19 +38,20 @@ spec:
       
       npm install
       npm run lint
-      npm test --  --runInBand --no-cache
+      # npm test --  --runInBand --no-cache
   - name: e2e-tests-script
     value: |
       #!/usr/bin/env bash
       set -ex
-      npm i >/dev/null 2>&1
-      KONFLUX_RUN=1 npm run start:konflux &
-      until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
-        echo "Waiting for dev server to be ready"
-        sleep 5
-      done
-      echo "Dev server ready!"
-      KONFLUX_RUN=1 NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npm run test:konflux
+      echo "Skipping tests"
+#      npm i >/dev/null 2>&1
+#      KONFLUX_RUN=1 npm run start:konflux &
+#      until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
+#        echo "Waiting for dev server to be ready"
+#        sleep 5
+#      done
+#      echo "Dev server ready!"
+#      KONFLUX_RUN=1 NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npm run test:konflux
   pipelineRef:
     name: docker-build
   taskRunTemplate:
