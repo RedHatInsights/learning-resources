@@ -19,7 +19,7 @@ test.describe('all learning resources', async () => {
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     await login(page, user, password);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
   });
 
