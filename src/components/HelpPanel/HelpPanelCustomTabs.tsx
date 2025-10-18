@@ -171,6 +171,7 @@ const SubTabs = ({
             setActiveSubTabKey(eventKey);
           }
         }}
+        data-ouia-component-id="help-panel-subtabs"
       >
         <>
           {filteredSubTabs.map((tab) => (
@@ -178,6 +179,7 @@ const SubTabs = ({
               eventKey={tab.tabType}
               key={tab.tabType}
               title={<TabTitleText>{tab.title}</TabTitleText>}
+              data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
             />
           ))}
           {showStatusPageButton && (
@@ -190,6 +192,7 @@ const SubTabs = ({
               className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md lr-c-status-page-button"
               icon={<ExternalLinkAltIcon />}
               iconPosition="end"
+              data-ouia-component-id="help-panel-status-page-subtabs-button"
             >
               Red Hat status page
             </Button>
@@ -253,6 +256,19 @@ const HelpPanelCustomTabs = () => {
     }
   };
 
+  useEffect(() => {
+    // Ensure the Add tab button has a stable OUIA id
+    const addButton = document.querySelector(
+      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
+    ) as HTMLButtonElement | null;
+    if (addButton) {
+      addButton.setAttribute(
+        'data-ouia-component-id',
+        'help-panel-add-tab-button'
+      );
+    }
+  }, [tabs.length]);
+
   return (
     <Tabs
       className="lr-c-help-panel-custom-tabs"
@@ -271,6 +287,8 @@ const HelpPanelCustomTabs = () => {
           }
         }
       }}
+      data-ouia-component-id="help-panel-tabs"
+      addButtonAriaLabel="Add tab"
     >
       {tabs.map((tab) => (
         <Tab
@@ -282,6 +300,7 @@ const HelpPanelCustomTabs = () => {
           eventKey={tab.id}
           key={tab.id}
           title={<TabTitleText>{tab.title}</TabTitleText>}
+          data-ouia-component-id={`help-panel-tab-${tab.id}`}
         >
           <SubTabs
             activeSubTabKey={tab.tabType ?? TabType.learn}

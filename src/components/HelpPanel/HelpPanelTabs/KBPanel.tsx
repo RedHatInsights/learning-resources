@@ -18,6 +18,7 @@ const KBPanel = ({
         id="help-panel-kb"
         value={searchText}
         onChange={handleTextInputChange}
+        data-ouia-component-id="help-panel-kb-input"
       />
     </div>
   );

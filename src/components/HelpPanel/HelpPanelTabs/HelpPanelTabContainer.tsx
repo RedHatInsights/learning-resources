@@ -12,7 +12,10 @@ const HelpPanelTabContainer = ({
     return helpPanelTabsMapper[activeTabType];
   }, [activeTabType]);
   return (
-    <div className="pf-v6-u-p-md">
+    <div
+      className="pf-v6-u-p-md"
+      data-ouia-component-id="help-panel-content-container"
+    >
       <ActiveComponent setNewActionTitle={setNewActionTitle} />
     </div>
   );

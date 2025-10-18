@@ -149,6 +149,7 @@ const SupportPanel: React.FunctionComponent = () => {
             </Title>
           }
           variant={EmptyStateVariant.lg}
+          data-ouia-component-id="help-panel-support-empty-state"
         >
           <EmptyStateBody>
             <Stack>
@@ -165,6 +166,7 @@ const SupportPanel: React.FunctionComponent = () => {
             onClick={() => {
               window.open(SUPPORT_CASE_URL, '_blank');
             }}
+            data-ouia-component-id="help-panel-open-support-case-button"
           >
             Open a support case
           </Button>
@@ -182,7 +184,10 @@ const SupportPanel: React.FunctionComponent = () => {
               Customer Portal
             </Content>
           </Content>
-          <Table variant={TableVariant.compact}>
+          <Table
+            variant={TableVariant.compact}
+            data-ouia-component-id="help-panel-support-cases-table"
+          >
             <Thead>My open support cases ({cases.length})</Thead>
             <Tbody>
               {cases.map((c) => (
@@ -212,6 +217,7 @@ const SupportPanel: React.FunctionComponent = () => {
             widgetId="compact-example"
             onPerPageSelect={onPerPageSelect}
             isCompact
+            data-ouia-component-id="help-panel-support-pagination"
           />
         </>
       )}

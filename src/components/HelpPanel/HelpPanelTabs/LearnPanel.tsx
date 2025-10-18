@@ -378,6 +378,7 @@ const LearnPanelContent: React.FC<{
       onClick={handleContentTypeToggle}
       isExpanded={isContentTypeOpen}
       style={{ width: '100%' }}
+      data-ouia-component-id="help-panel-content-type-select-toggle"
     >
       <Flex
         alignItems={{ default: 'alignItemsCenter' }}
@@ -400,7 +401,11 @@ const LearnPanelContent: React.FC<{
   };
 
   return (
-    <Stack hasGutter className="pf-v6-u-h-100">
+    <Stack
+      hasGutter
+      className="pf-v6-u-h-100"
+      data-ouia-component-id="help-panel-learn-root"
+    >
       <StackItem>
         <Content>
           Find product documentation, quick starts, learning paths, and more.
@@ -430,6 +435,7 @@ const LearnPanelContent: React.FC<{
                   onSelect={handleContentTypeSelect}
                   onOpenChange={setIsContentTypeOpen}
                   shouldFocusToggleOnSelect
+                  data-ouia-component-id="help-panel-content-type-select"
                 >
                   <SelectList>
                     {CONTENT_TYPE_OPTIONS.map((option) => (
@@ -438,6 +444,7 @@ const LearnPanelContent: React.FC<{
                         value={option.value}
                         hasCheckbox
                         isSelected={selectedContentTypes.includes(option.value)}
+                        data-ouia-component-id={`help-panel-content-type-option-${option.value}`}
                       >
                         {option.label}
                       </SelectOption>
@@ -451,6 +458,7 @@ const LearnPanelContent: React.FC<{
                   label="Show bookmarked only"
                   isChecked={showBookmarkedOnly}
                   onChange={handleBookmarkToggle}
+                  data-ouia-component-id="help-panel-bookmarked-only-checkbox"
                 />
               </FlexItem>
             </Flex>
@@ -458,7 +466,10 @@ const LearnPanelContent: React.FC<{
 
           {/* Filter chips directly below dropdown */}
           {selectedContentTypes.length > 0 && (
-            <StackItem className="pf-v6-u-mt-sm">
+            <StackItem
+              className="pf-v6-u-mt-sm"
+              data-ouia-component-id="help-panel-selected-content-type-chips"
+            >
               <Flex
                 alignItems={{ default: 'alignItemsCenter' }}
                 spaceItems={{ default: 'spaceItemsXs' }}
@@ -468,6 +479,7 @@ const LearnPanelContent: React.FC<{
                     <Label
                       variant="outline"
                       onClose={() => handleRemoveContentType(contentType)}
+                      data-ouia-component-id={`help-panel-selected-chip-${contentType}`}
                     >
                       {getContentTypeLabel(contentType)}
                     </Label>
@@ -479,6 +491,7 @@ const LearnPanelContent: React.FC<{
                     onClick={handleClearAllFilters}
                     isInline
                     className="pf-v6-u-font-size-sm"
+                    data-ouia-component-id="help-panel-clear-filters-button"
                   >
                     Clear all filters
                   </Button>
@@ -500,7 +513,10 @@ const LearnPanelContent: React.FC<{
         <>
           {/* Toolbar with results count and toggle group */}
           <StackItem>
-            <Toolbar id="learning-resources-results-toolbar">
+            <Toolbar
+              id="learning-resources-results-toolbar"
+              data-ouia-component-id="help-panel-learning-results-toolbar"
+            >
               <ToolbarContent>
                 <ToolbarItem>
                   <Content>
@@ -509,7 +525,10 @@ const LearnPanelContent: React.FC<{
                 </ToolbarItem>
                 <ToolbarItem>
                   {!isHomePage && (
-                    <ToggleGroup aria-label="Filter by scope">
+                    <ToggleGroup
+                      aria-label="Filter by scope"
+                      data-ouia-component-id="help-panel-scope-toggle"
+                    >
                       <ToggleGroupItem
                         text="All"
                         buttonId="all-toggle"
@@ -517,6 +536,7 @@ const LearnPanelContent: React.FC<{
                         onChange={(event, isSelected) =>
                           handleToggleChange(event, isSelected, 'all')
                         }
+                        data-ouia-component-id="help-panel-scope-toggle-all"
                       />
                       <ToggleGroupItem
                         text={displayBundleName}
@@ -525,6 +545,7 @@ const LearnPanelContent: React.FC<{
                         onChange={(event, isSelected) =>
                           handleToggleChange(event, isSelected, 'bundle')
                         }
+                        data-ouia-component-id="help-panel-scope-toggle-bundle"
                       />
                     </ToggleGroup>
                   )}
@@ -535,7 +556,10 @@ const LearnPanelContent: React.FC<{
 
           {/* Learning resources list with PatternFly List component */}
           <StackItem isFilled className="pf-v6-u-overflow-hidden">
-            <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
+            <div
+              className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto"
+              data-ouia-component-id="help-panel-learning-resources-list"
+            >
               {filteredResources.length > 0 ? (
                 <DataList aria-label="Learning resources">
                   {paginatedResources.map((resource: ExtendedQuickstart) => (
@@ -573,6 +597,7 @@ const LearnPanelContent: React.FC<{
                 onSetPage={handleSetPage}
                 onPerPageSelect={handlePerPageSelect}
                 isCompact
+                data-ouia-component-id="help-panel-learning-pagination"
               />
             </StackItem>
           )}

@@ -21,7 +21,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
   return (
     <>
       <DrawerHead>
-        <Title headingLevel="h2">
+        <Title headingLevel="h2" data-ouia-component-id="help-panel-title">
           Help
           {showStatusPageInHeader && (
             <Button
@@ -33,6 +33,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
               className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md"
               icon={<ExternalLinkAltIcon />}
               iconPosition="end"
+              data-ouia-component-id="help-panel-status-page-header-button"
             >
               Red Hat status page
             </Button>
@@ -47,10 +48,14 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
             target="_blank"
             rel="noopener noreferrer"
             icon={<AskRedHatIcon width={20} height={20} />}
+            data-ouia-component-id="help-panel-ask-red-hat-button"
           >
             Ask Red Hat
           </Button>
-          <DrawerCloseButton onClick={toggleDrawer} />
+          <DrawerCloseButton
+            onClick={toggleDrawer}
+            data-ouia-component-id="help-panel-close-button"
+          />
         </DrawerActions>
       </DrawerHead>
       <DrawerPanelBody>
