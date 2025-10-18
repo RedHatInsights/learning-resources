@@ -181,7 +181,11 @@ const APIPanelContent: React.FC = () => {
   };
 
   return (
-    <Stack hasGutter className="pf-v6-u-h-100">
+    <Stack
+      hasGutter
+      className="pf-v6-u-h-100"
+      data-ouia-component-id="help-panel-api-root"
+    >
       <StackItem>
         <Content>
           Browse the APIs for Hybrid Cloud Console services. See full API
@@ -194,6 +198,7 @@ const APIPanelContent: React.FC = () => {
             href="https://developers.redhat.com/api-catalog/"
             isInline
             iconPosition="end"
+            data-ouia-component-id="help-panel-api-docs-link"
           >
             API Documentation Catalog
           </Button>
@@ -201,14 +206,20 @@ const APIPanelContent: React.FC = () => {
       </StackItem>
 
       <StackItem>
-        <Toolbar id="api-resources-results-toolbar">
+        <Toolbar
+          id="api-resources-results-toolbar"
+          data-ouia-component-id="help-panel-api-results-toolbar"
+        >
           <ToolbarContent>
             <ToolbarItem>
               <Content>API Documentation ({filteredResources.length})</Content>
             </ToolbarItem>
             <ToolbarItem>
               {!isHomePage && (
-                <ToggleGroup aria-label="Filter by scope">
+                <ToggleGroup
+                  aria-label="Filter by scope"
+                  data-ouia-component-id="help-panel-api-scope-toggle"
+                >
                   <ToggleGroupItem
                     text="All"
                     buttonId="all-toggle"
@@ -216,6 +227,7 @@ const APIPanelContent: React.FC = () => {
                     onChange={(event, isSelected) =>
                       handleToggleChange(event, isSelected, 'all')
                     }
+                    data-ouia-component-id="help-panel-api-toggle-all"
                   />
                   <ToggleGroupItem
                     text={displayBundleName}
@@ -224,6 +236,7 @@ const APIPanelContent: React.FC = () => {
                     onChange={(event, isSelected) =>
                       handleToggleChange(event, isSelected, 'bundle')
                     }
+                    data-ouia-component-id="help-panel-api-toggle-bundle"
                   />
                 </ToggleGroup>
               )}
@@ -233,7 +246,10 @@ const APIPanelContent: React.FC = () => {
       </StackItem>
 
       <StackItem isFilled className="pf-v6-u-overflow-hidden">
-        <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
+        <div
+          className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto"
+          data-ouia-component-id="help-panel-api-resources-list"
+        >
           {paginatedResources.length > 0 ? (
             <DataList aria-label="API resources">
               {paginatedResources.map((resource) => (
@@ -267,6 +283,7 @@ const APIPanelContent: React.FC = () => {
             onSetPage={handleSetPage}
             onPerPageSelect={handlePerPageSelect}
             isCompact
+            data-ouia-component-id="help-panel-api-pagination"
           />
         </StackItem>
       )}

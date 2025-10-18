@@ -18,6 +18,7 @@ const SearchPanel = ({
         id="help-panel-search"
         value={searchText}
         onChange={handleTextInputChange}
+        data-ouia-component-id="help-panel-search-input"
       />
     </div>
   );
