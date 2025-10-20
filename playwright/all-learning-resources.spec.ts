@@ -21,10 +21,17 @@ test.describe('all learning resources', async () => {
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 
   test('appears in the help menu and the link works', async({page}) => {
-    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
+      // click the help button
+      await page.getByLabel('Toggle help panel').click()
+      // click the "All Learning Catalog"
+      await page.getByRole('link', { name: 'All Learning Catalog' }).click();
+      // Ensure page heading is "All learning resources" on the page that loads
+      await page.waitForLoadState("load");
+      await expect(page.locator('h1')).toHaveText('All learning resources' );
   });
 });
 
