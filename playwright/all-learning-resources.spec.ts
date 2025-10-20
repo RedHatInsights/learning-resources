@@ -18,6 +18,8 @@ test.describe('all learning resources', async () => {
     await page.goto('https://console.stage.redhat.com');
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
+    expect(user).not.toContain('misconfigured');
+    expect(password).not.toContain('misconfigured');
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
