@@ -8,11 +8,20 @@ import {
   FlexItem,
   Stack,
   StackItem,
+  Tab,
+  TabTitleText,
+  Tabs,
   Title,
 } from '@patternfly/react-core';
 import CheckCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/check-circle-icon';
 import DownloadIcon from '@patternfly/react-icons/dist/dynamic/icons/download-icon';
-import React, { Fragment, useContext, useEffect, useMemo } from 'react';
+import React, {
+  Fragment,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { CreatorWizardStage, ItemKind, isItemKind, metaForKind } from './meta';
 import { QuickStartSpec, QuickStartTask } from '@patternfly/quickstarts';
 import {
@@ -45,6 +54,7 @@ import { CreatorWizardContext } from './context';
 import { CreatorFiles } from './types';
 import { FilterData } from '../../utils/FiltersCategoryInterface';
 import TagsSelector from './TagsSelector';
+import CreatorYAMLView from './CreatorYAMLView';
 
 export type CreatorWizardProps = {
   onChangeKind: (newKind: ItemKind | null) => void;
@@ -56,6 +66,8 @@ export type CreatorWizardProps = {
   filterData: FilterData;
   onChangeTags: (tags: { [kind: string]: string[] }) => void;
 };
+
+type ViewMode = 'wizard' | 'creator';
 
 type FormValue = AnyObject;
 
@@ -300,6 +312,7 @@ const CreatorWizard = ({
   filterData,
 }: CreatorWizardProps) => {
   const chrome = useChrome();
+  const [viewMode, setViewMode] = useState<ViewMode>('wizard');
   const schema = useMemo(() => makeSchema(chrome, filterData), []);
 
   const context = useMemo(
@@ -323,44 +336,66 @@ const CreatorWizard = ({
 
   return (
     <CreatorWizardContext.Provider value={context}>
-      <FormRenderer
-        onSubmit={() => {}}
-        schema={schema}
-        componentMapper={componentMapper}
+      <Tabs
+        activeKey={viewMode}
+        onSelect={(_, eventKey) => setViewMode(eventKey as ViewMode)}
+        aria-label="Creator view mode"
+        className="pf-v6-u-mb-md"
       >
-        {({ formFields }) => (
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="pf-v6-c-form lrn-creator-form"
-          >
-            <FormSpy subscription={{ values: true }}>
-              {/*
-            In order to display the live preview, we need to update the parent
-            whenever the form state changes. Unfortunately, as best as I can
-            tell, there is no way to pass FormRenderer a callback that's called
-            whenever a value changes.
+        <Tab
+          eventKey="wizard"
+          title={<TabTitleText>Wizard</TabTitleText>}
+          tabContentId="wizard-tab"
+        />
+        <Tab
+          eventKey="creator"
+          title={<TabTitleText>Creator (YAML)</TabTitleText>}
+          tabContentId="creator-tab"
+        />
+      </Tabs>
 
-            The example at [0] shows using a custom component in the schema to
-            watch the values, but it seems clearer to just add it once here
-            (and it avoids introducing another custom component name).
+      {viewMode === 'wizard' ? (
+        <FormRenderer
+          onSubmit={() => {}}
+          schema={schema}
+          componentMapper={componentMapper}
+        >
+          {({ formFields }) => (
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="pf-v6-c-form lrn-creator-form"
+            >
+              <FormSpy subscription={{ values: true }}>
+                {/*
+              In order to display the live preview, we need to update the parent
+              whenever the form state changes. Unfortunately, as best as I can
+              tell, there is no way to pass FormRenderer a callback that's called
+              whenever a value changes.
 
-            [0]: https://github.com/data-driven-forms/react-forms/blob/master/packages/react-renderer-demo/src/examples/components/examples/value-listener.js
-             */}
-              {(props) => (
-                <PropUpdater
-                  values={props.values}
-                  onChangeKind={onChangeKind}
-                  onChangeTags={onChangeTags}
-                  onChangeBundles={onChangeBundles}
-                  onChangeQuickStartSpec={onChangeQuickStartSpec}
-                />
-              )}
-            </FormSpy>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <Fragment>{formFields as any}</Fragment>
-          </form>
-        )}
-      </FormRenderer>
+              The example at [0] shows using a custom component in the schema to
+              watch the values, but it seems clearer to just add it once here
+              (and it avoids introducing another custom component name).
+
+              [0]: https://github.com/data-driven-forms/react-forms/blob/master/packages/react-renderer-demo/src/examples/components/examples/value-listener.js
+               */}
+                {(props) => (
+                  <PropUpdater
+                    values={props.values}
+                    onChangeKind={onChangeKind}
+                    onChangeTags={onChangeTags}
+                    onChangeBundles={onChangeBundles}
+                    onChangeQuickStartSpec={onChangeQuickStartSpec}
+                  />
+                )}
+              </FormSpy>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              <Fragment>{formFields as any}</Fragment>
+            </form>
+          )}
+        </FormRenderer>
+      ) : (
+        <CreatorYAMLView />
+      )}
     </CreatorWizardContext.Provider>
   );
 };
