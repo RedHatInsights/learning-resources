@@ -1,4 +1,6 @@
-import { Page, test, expect } from '@playwright/test';
+i
+:q
+port { Page, test, expect } from '@playwright/test';
 
 
 async function login(page: Page, user: string, password: string): Promise<void> {
@@ -15,7 +17,7 @@ async function login(page: Page, user: string, password: string): Promise<void> 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await page.goto('https://console.stage.redhat.com');
+    await page.goto('https://stage.foo.redhat.com:1337');
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     expect(user).not.toContain('misconfigured');
