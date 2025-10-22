@@ -1,6 +1,4 @@
-i
-:q
-port { Page, test, expect } from '@playwright/test';
+import { Page, test, expect } from '@playwright/test';
 
 
 async function login(page: Page, user: string, password: string): Promise<void> {
