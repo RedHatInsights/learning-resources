@@ -1,5 +1,6 @@
 import { Page, test, expect } from '@playwright/test';
 
+test.use({ ignoreHTTPSErrors: true });
 
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
