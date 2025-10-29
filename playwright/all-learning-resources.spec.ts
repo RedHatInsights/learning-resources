@@ -27,6 +27,13 @@ test.describe('all learning resources', async () => {
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 
+  test('Validate developer change to title of Learn tab', async({page}) => {
+    // click the help button
+    await page.getByLabel('Toggle help panel').click()
+    // The Learn tab should be visible with the updated text, 'Learn (Test)'
+    await expect(page.getByText('Learn (Test)')).toBeVisible();
+  });
+
   test('appears in the help menu and the link works', async({page}) => {
       // click the help button
       await page.getByLabel('Toggle help panel').click()
