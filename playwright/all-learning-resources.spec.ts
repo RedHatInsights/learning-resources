@@ -31,7 +31,7 @@ test.describe('all learning resources', async () => {
     // click the help button
     await page.getByLabel('Toggle help panel').click()
     // The Learn tab should be visible with the updated text, 'Learn (Test)'
-    await expect(page.getByText('Learn (Test)')).toBeVisible();
+    await expect(page.getByText('LEARN (Test)')).toBeVisible();
   });
 
   test('appears in the help menu and the link works', async({page}) => {
