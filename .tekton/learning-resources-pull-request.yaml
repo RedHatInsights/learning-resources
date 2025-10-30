@@ -38,31 +38,28 @@ spec:
       
       npm install
       npm run lint
-      # npm test --  --runInBand --no-cache
+      npm test --  --runInBand --no-cache
   - name: e2e-tests-script
     value: |
       #!/usr/bin/env bash
       set -ex
-      echo "Skipping tests"
-#      npm i >/dev/null 2>&1
-#      KONFLUX_RUN=1 npm run start:konflux &
-#      until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
-#        echo "Waiting for dev server to be ready"
-#        sleep 5
-#      done
-#      echo "Dev server ready!"
-#      KONFLUX_RUN=1 NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npm run test:konflux
-  pipelineRef:
-    name: docker-build
+      npm i >/dev/null 2>&1
+      KONFLUX_RUN=$KONFLUX_RUN npm run dev:beta &
+      until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
+        echo "Waiting for dev server to be ready"
+        sleep 5
+      done
+      echo "Dev server ready!"
+      KONFLUX_RUN=$KONFLUX_RUN NO_COLOR=1 E2E_USER=$CHROME_ACCOUNT E2E_PASSWORD=$CHROME_PASSWORD npx cypress run --spec "cypress/e2e/**/*"
+  - name: e2e-user
+    value: '{{ e2e_user }}'
+  - name: e2e-password
+    value: '{{ e2e_password }}'
+  - name: e2e-proxy
+    value: ''
+  pipelineRef: {}
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
-    podTemplate:
-      hostAliases:
-        # Webpack explicitly binds to this address; don't remove or change this without careful consideration
-        - ip: "127.0.0.1"
-          hostnames:
-            - "stage.foo.redhat.com"
-            - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
