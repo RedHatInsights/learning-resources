@@ -57,6 +57,15 @@ spec:
     value: '{{ e2e_password }}'
   - name: e2e-proxy
     value: ''
+  pipelineRef:
+    resolver: git
+    params:
+    - name: url
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
+    - name: revision
+      value: btweed/platform-ui-e2e
+    - name: pathInRepo
+      value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
   workspaces:
