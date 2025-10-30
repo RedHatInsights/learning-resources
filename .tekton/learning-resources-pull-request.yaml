@@ -57,7 +57,6 @@ spec:
     value: '{{ e2e_password }}'
   - name: e2e-proxy
     value: ''
-  pipelineRef: {}
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
   workspaces:
