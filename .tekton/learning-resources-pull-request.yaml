@@ -68,6 +68,13 @@ spec:
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
+    podTemplate:
+      hostAliases:
+      # Webpack explicitly binds to this address; don't remove or change this without careful consideration
+      - ip: "127.0.0.1"
+        hostnames:
+        - "stage.foo.redhat.com"
+        - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
