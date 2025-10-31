@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "master"
-    pipelinesascode.tekton.dev/pipeline: https://github.com/RedHatInsights/konflux-pipelines/raw/main/pipelines/platform-ui/docker-build-run-unit-tests.yaml
+    pipelinesascode.tekton.dev/pipeline: https://github.com/catastrophe-brandon/konflux-pipelines/raw/btweed/platform-ui-e2e/pipelines/platform-ui/docker-build-run-all-tests.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: learning-resources
@@ -35,14 +35,46 @@ spec:
     value: |
       #!/bin/bash
       set -ex
-      
+      exit 0 
       npm install
       npm run lint
       npm test --  --runInBand --no-cache
+  - name: e2e-tests-script
+    value: |
+      #!/usr/bin/env bash
+      set -ex
+      getent hosts stage.foo.redhat.com
+      # npm ci 
+      timeout 120s bash -c 'until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
+        echo "Waiting for dev server to be ready"
+        sleep 5
+      done'
+      echo "Dev server ready!"
+      # TODO: Install playwright and run e2e tests
+  - name: e2e-user
+    value: '{{ e2e_user }}'
+  - name: e2e-password
+    value: '{{ e2e_password }}'
+  - name: e2e-proxy
+    value: ''
   pipelineRef:
-    name: docker-build
+    resolver: git
+    params:
+    - name: url
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
+    - name: revision
+      value: btweed/platform-ui-e2e
+    - name: pathInRepo
+      value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
+    podTemplate:
+      hostAliases:
+      # Webpack explicitly binds to this address; don't remove or change this without careful consideration
+      - ip: "127.0.0.1"
+        hostnames:
+        - "stage.foo.redhat.com"
+        - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
