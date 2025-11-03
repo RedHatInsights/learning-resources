@@ -30,6 +30,8 @@ test.describe('all learning resources', async () => {
   test('Validate developer change to title of Learn tab', async({page}) => {
     // click the help button
     await page.getByLabel('Toggle help panel').click()
+    await page.waitForTimeout(5000);
+
     // The Learn tab should be visible with the updated text, 'Learn (Test)'
     await expect(page.getByText('LEARN (Test)')).toBeVisible();
   });
