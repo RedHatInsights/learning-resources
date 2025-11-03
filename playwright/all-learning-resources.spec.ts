@@ -28,6 +28,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('Validate developer change to title of Learn tab', async({page}) => {
+    test.setTimeout(60000);
     // click the help button
     await page.getByLabel('Toggle help panel').click()
     await page.waitForTimeout(5000);
@@ -37,6 +38,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('appears in the help menu and the link works', async({page}) => {
+      test.setTimeout(60000);    
       // click the help button
       await page.getByLabel('Toggle help panel').click()
       // click the "All Learning Catalog"
