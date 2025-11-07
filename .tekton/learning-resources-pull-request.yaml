@@ -31,6 +31,8 @@ spec:
     value: build-tools/Dockerfile
   - name: path-context
     value: .
+  - name: rebuild
+    value: "true"
   - name: unit-tests-script
     value: |
       #!/bin/bash
