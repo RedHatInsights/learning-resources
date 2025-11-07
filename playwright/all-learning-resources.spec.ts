@@ -24,6 +24,8 @@ test.describe('all learning resources', async () => {
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
+    // long wait for the page to load; stage can be delicate
+    await page.waitForTimeout(10000);
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 
