@@ -57,6 +57,58 @@ spec:
     value: '{{ e2e_password }}'
   - name: e2e-proxy
     value: ''
+  - name: SOURCE_ARTIFACT
+    value: quay.io/redhat-user-workloads/hcc-platex-services-tenant/learning-resources/learning-resources:on-pr-{{revision}}
+  - name: STAGE_ACTUAL_HOSTNAME
+    value: '{{ stage_actual_hostname }}'
+  - name: HCC_ENV_URL
+    value: '{{ hcc_env_url }}'
+  - name: proxy-routes-json
+    value: |
+      @root path /
+      handle @root {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /index.html {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/chrome* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/learning-resources* {
+          reverse_proxy 127.0.0.1:8000
+      }
+
+      handle /settings/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /openshift/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /ansible/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /insights/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /edge/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /iam/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
   pipelineRef:
     resolver: git
     params:
@@ -66,15 +118,19 @@ spec:
       value: btweed/platform-ui-e2e
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
-  taskRunTemplate:
-    serviceAccountName: build-pipeline-learning-resources
-    podTemplate:
-      hostAliases:
-      # Webpack explicitly binds to this address; don't remove or change this without careful consideration
-      - ip: "127.0.0.1"
-        hostnames:
-        - "stage.foo.redhat.com"
-        - "prod.foo.redhat.com"
+  taskRunSpecs:
+    - pipelineTaskName: e2e-test-run
+      serviceAccountName: build-pipeline-learning-resources
+      podTemplate:
+        # Override /etc/hosts to redirect stage.foo.redhat.com to localhost
+        hostAliases:
+          - ip: "::1"
+            hostnames:
+              - "stage.foo.redhat.com"
+          - ip: "127.0.0.1"
+            hostnames:
+              - "stage.foo.redhat.com"
+              - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
