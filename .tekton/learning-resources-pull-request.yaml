@@ -18,7 +18,6 @@ metadata:
   name: learning-resources-on-pull-request
   namespace: hcc-platex-services-tenant
 spec:
-  serviceAccountName: build-pipeline-learning-resources
   params:
   - name: git-url
     value: '{{source_url}}'
