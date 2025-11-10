@@ -118,8 +118,11 @@ spec:
       value: btweed/platform-ui-e2e
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-learning-resources
   taskRunSpecs:
     - pipelineTaskName: run-e2e-tests
+      serviceAccountName: build-pipeline-learning-resources
       podTemplate:
         # Override /etc/hosts to redirect stage.foo.redhat.com to localhost
         hostAliases:
