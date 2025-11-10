@@ -129,7 +129,6 @@ spec:
           - ip: "127.0.0.1"
             hostnames:
               - "stage.foo.redhat.com"
-              - "prod.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
