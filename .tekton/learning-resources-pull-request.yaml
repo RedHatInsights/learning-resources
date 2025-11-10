@@ -45,6 +45,7 @@ spec:
     value: |
       #!/usr/bin/env bash
       set -ex
+      env
       getent hosts stage.foo.redhat.com
       # npm ci 
       timeout 120s bash -c 'until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
@@ -58,7 +59,7 @@ spec:
   - name: e2e-password
     value: '{{ e2e_password }}'
   - name: e2e-proxy
-    value: ''
+    value: '{{ hcc_proxy }}'
   - name: e2e-stage-actual-hostname
     value: '{{ stage_actual_hostname }}'
   - name: e2e-hcc-env-url
