@@ -42,6 +42,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.12",
     "@redhat-cloud-services/frontend-components-config": "^6.7.4",
     "@redhat-cloud-services/tsc-transform-imports": "^1.0.26",
@@ -58,7 +59,6 @@
     "jest_workaround": "^0.79.19",
     "jest-environment-jsdom": "^29.7.0",
     "npm-run-all2": "5.0.0",
-    "@playwright/test": "^1.43.1",
     "ts-jest": "^29.4.5",
     "ts-patch": "^3.3.0",
     "typescript": "^5.9.3",
