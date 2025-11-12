@@ -54,13 +54,10 @@ spec:
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
       # sleep 2000
-      echo "Clearing all npm state..."
-      rm -rf /root/.npm /root/.npmrc node_modules package-lock.json
-      echo "Setting custom npm cache directory..."
-      export npm_config_cache=/tmp/npm-cache-$$
-      mkdir -p /tmp/npm-cache-$$
-      echo "Installing dependencies..."
-      npm install --legacy-peer-deps --no-audit --no-fund
+      echo "Checking pre-installed Playwright version..."
+      npx playwright --version || echo "Playwright not pre-installed"
+      echo "Installing dependencies with --force to override conflicts..."
+      npm install --legacy-peer-deps --no-audit --no-fund --force
       npx playwright test      
   - name: proxy-routes-json
     value: |
