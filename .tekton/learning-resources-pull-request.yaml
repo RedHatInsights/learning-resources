@@ -117,16 +117,6 @@ spec:
       handle /learning-resources* {
           reverse_proxy 127.0.0.1:9912
       }
-
-      # Catch-all: proxy everything else to staging environment via squid
-      handle {
-          cache
-          reverse_proxy {env.HCC_ENV_URL} {
-              header_up Host {http.reverse_proxy.upstream.hostport}
-              header_up Accept-Encoding "gzip;q=0,deflate,sdch"
-              header_up -Origin
-          }
-      }
   pipelineRef:
     resolver: git
     params:
