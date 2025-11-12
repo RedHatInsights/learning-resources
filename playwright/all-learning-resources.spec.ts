@@ -21,6 +21,8 @@ test.describe('all learning resources', async () => {
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     expect(user).not.toContain('misconfigured');
     expect(password).not.toContain('misconfigured');
+    // make sure the SSO prompt is loaded for login
+    await page.waitForLoadState("load");
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
