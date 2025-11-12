@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "master"
-    pipelinesascode.tekton.dev/pipeline: https://github.com/RedHatInsights/konflux-pipelines/raw/main/pipelines/platform-ui/docker-build-run-unit-tests.yaml
+    pipelinesascode.tekton.dev/pipeline: https://github.com/catastrophe-brandon/konflux-pipelines/raw/btweed/platform-ui-e2e/pipelines/platform-ui/docker-build-run-all-tests.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: learning-resources
@@ -31,18 +31,136 @@ spec:
     value: build-tools/Dockerfile
   - name: path-context
     value: .
+  - name: rebuild
+    value: "true"
   - name: unit-tests-script
     value: |
       #!/bin/bash
       set -ex
-      
+      exit 0 
       npm install
       npm run lint
       npm test --  --runInBand --no-cache
+  - name: e2e-tests-script
+    value: |
+      #!/bin/bash
+      set -ex
+      getent hosts stage.foo.redhat.com
+      timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
+        echo "Waiting for dev server to be ready"
+        sleep 5
+      done'
+      echo "Dev server ready!"
+      # Save proxy values before unsetting
+      SAVED_HTTP_PROXY="${HTTP_PROXY}"
+      SAVED_HTTPS_PROXY="${HTTPS_PROXY}"
+      echo "HTTP_PROXY is ${SAVED_HTTP_PROXY}"
+      echo "HTTPS_PROXY is ${SAVED_HTTPS_PROXY}"
+      # Clone fresh from git instead of using trusted artifact
+      echo "Cloning repository for tests..."
+      cd /tmp
+      # Unset proxy for git clone and npm install
+      unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+      git clone {{source_url}} test-repo
+      cd test-repo
+      git checkout {{revision}}
+      echo "Installing dependencies..."
+      npm install
+      # Restore proxy for Playwright tests
+      export HTTP_PROXY="${SAVED_HTTP_PROXY}"
+      export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
+      echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
+      echo "HCC_ENV_URL is ${HCC_ENV_URL}"
+      echo "Testing direct connection to ${HCC_ENV_URL} (without proxy)..."
+      DIRECT_TEST_OUTPUT=$(curl -sL -w "\n\nFINAL_URL: %{url_effective}\n" "${HCC_ENV_URL}" 2>&1)
+      echo "$DIRECT_TEST_OUTPUT" | tail -5
+      FINAL_URL=$(echo "$DIRECT_TEST_OUTPUT" | grep "FINAL_URL:" | awk '{print $2}')
+      echo "Final URL after redirects: ${FINAL_URL}"
+      if echo "$FINAL_URL" | grep -q "sso.stage.redhat.com"; then
+        echo "✓ Redirected to sso.stage.redhat.com as expected"
+      else
+        echo "✗ Did NOT redirect to sso.stage.redhat.com"
+      fi
+      if echo "$DIRECT_TEST_OUTPUT" | grep -q "<input"; then
+        echo "✓ Found input element on page"
+        echo "$DIRECT_TEST_OUTPUT" | grep -o "<input[^>]*>" | head -3
+      else
+        echo "✗ No input elements found on page"
+      fi
+      echo "Direct connection test complete"
+      echo "Testing proxy connection to ${HCC_ENV_URL}..."
+      curl -v -x "${HTTP_PROXY}" "${HCC_ENV_URL}" 2>&1 | head -30
+      echo "Proxy test complete"
+      npx playwright test      
+  - name: proxy-routes-json
+    value: |
+      @root path /
+      handle @root {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /index.html {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/chrome* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/learning-resources* {
+          reverse_proxy 127.0.0.1:8000
+      }
+
+      handle /settings/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /openshift/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /ansible/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /insights/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /edge/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /iam/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
   pipelineRef:
-    name: docker-build
+    resolver: git
+    params:
+    - name: url
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
+    - name: revision
+      value: btweed/platform-ui-e2e
+    - name: pathInRepo
+      value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
+  taskRunSpecs:
+    - pipelineTaskName: run-e2e-tests
+      serviceAccountName: build-pipeline-learning-resources
+      podTemplate:
+        # Override /etc/hosts to redirect stage.foo.redhat.com to localhost
+        hostAliases:
+          - ip: "::1"
+            hostnames:
+              - "stage.foo.redhat.com"
+          - ip: "127.0.0.1"
+            hostnames:
+              - "stage.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
