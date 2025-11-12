@@ -54,6 +54,8 @@ spec:
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
       # sleep 2000
+      echo "Installing dependencies..."
+      npm ci --legacy-peer-deps
       npx playwright test      
   - name: proxy-routes-json
     value: |
