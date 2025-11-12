@@ -54,6 +54,7 @@ spec:
       # TODO: Install playwright and run e2e tests
       npm ci
       npx playwright install
+      echo "Playwright installed!"
   - name: proxy-routes-json
     value: |
       @root path /
