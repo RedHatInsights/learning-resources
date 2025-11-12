@@ -53,9 +53,15 @@ spec:
       echo "Dev server ready!"
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
-      # sleep 2000
-      cd /var/workdir
+      # Clone fresh from git instead of using trusted artifact
+      echo "Cloning repository for tests..."
+      cd /tmp
+      git clone {{source_url}} test-repo
+      cd test-repo
+      git checkout {{revision}}
+      echo "Installing dependencies..."
       npm install
+      echo "Running Playwright tests..."
       npx playwright test      
   - name: proxy-routes-json
     value: |
