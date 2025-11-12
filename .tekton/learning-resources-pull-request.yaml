@@ -71,6 +71,9 @@ spec:
       export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
       echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
       echo "HCC_ENV_URL is ${HCC_ENV_URL}"
+      echo "Testing direct connection to ${HCC_ENV_URL} (without proxy)..."
+      curl -v "${HCC_ENV_URL}" 2>&1 | head -30
+      echo "Direct connection test complete"
       echo "Testing proxy connection to ${HCC_ENV_URL}..."
       curl -v -x "${HTTP_PROXY}" "${HCC_ENV_URL}" 2>&1 | head -30
       echo "Proxy test complete"
