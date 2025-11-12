@@ -2,6 +2,8 @@ import { Page, test, expect } from '@playwright/test';
 
 test.use({ ignoreHTTPSErrors: true });
 
+// Testing with Caddy proxy configuration for upstream connections
+
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
