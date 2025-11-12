@@ -2,7 +2,7 @@ import { Page, test, expect } from '@playwright/test';
 
 test.use({ ignoreHTTPSErrors: true });
 
-// Testing with Caddy proxy configuration (fixed syntax)
+// Caddy v2.7+ automatically uses HTTP_PROXY env variable
 
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
