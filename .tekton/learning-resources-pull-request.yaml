@@ -43,17 +43,16 @@ spec:
       npm test --  --runInBand --no-cache
   - name: e2e-tests-script
     value: |
-      #!/usr/bin/env bash
       set -ex
-      env
       getent hosts stage.foo.redhat.com
-      # npm ci 
       timeout 120s bash -c 'until curl -k 'https://stage.foo.redhat.com:1337' > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
         sleep 5
       done'
       echo "Dev server ready!"
       # TODO: Install playwright and run e2e tests
+      npm ci
+      npx install playwright
   - name: proxy-routes-json
     value: |
       @root path /
