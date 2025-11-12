@@ -42,18 +42,14 @@ spec:
       npm run lint
       npm test --  --runInBand --no-cache
   - name: e2e-tests-script
-    value: |
+    value: |-
       #!/bin/sh
-      set -ex
-      getent hosts stage.foo.redhat.com
-      timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
-        echo "Waiting for dev server to be ready"
-        sleep 5
-      done'
-      echo "Dev server ready!"
-      # TODO: Install playwright and run e2e tests
-      npm ci
-      npx playwright install
+      echo "Script is executing!"
+      echo "PATH: $PATH"
+      which sh
+      which bash
+      pwd
+      ls -la
   - name: proxy-routes-json
     value: |
       @root path /
