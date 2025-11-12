@@ -5,10 +5,19 @@ test.use({ ignoreHTTPSErrors: true });
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
-  await page.getByLabel('Red Hat login').first().fill(user);
+
+  // Wait for and fill username field
+  const usernameField = page.getByLabel('Red Hat login').first();
+  await usernameField.waitFor({ state: 'visible', timeout: 30000 });
+  await usernameField.fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByLabel('Password').first().fill(password);
+
+  // Wait for and fill password field
+  const passwordField = page.getByLabel('Password').first();
+  await passwordField.waitFor({ state: 'visible', timeout: 30000 });
+  await passwordField.fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
+
   // confirm login was valid
   await expect(page.getByText('Invalid login')).not.toBeVisible();
 }
@@ -16,7 +25,7 @@ async function login(page: Page, user: string, password: string): Promise<void> 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await page.goto('https://stage.foo.redhat.com:1337');
+    await page.goto('https://stage.foo.redhat.com:1337', { waitUntil: 'networkidle', timeout: 60000 });
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     expect(user).not.toContain('misconfigured');
