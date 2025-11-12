@@ -54,10 +54,10 @@ spec:
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
       # sleep 2000
-      echo "Cleaning npm cache..."
-      npm cache clean --force
+      echo "Removing existing node_modules and lock files..."
+      rm -rf node_modules package-lock.json
       echo "Installing dependencies..."
-      npm install --legacy-peer-deps
+      npm install --legacy-peer-deps --prefer-offline --no-audit --no-fund
       npx playwright test      
   - name: proxy-routes-json
     value: |
