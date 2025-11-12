@@ -54,6 +54,7 @@ spec:
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
       # sleep 2000
+      npm install @playwright/test
       npx playwright test      
   - name: proxy-routes-json
     value: |
