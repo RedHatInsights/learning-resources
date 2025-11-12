@@ -70,6 +70,10 @@ spec:
       export HTTP_PROXY="${SAVED_HTTP_PROXY}"
       export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
       echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
+      echo "HCC_ENV_URL is ${HCC_ENV_URL}"
+      echo "Testing proxy connection to ${HCC_ENV_URL}..."
+      curl -v -x "${HTTP_PROXY}" "${HCC_ENV_URL}" 2>&1 | head -30
+      echo "Proxy test complete"
       npx playwright test      
   - name: proxy-routes-json
     value: |
