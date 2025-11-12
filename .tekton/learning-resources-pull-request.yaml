@@ -51,8 +51,11 @@ spec:
         sleep 5
       done'
       echo "Dev server ready!"
-      echo "HTTP_PROXY is ${HTTP_PROXY}"
-      echo "HTTPS_PROXY is ${HTTPS_PROXY}"
+      # Save proxy values before unsetting
+      SAVED_HTTP_PROXY="${HTTP_PROXY}"
+      SAVED_HTTPS_PROXY="${HTTPS_PROXY}"
+      echo "HTTP_PROXY is ${SAVED_HTTP_PROXY}"
+      echo "HTTPS_PROXY is ${SAVED_HTTPS_PROXY}"
       # Clone fresh from git instead of using trusted artifact
       echo "Cloning repository for tests..."
       cd /tmp
@@ -63,7 +66,10 @@ spec:
       git checkout {{revision}}
       echo "Installing dependencies..."
       npm install
-      echo "Running Playwright tests..."
+      # Restore proxy for Playwright tests
+      export HTTP_PROXY="${SAVED_HTTP_PROXY}"
+      export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
+      echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
       npx playwright test      
   - name: proxy-routes-json
     value: |
