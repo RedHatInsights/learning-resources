@@ -54,10 +54,8 @@ spec:
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
       # sleep 2000
-      echo "Checking pre-installed Playwright version..."
-      npx playwright --version || echo "Playwright not pre-installed"
-      echo "Installing dependencies with --force to override conflicts..."
-      npm install --legacy-peer-deps --no-audit --no-fund --force
+      cd /var/workdir
+      npm install
       npx playwright test      
   - name: proxy-routes-json
     value: |
