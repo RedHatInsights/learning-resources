@@ -51,7 +51,16 @@ spec:
         sleep 5
       done'
       echo "Dev server ready!"
-      # TODO: Install playwright and run e2e tests
+      echo "HTTP_PROXY is ${HTTP_PROXY}"
+      echo "HTTPS_PROXY is ${HTTPS_PROXY}"
+      getent hosts stage.foo.redhat.com
+      cd /workspace/output
+      set -e
+      # sleep 2000
+      npm install
+      npx playwright test      
+
+# TODO: Install playwright and run e2e tests
       npm ci
       npx playwright install
       echo "Playwright installed!"
