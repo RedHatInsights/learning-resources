@@ -53,11 +53,7 @@ spec:
       echo "Dev server ready!"
       echo "HTTP_PROXY is ${HTTP_PROXY}"
       echo "HTTPS_PROXY is ${HTTPS_PROXY}"
-      getent hosts stage.foo.redhat.com
-      ls -la /var/workdir
-      set -e
       # sleep 2000
-      npm install
       npx playwright test      
   - name: proxy-routes-json
     value: |
