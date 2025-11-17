@@ -61,11 +61,6 @@ spec:
       git checkout {{revision}}
       echo "Installing dependencies..."
       npm install
-      
-      echo "HCC_ENV_URL is ${HCC_ENV_URL}"
-      echo "Testing curl without any proxy config"
-      curl -vkL "${HCC_ENV_URL}"
-      echo "Direct connection test complete"
      
       echo "Running Playwright tests ..."
       npx playwright test      
