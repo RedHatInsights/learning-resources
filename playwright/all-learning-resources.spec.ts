@@ -66,7 +66,8 @@ test.describe('all learning resources', async () => {
 
   test('Confirm it is currently broken in the staging environment', async({page}) => {
     await page.getByLabel('Toggle help panel').click()
-    expect(page.getByText('Loading...')).toBeVisible();
+    const element = await page.getByText('Loading...');
+    await expect(element).toBeVisible();
   });
 
   test('Validate developer change to title of Learn tab', async({page}) => {
