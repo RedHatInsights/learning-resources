@@ -48,13 +48,14 @@ async function login(page: Page, user: string, password: string): Promise<void> 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await page.goto('https://stage.foo.redhat.com:1337', { waitUntil: 'networkidle', timeout: 60000 });
+    await page.goto('https://stage.foo.redhat.com:1337', { waitUntil: 'load', timeout: 60000 });
     const user = process.env.E2E_USER || 'misconfigured';
     const password = process.env.E2E_PASSWORD || 'misconfigured';
     expect(user).not.toContain('misconfigured');
     expect(password).not.toContain('misconfigured');
     // make sure the SSO prompt is loaded for login
     await page.waitForLoadState("load");
+    expect(page.locator("#username-verification")).toBeVisible();
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
