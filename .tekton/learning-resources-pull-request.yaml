@@ -75,21 +75,26 @@ spec:
       echo "==============================================="
       echo "FULL RESPONSE FROM HCC_ENV_URL:"
       echo "==============================================="
-      DIRECT_TEST_OUTPUT=$(curl -sL -w "\n\nFINAL_URL: %{url_effective}\n" "${HCC_ENV_URL}" 2>&1)
-      echo "$DIRECT_TEST_OUTPUT"
+      set +x  # Temporarily disable command echoing for cleaner output
+      curl -sL -w "\n\nFINAL_URL: %{url_effective}\n" "${HCC_ENV_URL}" > /tmp/hcc_response.html 2>&1
+      CURL_EXIT_CODE=$?
+      echo "Curl exit code: ${CURL_EXIT_CODE}"
+      echo "Response size: $(wc -c < /tmp/hcc_response.html) bytes"
+      cat /tmp/hcc_response.html
+      set -x  # Re-enable command echoing
       echo "==============================================="
       echo "END OF FULL RESPONSE"
       echo "==============================================="
-      FINAL_URL=$(echo "$DIRECT_TEST_OUTPUT" | grep "FINAL_URL:" | awk '{print $2}')
+      FINAL_URL=$(grep "FINAL_URL:" /tmp/hcc_response.html | awk '{print $2}')
       echo "Final URL after redirects: ${FINAL_URL}"
       if echo "$FINAL_URL" | grep -q "sso.stage.redhat.com"; then
         echo "✓ Redirected to sso.stage.redhat.com as expected"
       else
         echo "✗ Did NOT redirect to sso.stage.redhat.com"
       fi
-      if echo "$DIRECT_TEST_OUTPUT" | grep -q "<input"; then
+      if grep -q "<input" /tmp/hcc_response.html; then
         echo "✓ Found input element on page"
-        echo "$DIRECT_TEST_OUTPUT" | grep -o "<input[^>]*>" | head -3
+        grep -o "<input[^>]*>" /tmp/hcc_response.html | head -3
       else
         echo "✗ No input elements found on page"
       fi
