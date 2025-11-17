@@ -72,19 +72,7 @@ spec:
       echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
       echo "HCC_ENV_URL is ${HCC_ENV_URL}"
       echo "Testing direct connection to ${HCC_ENV_URL} (without proxy)..."
-      echo "==============================================="
-      echo "FULL RESPONSE FROM HCC_ENV_URL:"
-      echo "==============================================="
-      set +x  # Temporarily disable command echoing for cleaner output
-      curl -sL -w "\n\nFINAL_URL: %{url_effective}\n" "${HCC_ENV_URL}" > /tmp/hcc_response.html 2>&1
-      CURL_EXIT_CODE=$?
-      echo "Curl exit code: ${CURL_EXIT_CODE}"
-      echo "Response size: $(wc -c < /tmp/hcc_response.html) bytes"
-      cat /tmp/hcc_response.html
-      set -x  # Re-enable command echoing
-      echo "==============================================="
-      echo "END OF FULL RESPONSE"
-      echo "==============================================="
+      curl -vkL "${HCC_ENV_URL}"
       FINAL_URL=$(grep "FINAL_URL:" /tmp/hcc_response.html | awk '{print $2}')
       echo "Final URL after redirects: ${FINAL_URL}"
       if echo "$FINAL_URL" | grep -q "sso.stage.redhat.com"; then
