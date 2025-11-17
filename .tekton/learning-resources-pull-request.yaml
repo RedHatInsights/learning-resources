@@ -51,47 +51,23 @@ spec:
         sleep 5
       done'
       echo "Dev server ready!"
-      # Save proxy values before unsetting
-      SAVED_HTTP_PROXY="${HTTP_PROXY}"
-      SAVED_HTTPS_PROXY="${HTTPS_PROXY}"
-      echo "HTTP_PROXY is ${SAVED_HTTP_PROXY}"
-      echo "HTTPS_PROXY is ${SAVED_HTTPS_PROXY}"
+    
       # Clone fresh from git instead of using trusted artifact
       echo "Cloning repository for tests..."
       cd /tmp
-      # Unset proxy for git clone and npm install
-      unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+     
       git clone {{source_url}} test-repo
       cd test-repo
       git checkout {{revision}}
       echo "Installing dependencies..."
       npm install
-      # Restore proxy for Playwright tests
-      export HTTP_PROXY="${SAVED_HTTP_PROXY}"
-      export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
-      echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
+      
       echo "HCC_ENV_URL is ${HCC_ENV_URL}"
-      unset HTTP_PROXY
-      unset HTTPS_PROXY
       echo "Testing curl without any proxy config"
       curl -vkL "${HCC_ENV_URL}"
-      FINAL_URL=$(grep "FINAL_URL:" /tmp/hcc_response.html | awk '{print $2}')
-      echo "Final URL after redirects: ${FINAL_URL}"
-      if echo "$FINAL_URL" | grep -q "sso.stage.redhat.com"; then
-        echo "✓ Redirected to sso.stage.redhat.com as expected"
-      else
-        echo "✗ Did NOT redirect to sso.stage.redhat.com"
-      fi
-      if grep -q "<input" /tmp/hcc_response.html; then
-        echo "✓ Found input element on page"
-        grep -o "<input[^>]*>" /tmp/hcc_response.html | head -3
-      else
-        echo "✗ No input elements found on page"
-      fi
       echo "Direct connection test complete"
-      echo "Testing proxy connection to ${HCC_ENV_URL}..."
-      curl -v -x "${HTTP_PROXY}" "${HCC_ENV_URL}" 2>&1 | head -30
-      echo "Proxy test complete"
+     
+      echo "Running Playwright tests ..."
       npx playwright test      
   - name: proxy-routes-json
     value: |
