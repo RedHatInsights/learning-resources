@@ -72,8 +72,14 @@ spec:
       echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
       echo "HCC_ENV_URL is ${HCC_ENV_URL}"
       echo "Testing direct connection to ${HCC_ENV_URL} (without proxy)..."
+      echo "==============================================="
+      echo "FULL RESPONSE FROM HCC_ENV_URL:"
+      echo "==============================================="
       DIRECT_TEST_OUTPUT=$(curl -sL -w "\n\nFINAL_URL: %{url_effective}\n" "${HCC_ENV_URL}" 2>&1)
-      echo "$DIRECT_TEST_OUTPUT" | tail -5
+      echo "$DIRECT_TEST_OUTPUT"
+      echo "==============================================="
+      echo "END OF FULL RESPONSE"
+      echo "==============================================="
       FINAL_URL=$(echo "$DIRECT_TEST_OUTPUT" | grep "FINAL_URL:" | awk '{print $2}')
       echo "Final URL after redirects: ${FINAL_URL}"
       if echo "$FINAL_URL" | grep -q "sso.stage.redhat.com"; then
