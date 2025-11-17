@@ -71,7 +71,9 @@ spec:
       export HTTPS_PROXY="${SAVED_HTTPS_PROXY}"
       echo "Running Playwright tests with proxy: ${HTTP_PROXY}"
       echo "HCC_ENV_URL is ${HCC_ENV_URL}"
-      echo "Testing direct connection to ${HCC_ENV_URL} (without proxy)..."
+      unset HTTP_PROXY
+      unset HTTPS_PROXY
+      echo "Testing curl without any proxy config"
       curl -vkL "${HCC_ENV_URL}"
       FINAL_URL=$(grep "FINAL_URL:" /tmp/hcc_response.html | awk '{print $2}')
       echo "Final URL after redirects: ${FINAL_URL}"
