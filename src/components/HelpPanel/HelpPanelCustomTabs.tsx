@@ -52,7 +52,7 @@ const subTabs: SubTab[] = [
     featureFlag: 'platform.chrome.help-panel_search',
   },
   {
-    title: 'LEARN (Test)',
+    title: 'Learn',
     tabType: TabType.learn,
   },
   {
