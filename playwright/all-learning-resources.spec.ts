@@ -88,9 +88,8 @@ test.describe('all learning resources', async () => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
 
-    // Check for 50 items
-    const itemCountText = await page.getByText('All learning resources (').innerText();
-    await expect(itemCountText).toContain('102');
+    // Wait for the count to be populated (data is loaded asynchronously)
+    await expect(page.getByText('All learning resources (', { exact: false })).toContainText('102', { timeout: 10000 });
   });
 });
 
