@@ -3,7 +3,7 @@ import { Page, test, expect } from '@playwright/test';
 test.use({ ignoreHTTPSErrors: true });
 
 
-const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+const APP_TEST_HOST_PORT = 'console.stage.redhat.com';
 
 
 async function login(page: Page, user: string, password: string): Promise<void> {
@@ -84,7 +84,15 @@ test.describe('all learning resources', async () => {
     await expect(page.getByRole('menuitem', { name: 'All Learning Resources'}).first()).toBeVisible({timeout: 10000});
   });
 
-  test.skip('performs basic filtering by name', () => {});
+  test('performs basic filtering by name', async({page}) => {
+    await page.getByRole('button', { name: 'Expandable search input toggle' }).click();
+    await page.getByRole('textbox', { name: 'Search input' }).fill('all learning resources');
+    await page.getByRole('textbox', { name: 'Search input' }).press('Enter');
+    await page.getByRole('menuitem', { name: 'All Learning Resources'}).first().click();
+    await page.waitForLoadState("load");
+    await page.getByRole('textbox', {name: 'Type to filter'}).fill('Adding an integration: Google');
+    await expect(page.getByText('All learning resources (1)', { exact: true })).toBeVisible({ timeout: 10000 });
+  });
 
   test.skip('filters by product family', () => {});
 
