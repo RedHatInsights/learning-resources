@@ -102,7 +102,7 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await page.waitForLoadState("load");
 
-    await expect(page.getByText('All learning resources(16)')).toBeVisible({timeout: 10000});
+    await expect(page.getByText('All learning resources (16)')).toBeVisible({timeout: 10000});
     // all cards should have Settings
     const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
     for (const card of cards) {
