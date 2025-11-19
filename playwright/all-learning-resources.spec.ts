@@ -91,6 +91,20 @@ test.describe('all learning resources', async () => {
     // Wait for the count to be populated (data is loaded asynchronously)
     await expect(page.getByText('All learning resources (', { exact: false })).toContainText('102', { timeout: 10000 });
   });
+
+  test('appears in search results', () => {});
+
+  test('performs basic filtering by name', () => {});
+
+  test('filters by product family', () => {});
+
+  test('filters by console-wide services', () => {});
+
+  test('filters by content type', () => {});
+
+  test('filters by use case', () => {});
+
+  test('displays bookmarked resources', () => {});
 });
 
 
