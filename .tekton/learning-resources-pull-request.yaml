@@ -61,6 +61,9 @@ spec:
       git checkout {{revision}}
       echo "Installing dependencies..."
       npm install
+
+      echo "Installing Playwright..."
+      npx playwright install
      
       echo "Running Playwright tests ..."
       npx playwright test      
