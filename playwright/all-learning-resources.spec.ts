@@ -10,21 +10,6 @@ async function login(page: Page, user: string, password: string): Promise<void> 
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
 
-  // Debug: log page info
-  console.log('=== LOGIN DEBUG INFO ===');
-  console.log('Page URL:', page.url());
-  console.log('Page title:', await page.title());
-  const htmlContent = await page.content();
-  console.log('Page HTML length:', htmlContent.length);
-  console.log('Page HTML snippet (first 1000 chars):', htmlContent.substring(0, 1000));
-  console.log('Looking for login form elements...');
-
-  // Check what's actually on the page
-  const allInputs = await page.locator('input').count();
-  console.log('Number of input elements found:', allInputs);
-  const allLabels = await page.locator('label').count();
-  console.log('Number of label elements found:', allLabels);
-
   // Wait for and fill username field
   const usernameField = page.getByLabel('Red Hat login').first();
   try {
