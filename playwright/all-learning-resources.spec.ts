@@ -64,12 +64,6 @@ test.describe('all learning resources', async () => {
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
   });
 
-  test('Confirm it is currently broken in the staging environment', async({page}) => {
-    await page.getByLabel('Toggle help panel').click()
-    const element = await page.getByText('Loading...');
-    await expect(element).toBeVisible();
-  });
-
   test('Validate developer change to title of Learn tab', async({page}) => {
     test.setTimeout(60000);
     // click the help button
