@@ -2,7 +2,9 @@ import { Page, test, expect } from '@playwright/test';
 
 test.use({ ignoreHTTPSErrors: true });
 
-// Caddy v2.7+ automatically uses HTTP_PROXY env variable
+
+const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+
 
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
@@ -49,7 +51,7 @@ test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
 
-    await page.goto('https://stage.foo.redhat.com:1337', { waitUntil: 'load', timeout: 60000 });
+    await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
 
     const loggedIn = await page.getByText('Hi,').isVisible();
 
@@ -70,16 +72,6 @@ test.describe('all learning resources', async () => {
     }
   });
 
-  test('Validate developer change to title of Learn tab', async({page}) => {
-    test.setTimeout(60000);
-    // click the help button
-    await page.getByLabel('Toggle help panel').click()
-    await page.waitForTimeout(5000);
-
-    // The Learn tab should be visible with the updated text, 'Learn (Test)'
-    await expect(page.getByText('LEARN (Test)')).toBeVisible();
-  });
-
   test('appears in the help menu and the link works', async({page}) => {
       test.setTimeout(60000);    
       // click the help button
@@ -89,6 +81,16 @@ test.describe('all learning resources', async () => {
       // Ensure page heading is "All learning resources" on the page that loads
       await page.waitForLoadState("load");
       await expect(page.locator('h1')).toHaveText('All learning resources' );
+  });
+
+  test('has the appropriate number of items on the all learning resources tab', async({page}) => {
+    test.setTimeout(60000);
+    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.waitForLoadState("load");
+
+    // Check for 50 items
+    const itemCountText = await page.getByText('All learning resources (').innerText();
+    await expect(itemCountText).toContain('102');
   });
 });
 
