@@ -92,19 +92,19 @@ test.describe('all learning resources', async () => {
     await expect(page.getByText('All learning resources (', { exact: false })).toContainText('102', { timeout: 10000 });
   });
 
-  test('appears in search results', () => {});
+  test.skip('appears in search results', () => {});
 
-  test('performs basic filtering by name', () => {});
+  test.skip('performs basic filtering by name', () => {});
 
-  test('filters by product family', () => {});
+  test.skip('filters by product family', () => {});
 
-  test('filters by console-wide services', () => {});
+  test.skip('filters by console-wide services', () => {});
 
-  test('filters by content type', () => {});
+  test.skip('filters by content type', () => {});
 
-  test('filters by use case', () => {});
+  test.skip('filters by use case', () => {});
 
-  test('displays bookmarked resources', () => {});
+  test.skip('displays bookmarked resources', () => {});
 });
 
 
