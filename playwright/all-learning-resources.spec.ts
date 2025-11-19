@@ -49,7 +49,7 @@ test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
 
-    await page.goto('https://console.stage.redhat.com', { waitUntil: 'load', timeout: 60000 });
+    await page.goto('https://stage.foo.redhat.com:1337', { waitUntil: 'load', timeout: 60000 });
 
     const loggedIn = await page.getByText('Hi,').isVisible();
 
