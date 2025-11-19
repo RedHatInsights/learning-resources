@@ -94,9 +94,22 @@ test.describe('all learning resources', async () => {
     await expect(page.getByText('All learning resources (1)', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('filters by product family', () => {});
+  test.skip('filters by product family', async({page}) => {});
 
-  test.skip('filters by console-wide services', () => {});
+  test.skip('filters by console-wide services', async({page}) => {
+    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.waitForLoadState("load");
+    await page.getByRole('checkbox', {name: 'Settings'}).click();
+    await page.waitForLoadState("load");
+
+    await expect(page.getByText('All learning resources(16)')).toBeVisible({timeout: 10000});
+    // all cards should have Settings
+    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    for (const card of cards) {
+      const text = await card.innerText();
+      await expect(text).toContain('Settings');
+    }
+  });
 
   test.skip('filters by content type', () => {});
 
