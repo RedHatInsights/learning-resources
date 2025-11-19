@@ -36,8 +36,7 @@ spec:
   - name: unit-tests-script
     value: |
       #!/bin/bash
-      set -ex
-      exit 0 
+      set -ex 
       npm install
       npm run lint
       npm test --  --runInBand --no-cache
@@ -240,9 +239,12 @@ spec:
       git checkout {{revision}}
       echo "Installing dependencies..."
       npm install
-     
+
+      echo "Installing Playwright browsers..."
+      npx playwright install --with-deps
+
       echo "Running Playwright tests ..."
-      npx playwright test      
+      npx playwright test
   - name: proxy-routes-json
     value: |
       @root path /
