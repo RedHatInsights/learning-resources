@@ -3,7 +3,7 @@ import { Page, test, expect } from '@playwright/test';
 test.use({ ignoreHTTPSErrors: true });
 
 
-const APP_TEST_HOST_PORT = 'console.stage.redhat.com';
+const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
 
 
 async function login(page: Page, user: string, password: string): Promise<void> {
