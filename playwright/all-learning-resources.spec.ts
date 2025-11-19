@@ -96,7 +96,7 @@ test.describe('all learning resources', async () => {
 
   test.skip('filters by product family', async({page}) => {});
 
-  test.skip('filters by console-wide services', async({page}) => {
+  test('filters by console-wide services', async({page}) => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
