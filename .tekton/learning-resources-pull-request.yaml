@@ -237,7 +237,7 @@ spec:
       #!/bin/sh
       set -e
 
-      echo "Generating proxy routes from frontend-proxy-routes parameter..."
+      echo "Generating proxy routes from frontend-proxy-routes parameter..." >&2
 
       # Validate route input
       validate_proxy_route() {
@@ -308,7 +308,7 @@ spec:
           route=$(echo "$line" | cut -d',' -f1)
           port=$(echo "$line" | cut -d',' -f2)
 
-          echo "Processing proxy route: $route -> 127.0.0.1:$port"
+          echo "Processing proxy route: $route -> 127.0.0.1:$port" >&2
 
           # Validate the route
           if ! validate_proxy_route "$route"; then
