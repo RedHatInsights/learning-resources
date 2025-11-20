@@ -232,7 +232,7 @@ spec:
 
       echo "Running Playwright tests ..."
       npx playwright test
-  - name: proxy-routes-json
+  - name: proxy-routes-script
     value: |
       #!/bin/sh
       set -e
