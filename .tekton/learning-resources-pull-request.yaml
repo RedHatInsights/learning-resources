@@ -34,14 +34,14 @@ spec:
   - name: rebuild
     value: "true"
   - name: app-routes
-    value:
-      - /learning-resources
-      - /settings/learning-resources
-      - /openshift/learning-resources
-      - /ansible/learning-resources
-      - /insights/learning-resources
-      - /edge/learning-resources
-      - /iam/learning-resources
+    value: |
+      /learning-resources
+      /settings/learning-resources
+      /openshift/learning-resources
+      /ansible/learning-resources
+      /insights/learning-resources
+      /edge/learning-resources
+      /iam/learning-resources
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -57,9 +57,6 @@ spec:
       set -e
 
       echo "Generating Caddyfile from route parameters..."
-
-      # Define the routes to be added (passed as parameters)
-      ROUTES="$(params.app-routes)"
 
       # Validate routes input
       validate_route() {
@@ -103,13 +100,18 @@ spec:
       echo "" > /tmp/learning_resources_routes.txt
       echo "# Dynamically generated learning-resources routes" >> /tmp/learning_resources_routes.txt
 
+      # Write routes to a file for processing (Tekton parameter interpolation happens here)
+      cat > /tmp/routes_input.txt << ROUTES_EOF
+      $(params.app-routes)
+      ROUTES_EOF
+
       # Parse and generate routes
-      echo "$ROUTES" | while IFS= read -r route; do
+      while IFS= read -r route; do
           # Skip empty lines
           [ -z "$route" ] && continue
 
-          # Remove leading/trailing whitespace and array syntax
-          route=$(echo "$route" | sed 's/^[[:space:]]*-*[[:space:]]*//' | sed 's/[[:space:]]*$//')
+          # Remove leading/trailing whitespace
+          route=$(echo "$route" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
           # Skip if still empty
           [ -z "$route" ] && continue
@@ -149,7 +151,7 @@ spec:
           }
       }
       EOF
-      done
+      done < /tmp/routes_input.txt
 
       # Verify the generated routes file is not empty
       if [ ! -s /tmp/learning_resources_routes.txt ]; then
