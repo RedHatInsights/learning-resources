@@ -33,15 +33,34 @@ spec:
     value: .
   - name: rebuild
     value: "true"
+  - name: test-app-name
+    value: learning-resources
+  - name: test-app-port
+    value: "8000"
+  - name: chrome-port
+    value: "9912"
   - name: app-routes
     value: |
-      /learning-resources
-      /settings/learning-resources
-      /openshift/learning-resources
-      /ansible/learning-resources
-      /insights/learning-resources
-      /edge/learning-resources
-      /iam/learning-resources
+      /$(params.test-app-name)
+      /settings/$(params.test-app-name)
+      /openshift/$(params.test-app-name)
+      /ansible/$(params.test-app-name)
+      /insights/$(params.test-app-name)
+      /edge/$(params.test-app-name)
+      /iam/$(params.test-app-name)
+  - name: frontend-proxy-routes
+    value: |
+      /,$(params.chrome-port)
+      /index.html,$(params.chrome-port)
+      /apps/chrome*,$(params.chrome-port)
+      /apps/$(params.test-app-name)*,$(params.test-app-port)
+      /settings/$(params.test-app-name)*,$(params.chrome-port)
+      /openshift/$(params.test-app-name)*,$(params.chrome-port)
+      /ansible/$(params.test-app-name)*,$(params.chrome-port)
+      /insights/$(params.test-app-name)*,$(params.chrome-port)
+      /edge/$(params.test-app-name)*,$(params.chrome-port)
+      /iam/$(params.test-app-name)*,$(params.chrome-port)
+      /$(params.test-app-name)*,$(params.chrome-port)
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -213,52 +232,115 @@ spec:
 
       echo "Running Playwright tests ..."
       npx playwright test
-  - name: proxy-routes-json
+  - name: proxy-routes-script
     value: |
+      #!/bin/sh
+      set -e
+
+      echo "Generating proxy routes from frontend-proxy-routes parameter..."
+
+      # Validate route input
+      validate_proxy_route() {
+          route="$1"
+
+          # Allow / as a special case
+          if [ "$route" = "/" ]; then
+              return 0
+          fi
+
+          # Check if route starts with /
+          if ! echo "$route" | grep -q '^/'; then
+              echo "ERROR: Route must start with /: $route"
+              return 1
+          fi
+
+          # Check for path traversal attempts (allow * for wildcards)
+          if echo "$route" | grep -q '\.\./'; then
+              echo "ERROR: Route contains path traversal (../): $route"
+              return 1
+          fi
+
+          # Check for invalid characters (allow alphanumeric, /, -, _, *, .)
+          if ! echo "$route" | grep -qE '^[a-zA-Z0-9/_*.-]+$'; then
+              echo "ERROR: Route contains invalid characters: $route"
+              return 1
+          fi
+
+          return 0
+      }
+
+      # Validate port number
+      validate_port() {
+          port="$1"
+
+          # Check if port is a number
+          if ! echo "$port" | grep -qE '^[0-9]+$'; then
+              echo "ERROR: Port must be a number: $port"
+              return 1
+          fi
+
+          # Check if port is in valid range (1-65535)
+          if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+              echo "ERROR: Port must be between 1 and 65535: $port"
+              return 1
+          fi
+
+          return 0
+      }
+
+      # Write routes to a file for processing
+      cat > /tmp/proxy_routes_input.txt << PROXY_ROUTES_EOF
+      $(params.frontend-proxy-routes)
+      PROXY_ROUTES_EOF
+
+      # Generate proxy route configuration
+      while IFS= read -r line; do
+          # Skip empty lines
+          [ -z "$line" ] && continue
+
+          # Remove leading/trailing whitespace
+          line=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+
+          # Skip if still empty
+          [ -z "$line" ] && continue
+
+          # Split on comma
+          route=$(echo "$line" | cut -d',' -f1)
+          port=$(echo "$line" | cut -d',' -f2)
+
+          echo "Processing proxy route: $route -> 127.0.0.1:$port"
+
+          # Validate the route
+          if ! validate_proxy_route "$route"; then
+              echo "ERROR: Route validation failed for: $route"
+              exit 1
+          fi
+
+          # Validate the port
+          if ! validate_port "$port"; then
+              echo "ERROR: Port validation failed for: $port"
+              exit 1
+          fi
+
+          # Generate the handle directive
+          if [ "$route" = "/" ]; then
+              # Special handling for root path
+              cat << EOF
       @root path /
       handle @root {
-          reverse_proxy 127.0.0.1:9912
+          reverse_proxy 127.0.0.1:${port}
       }
+      EOF
+          else
+              # Standard handle directive
+              cat << EOF
 
-      handle /index.html {
-          reverse_proxy 127.0.0.1:9912
+      handle ${route} {
+          reverse_proxy 127.0.0.1:${port}
       }
-
-      handle /apps/chrome* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /apps/learning-resources* {
-          reverse_proxy 127.0.0.1:8000
-      }
-
-      handle /settings/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /openshift/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /ansible/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /insights/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /edge/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /iam/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
+      EOF
+          fi
+      done < /tmp/proxy_routes_input.txt
   pipelineRef:
     resolver: git
     params:
