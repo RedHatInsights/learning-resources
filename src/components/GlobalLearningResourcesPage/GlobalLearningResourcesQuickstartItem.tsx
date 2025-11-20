@@ -45,6 +45,13 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
     color: 'green',
   };
 
+  // Helper function to check if this is a quickstart type (case-insensitive, space-insensitive)
+  const isQuickstartType = (typeText?: string): boolean => {
+    if (!typeText) return false;
+    const normalized = typeText.toLowerCase().replace(/\s+/g, '');
+    return normalized === 'quickstart';
+  };
+
   const handleBookmark = async (e: SyntheticEvent<Element, Event>) => {
     const user = await chrome.auth.getUser();
     if (!user) {
@@ -72,7 +79,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           component="div"
           className="lr-c-global-learning-resources-quickstart__card--title"
           onClick={() => {
-            if (quickStart.spec.type?.text === QUICK_START_TYPE.text) {
+            if (isQuickstartType(quickStart.spec.type?.text)) {
               chrome.quickStarts.activateQuickstart(quickStart.metadata.name);
             } else {
               window.open(quickStart.spec.link?.href, '_blank');
