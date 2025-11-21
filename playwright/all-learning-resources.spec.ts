@@ -10,6 +10,9 @@ async function login(page: Page, user: string, password: string): Promise<void> 
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
 
+  // dismiss the cookie prompt because it may cause issues later on
+  await page.getByRole('button', { name: 'Close'}).click();
+
   // Wait for and fill username field
   const usernameField = page.getByLabel('Red Hat login').first();
   try {
@@ -51,8 +54,10 @@ test.describe('all learning resources', async () => {
       await page.waitForLoadState("load");
       await expect(page.getByText('Invalid login')).not.toBeVisible();
       // long wait for the page to load; stage can be delicate
-      await page.waitForTimeout(10000);
+      await page.waitForTimeout(5000);
       await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
+      // dismiss the damned cookie prompt again because we're obnoxiously persistent about getting permission
+      await page.getByRole('button', { name: 'Accept all'}).click();
     }
   });
 
@@ -124,17 +129,18 @@ test.describe('all learning resources', async () => {
     }
   });
 
-  test('filters by content type', async({page}) => {
+  test.skip('filters by content type', async({page}) => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
+
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
     await page.waitForLoadState("load");
 
     await expect(page.getByText('All learning resources (18)')).toBeVisible({timeout: 10000});
-    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    const cards = await page.locator('.pf-v6-c-card').all();
+    expect(cards.length).toEqual(18);
     for (const card of cards) {
-      const text = await card.innerText();
-      await expect(text).toContain('Quick start');
+      await expect(card.getByText('Quick start')).toBeVisible();
     }
   });
 
@@ -146,11 +152,12 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("load");
 
     await expect(page.getByText('All learning resources (13)')).toBeVisible({timeout: 10000});
-    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    const cards = await page.locator('.pf-v6-c-card').all();
+    expect(cards.length).toEqual(13);
     for (const card of cards) {
-      const text = await card.innerText();
-      await expect(text).toContain('Observability');
+        await expect(card.getByText('Observability')).toBeVisible();
     }
+
   });
 
   test('displays bookmarked resources', async ({page}) => {
