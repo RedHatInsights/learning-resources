@@ -60,7 +60,7 @@ spec:
       /insights/$(params.test-app-name)*,$(params.chrome-port)
       /edge/$(params.test-app-name)*,$(params.chrome-port)
       /iam/$(params.test-app-name)*,$(params.chrome-port)
-      /$(params.test-app-name)*,$(params.test-app-port)
+      /$(params.test-app-name)*,$(params.chrome-port)
   - name: unit-tests-script
     value: |
       #!/bin/bash
