@@ -3,15 +3,25 @@ import { Page, test, expect } from '@playwright/test';
 test.use({ ignoreHTTPSErrors: true });
 
 
-const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+const APP_TEST_HOST_PORT = 'console.stage.redhat.com';
 
+// intercept routes for trustarc and abort the connection
+// (prevents inconsistent cookie prompting that is problematic for UI testing)
+async function disableCookiePrompt(page) {
+  await page.route('**/*', async (route, request) => {
+    if (request.url().includes('consent.trustarc.com') && request.resourceType() !== 'document') {
+      await route.abort();
+    } else {
+      await route.continue();
+    }
+  });
+}
 
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
 
-  // dismiss the cookie prompt because it may cause issues later on
-  await page.getByRole('button', { name: 'Close'}).click();
+  await disableCookiePrompt(page)
 
   // Wait for and fill username field
   const usernameField = page.getByLabel('Red Hat login').first();
@@ -56,8 +66,6 @@ test.describe('all learning resources', async () => {
       // long wait for the page to load; stage can be delicate
       await page.waitForTimeout(5000);
       await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
-      // dismiss the damned cookie prompt again because we're obnoxiously persistent about getting permission
-      await page.getByRole('button', { name: 'Accept all'}).click();
     }
   });
 
