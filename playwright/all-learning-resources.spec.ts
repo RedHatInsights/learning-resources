@@ -109,7 +109,7 @@ test.describe('all learning resources', async () => {
     const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
     for (const card of cards) {
       const text = await card.innerText();
-      await expect(text).toContain('Ansible');
+      expect(text).toContain('Ansible');
     }
   });
 
@@ -124,7 +124,7 @@ test.describe('all learning resources', async () => {
     const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
     for (const card of cards) {
       const text = await card.innerText();
-      await expect(text).toContain('Settings');
+      expect(text).toContain('Settings');
     }
   });
 
@@ -140,7 +140,7 @@ test.describe('all learning resources', async () => {
 
     await expect(page.getByText(`All learning resources (${expectedMatches})`)).toBeVisible({timeout: 10000});
     const cards = await page.locator('.pf-v6-c-card').all();
-    expect(cards.length).toEqual(18);
+    expect(cards.length).toEqual(expectedMatches);
     for (const card of cards) {
       await expect(card.getByText('Quick start')).toBeVisible();
     }
@@ -153,9 +153,10 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Observability'}).click();
     await page.waitForLoadState("load");
 
-    await expect(page.getByText('All learning resources (13)')).toBeVisible({timeout: 10000});
+    const expectedCount = 13;
+    await expect(page.getByText(`All learning resources (${expectedCount})`)).toBeVisible({timeout: 10000});
     const cards = await page.locator('.pf-v6-c-card').all();
-    expect(cards.length).toEqual(13);
+    expect(cards.length).toEqual(expectedCount);
     for (const card of cards) {
         await expect(card.getByText('Observability')).toBeVisible();
     }
