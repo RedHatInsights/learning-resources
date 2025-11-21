@@ -129,16 +129,19 @@ test.describe('all learning resources', async () => {
   });
 
   // still broken, fix probably didn't correct the issue fully
-  test.skip('filters by content type', async({page}) => {
+  test('filters by content type', async({page}) => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
-    await page.waitForLoadState("load");
 
+    // Wait for the filter to be applied by waiting for the count to update
     const expectedMatches = 18;
-
     await expect(page.getByText(`All learning resources (${expectedMatches})`)).toBeVisible({timeout: 10000});
+
+    // Wait for the DOM to stabilize by ensuring the card count matches the expected count
+    await expect(page.locator('.pf-v6-c-card')).toHaveCount(expectedMatches, {timeout: 10000});
+
     const cards = await page.locator('.pf-v6-c-card').all();
     expect(cards.length).toEqual(expectedMatches);
     for (const card of cards) {
