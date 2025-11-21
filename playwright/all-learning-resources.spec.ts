@@ -57,6 +57,12 @@ test.describe('all learning resources', async () => {
       // long wait for the page to load; stage can be delicate
       await page.waitForTimeout(5000);
       await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
+
+      // conditionally accept cookie prompt
+      const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
+      if (await acceptAllButton.isVisible()) {
+        await acceptAllButton.click();
+      }
     }
   });
 
