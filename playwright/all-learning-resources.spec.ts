@@ -169,6 +169,7 @@ test.describe('all learning resources', async () => {
 
     // now check that the "unbookmark" option is available on the bookmarked resources tab
     await page.getByText('My bookmarked resources').click();
+    await page.waitForLoadState("load");
     await expect(page.getByRole('heading', { name: 'Adding a machine pool to your' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
   });
