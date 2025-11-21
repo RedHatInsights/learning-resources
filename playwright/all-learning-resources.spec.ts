@@ -16,7 +16,6 @@ async function login(page: Page, user: string, password: string): Promise<void> 
     await usernameField.waitFor({ state: 'visible', timeout: 30000 });
   } catch (error) {
     console.error('FAILED to find username field with label "Red Hat login"');
-    console.error('Full page HTML:', htmlContent);
     throw error;
   }
   await usernameField.fill(user);
@@ -94,7 +93,7 @@ test.describe('all learning resources', async () => {
     await expect(page.getByText('All learning resources (1)', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('filters by product family', async({page}) => {
+  test('filters by product family', async({page}) => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
 
@@ -125,11 +124,47 @@ test.describe('all learning resources', async () => {
     }
   });
 
-  test.skip('filters by content type', () => {});
+  test('filters by content type', async({page}) => {
+    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.waitForLoadState("load");
+    await page.getByRole('checkbox', {name: 'Quick start'}).click();
+    await page.waitForLoadState("load");
 
-  test.skip('filters by use case', () => {});
+    await expect(page.getByText('All learning resources (18)')).toBeVisible({timeout: 10000});
+    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    for (const card of cards) {
+      const text = await card.innerText();
+      await expect(text).toContain('Quick start');
+    }
+  });
 
-  test.skip('displays bookmarked resources', () => {});
+  test('filters by use case', async({page}) => {
+
+    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.waitForLoadState("load");
+    await page.getByRole('checkbox', {name: 'Observability'}).click();
+    await page.waitForLoadState("load");
+
+    await expect(page.getByText('All learning resources (13)')).toBeVisible({timeout: 10000});
+    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    for (const card of cards) {
+      const text = await card.innerText();
+      await expect(text).toContain('Observability');
+    }
+  });
+
+  test('displays bookmarked resources', async ({page}) => {
+    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.waitForLoadState("load");
+
+    // bookmark the first item
+    await page.getByRole('button', { name: 'Bookmark learning resource' }).first().click();
+
+    // now check that the "unbookmark" option is available on the bookmarked resources tab
+    await page.getByText('My bookmarked resources').click();
+    await expect(page.getByRole('heading', { name: 'Adding a machine pool to your' }).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
+  });
 });
 
 
