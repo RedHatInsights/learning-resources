@@ -129,7 +129,7 @@ test.describe('all learning resources', async () => {
     }
   });
 
-  test.skip('filters by content type', async({page}) => {
+  test('filters by content type', async({page}) => {
     await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
     await page.waitForLoadState("load");
 
