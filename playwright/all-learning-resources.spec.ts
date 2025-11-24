@@ -108,7 +108,7 @@ test.describe('all learning resources', async () => {
 
     await expect(page.getByText('All learning resources (11)')).toBeVisible({timeout: 10000});
     // all cards should have Ansible
-    const cards = await page.locator('.pf-v6-c-card').all();
+    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Ansible');
@@ -123,7 +123,7 @@ test.describe('all learning resources', async () => {
 
     await expect(page.getByText('All learning resources (16)')).toBeVisible({timeout: 10000});
     // all cards should have Settings
-    const cards = await page.locator('.pf-v6-c-card').all();
+    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Settings');
@@ -144,7 +144,7 @@ test.describe('all learning resources', async () => {
     // Wait for the DOM to stabilize by ensuring the card count matches the expected count
     // await expect(page.locator('.pf-v6-c-card')).toHaveCount(expectedMatches, {timeout: 10000});
 
-    const cards = await page.locator('.pf-v6-c-card').all();
+    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     // expect(cards.length).toEqual(expectedMatches);
     for (const card of cards) {
       // print the text of each card to help understand the issue in-pipeline
@@ -162,7 +162,7 @@ test.describe('all learning resources', async () => {
 
     const expectedCount = 13;
     await expect(page.getByText(`All learning resources (${expectedCount})`)).toBeVisible({timeout: 10000});
-    const cards = await page.locator('.pf-v6-c-card').all();
+    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     expect(cards.length).toEqual(expectedCount);
     for (const card of cards) {
         await expect(card.getByText('Observability')).toBeVisible();
