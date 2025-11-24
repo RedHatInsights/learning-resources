@@ -4,6 +4,7 @@ test.use({ ignoreHTTPSErrors: true });
 
 // This can be changed to hit stage directly, but by default devs should be using stage.foo
 const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+const LEARNING_RESOURCES_URL = `https://${APP_TEST_HOST_PORT}/learning-resources`;
 
 
 // Prevents inconsistent cookie prompting that is problematic for UI testing
@@ -67,7 +68,6 @@ test.describe('all learning resources', async () => {
   });
 
   test('appears in the help menu and the link works', async({page}) => {
-      test.setTimeout(60000);    
       // click the help button
       await page.getByLabel('Toggle help panel').click()
       // click the "All Learning Catalog"
@@ -78,11 +78,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
-    test.setTimeout(60000);
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
-    await page.waitForLoadState("load");
-
-    // Wait for the count to be populated (data is loaded asynchronously)
+    await page.goto(LEARNING_RESOURCES_URL);
     await expect(page.getByText('All learning resources (', { exact: false })).toContainText('102', { timeout: 10000 });
   });
 
@@ -104,7 +100,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by product family', async({page}) => {
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
@@ -112,7 +108,7 @@ test.describe('all learning resources', async () => {
 
     await expect(page.getByText('All learning resources (11)')).toBeVisible({timeout: 10000});
     // all cards should have Ansible
-    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    const cards = await page.locator('.pf-v6-c-card').all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Ansible');
@@ -120,14 +116,14 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by console-wide services', async({page}) => {
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await page.waitForLoadState("load");
 
     await expect(page.getByText('All learning resources (16)')).toBeVisible({timeout: 10000});
     // all cards should have Settings
-    const cards = await page.locator('.lr-c-global-learning-resources-page__content--gallery-card-wrapper').all();
+    const cards = await page.locator('.pf-v6-c-card').all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Settings');
@@ -136,7 +132,7 @@ test.describe('all learning resources', async () => {
 
   // still broken, fix probably didn't correct the issue fully
   test('filters by content type', async({page}) => {
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
@@ -159,7 +155,7 @@ test.describe('all learning resources', async () => {
 
   test('filters by use case', async({page}) => {
 
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Observability'}).click();
     await page.waitForLoadState("load");
@@ -175,7 +171,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('displays bookmarked resources', async ({page}) => {
-    await page.goto(`https://${APP_TEST_HOST_PORT}/learning-resources`)
+    await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
     // bookmark the first item
