@@ -65,6 +65,7 @@ export type CreatorWizardProps = {
   files: CreatorFiles;
   filterData: FilterData;
   onChangeTags: (tags: { [kind: string]: string[] }) => void;
+  onChangeMetadataTags: (tags: Array<{ kind: string; value: string }>) => void;
 };
 
 type ViewMode = 'wizard' | 'creator';
@@ -308,12 +309,21 @@ const CreatorWizard = ({
   onChangeCurrentStage,
   resetCreator,
   onChangeTags,
+  onChangeMetadataTags,
   files,
   filterData,
 }: CreatorWizardProps) => {
   const chrome = useChrome();
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
   const schema = useMemo(() => makeSchema(chrome, filterData), []);
+
+  // Update stage when switching to creator mode to show preview
+  const handleViewModeChange = (newMode: ViewMode) => {
+    setViewMode(newMode);
+    if (newMode === 'creator') {
+      onChangeCurrentStage({ type: 'card' });
+    }
+  };
 
   const context = useMemo(
     () => ({
@@ -338,7 +348,7 @@ const CreatorWizard = ({
     <CreatorWizardContext.Provider value={context}>
       <Tabs
         activeKey={viewMode}
-        onSelect={(_, eventKey) => setViewMode(eventKey as ViewMode)}
+        onSelect={(_, eventKey) => handleViewModeChange(eventKey as ViewMode)}
         aria-label="Creator view mode"
         className="pf-v6-u-mb-md"
       >
@@ -394,7 +404,13 @@ const CreatorWizard = ({
           )}
         </FormRenderer>
       ) : (
-        <CreatorYAMLView />
+        <CreatorYAMLView
+          onChangeKind={onChangeKind}
+          onChangeQuickStartSpec={onChangeQuickStartSpec}
+          onChangeBundles={onChangeBundles}
+          onChangeTags={onChangeTags}
+          onChangeMetadataTags={onChangeMetadataTags}
+        />
       )}
     </CreatorWizardContext.Provider>
   );
