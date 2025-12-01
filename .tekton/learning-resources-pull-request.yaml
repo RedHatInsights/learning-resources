@@ -39,15 +39,6 @@ spec:
     value: "8000"
   - name: chrome-port
     value: "9912"
-  - name: app-routes
-    value: |
-      /$(params.test-app-name)
-      /settings/$(params.test-app-name)
-      /openshift/$(params.test-app-name)
-      /ansible/$(params.test-app-name)
-      /insights/$(params.test-app-name)
-      /edge/$(params.test-app-name)
-      /iam/$(params.test-app-name)
   - name: frontend-proxy-routes
     value: |
       /,$(params.chrome-port)
