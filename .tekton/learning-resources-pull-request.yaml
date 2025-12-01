@@ -202,7 +202,7 @@ spec:
     - name: url
       value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: btweed/platform-ui-e2e
+      value: btweed/simplified
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
