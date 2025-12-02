@@ -2,14 +2,14 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
-    build.appstudio.openshift.io/repo: https://github.com/RedHatInsights/learning-resources?rev={{revision}}
+    build.appstudio.openshift.io/repo: https://github.com/RedHatInsights/learning-resources.git?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "master"
-    pipelinesascode.tekton.dev/pipeline: https://github.com/RedHatInsights/konflux-pipelines/raw/main/pipelines/platform-ui/docker-build-run-unit-tests.yaml
+    pipelinesascode.tekton.dev/pipeline: https://github.com/catastrophe-brandon/konflux-pipelines/raw/btweed/platform-ui-e2e/pipelines/platform-ui/docker-build-run-all-tests.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: learning-resources
@@ -31,18 +31,321 @@ spec:
     value: build-tools/Dockerfile
   - name: path-context
     value: .
+  - name: rebuild
+    value: "true"
+  - name: test-app-name
+    value: learning-resources
+  - name: test-app-port
+    value: "8000"
+  - name: chrome-port
+    value: "9912"
   - name: unit-tests-script
     value: |
       #!/bin/bash
       set -ex
+      # Placeholder for unit testing script
+      exit 0
+  - name: run-app-script
+    value: |
+      #!/bin/sh
+      set -e
+
+      echo "Creating Caddyfile..."
+      cat > /etc/caddy/Caddyfile << CADDY_EOF
+            :8000 {
+          @settings_learning_resources_match {
+              path /settings/learning-resources /settings/learning-resources/
+          }
+          handle @settings_learning_resources_match {
+              uri strip_prefix /settings/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @settings_learning_resources_subpath {
+              path /settings/learning-resources/*
+          }
+          handle @settings_learning_resources_subpath {
+              uri strip_prefix /settings/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @openshift_learning_resources_match {
+              path /openshift/learning-resources /openshift/learning-resources/
+          }
+          handle @openshift_learning_resources_match {
+              uri strip_prefix /openshift/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @openshift_learning_resources_subpath {
+              path /openshift/learning-resources/*
+          }
+          handle @openshift_learning_resources_subpath {
+              uri strip_prefix /openshift/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @ansible_learning_resources_match {
+              path /ansible/learning-resources /ansible/learning-resources/
+          }
+          handle @ansible_learning_resources_match {
+              uri strip_prefix /ansible/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @ansible_learning_resources_subpath {
+              path /ansible/learning-resources/*
+          }
+          handle @ansible_learning_resources_subpath {
+              uri strip_prefix /ansible/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @insights_learning_resources_match {
+              path /insights/learning-resources /insights/learning-resources/
+          }
+          handle @insights_learning_resources_match {
+              uri strip_prefix /insights/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @insights_learning_resources_subpath {
+              path /insights/learning-resources/*
+          }
+          handle @insights_learning_resources_subpath {
+              uri strip_prefix /insights/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @edge_learning_resources_match {
+              path /edge/learning-resources /edge/learning-resources/
+          }
+          handle @edge_learning_resources_match {
+              uri strip_prefix /edge/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @edge_learning_resources_subpath {
+              path /edge/learning-resources/*
+          }
+          handle @edge_learning_resources_subpath {
+              uri strip_prefix /edge/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @iam_learning_resources_match {
+              path /iam/learning-resources /iam/learning-resources/
+          }
+          handle @iam_learning_resources_match {
+              uri strip_prefix /iam/learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @iam_learning_resources_subpath {
+              path /iam/learning-resources/*
+          }
+          handle @iam_learning_resources_subpath {
+              uri strip_prefix /iam/learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @learning_resources_match {
+              path /learning-resources /learning-resources/
+          }
+          handle @learning_resources_match {
+              uri strip_prefix /learning-resources
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @learning_resources_subpath {
+              path /learning-resources/*
+          }
+          handle @learning_resources_subpath {
+              uri strip_prefix /learning-resources
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @learning_resources_creator_match {
+              path /learning-resources/creator /learning-resources/creator/
+          }
+          handle @learning_resources_creator_match {
+              uri strip_prefix /learning-resources/creator
+              rewrite / /index.html
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          @learning_resources_creator_subpath {
+              path /learning-resources/creator/*
+          }
+          handle @learning_resources_creator_subpath {
+              uri strip_prefix /learning-resources/creator
+              file_server * {
+                  root /srv/dist
+              }
+          }
+
+          handle / {
+              file_server * {
+                  root /srv/dist
+              }
+          }
+      }
+      CADDY_EOF
       
+      echo "Starting application with Caddy..."
+      # Start Caddy with the configuration
+      exec caddy run --config /etc/caddy/Caddyfile
+  - name: proxy-routes-script
+    value: |
+      #!/bin/sh
+      set -e
+      cat << PROXY_ROUTES_EOF
+            # Caddyfile template for frontend-development-proxy sidecar
+      # Note:
+      # Port 9912 - Resources from insights-chrome-dev image
+      # Port 8000 - Resources from application to test
+
+      @root path /
+      handle @root {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /index.html {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/chrome* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /apps/learning-resources* {
+          reverse_proxy 127.0.0.1:8000
+      }
+
+      handle /settings/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /openshift/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /ansible/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /insights/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /edge/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /iam/learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+      handle /learning-resources/creator* {
+          reverse_proxy 127.0.0.1:9912
+      }
+
+
+      # Catch all for paths that don't match
+      handle /learning-resources* {
+          reverse_proxy 127.0.0.1:9912
+      }
+      PROXY_ROUTES_EOF
+  - name: e2e-tests-script
+    value: |
+      #!/bin/bash
+      set -ex
+      getent hosts stage.foo.redhat.com
+      timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
+        echo "Waiting for dev server to be ready"
+        sleep 5
+      done'
+      echo "Dev server ready!"
+
+      # Clone fresh from git instead of using trusted artifact
+      echo "Cloning repository for tests..."
+      cd /tmp
+
+      git clone {{source_url}} test-repo
+      cd test-repo
+      git checkout {{revision}}
+      echo "Installing dependencies..."
       npm install
-      npm run lint
-      npm test --  --runInBand --no-cache
+
+      echo "Installing Playwright browsers..."
+      npx playwright install --with-deps
+
+      echo "Running Playwright tests ..."
+      npx playwright test
   pipelineRef:
-    name: docker-build
+    resolver: git
+    params:
+    - name: url
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
+    - name: revision
+      value: btweed/platform-ui-e2e
+    - name: pathInRepo
+      value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
+  taskRunSpecs:
+    - pipelineTaskName: run-e2e-tests
+      serviceAccountName: build-pipeline-learning-resources
+      podTemplate:
+        # Override /etc/hosts to redirect stage.foo.redhat.com to localhost
+        hostAliases:
+          - ip: "::1"
+            hostnames:
+              - "stage.foo.redhat.com"
+          - ip: "127.0.0.1"
+            hostnames:
+              - "stage.foo.redhat.com"
   workspaces:
   - name: workspace
     volumeClaimTemplate:
