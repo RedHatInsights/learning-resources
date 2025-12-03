@@ -234,69 +234,52 @@ spec:
       exec caddy run --config /etc/caddy/Caddyfile
   - name: proxy-routes-script
     value: |
-      #!/bin/sh
-      set -e
-      cat << PROXY_ROUTES_EOF
-            # Caddyfile template for frontend-development-proxy sidecar
-      # Note:
-      # Port 9912 - Resources from insights-chrome-dev image
-      # Port 8000 - Resources from application to test
-
-      @root path /
-      handle @root {
-          reverse_proxy 127.0.0.1:9912
+            {
+        "/index.html": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/apps/chrome*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/apps/learning-resources*": {
+          "url": "http://localhost:8000",
+          "is_chrome": false
+        },
+        "/settings/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/openshift/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/ansible/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/insights/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/edge/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/iam/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/learning-resources*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        },
+        "/learning-resources/creator*": {
+          "url": "http://localhost:9912",
+          "is_chrome": true
+        }
       }
-
-      handle /index.html {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /apps/chrome* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /apps/learning-resources* {
-          reverse_proxy 127.0.0.1:8000
-      }
-
-      handle /settings/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /openshift/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /ansible/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /insights/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /edge/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /iam/learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-      handle /learning-resources/creator* {
-          reverse_proxy 127.0.0.1:9912
-      }
-
-
-      # Catch all for paths that don't match
-      handle /learning-resources* {
-          reverse_proxy 127.0.0.1:9912
-      }
-      PROXY_ROUTES_EOF
   - name: e2e-tests-script
     value: |
       #!/bin/bash
@@ -327,9 +310,9 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/catastrophe-brandon/konflux-pipelines
+      value: https://github.com/RedHatInsights/konflux-pipelines
     - name: revision
-      value: c956d1b09d2d6bb70110f7e6f67029276eb9f62a
+      value: main
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
