@@ -233,8 +233,11 @@ spec:
       # Start Caddy with the configuration
       exec caddy run --config /etc/caddy/Caddyfile
   - name: proxy-routes-script
-    value: |-
-            {"/index.html": {"url": "http://localhost:9912", "is_chrome": true}, "/apps/chrome*": {"url": "http://localhost:9912", "is_chrome": true}, "/apps/learning-resources*": {"url": "http://localhost:8000", "is_chrome": false}, "/settings/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/openshift/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/ansible/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/insights/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/edge/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/iam/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/learning-resources/creator*": {"url": "http://localhost:9912", "is_chrome": true}}
+    value: |
+      #!/bin/sh
+      cat << 'EOF'
+      {"/index.html": {"url": "http://localhost:9912", "is_chrome": true}, "/apps/chrome*": {"url": "http://localhost:9912", "is_chrome": true}, "/apps/learning-resources*": {"url": "http://localhost:8000", "is_chrome": false}, "/settings/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/openshift/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/ansible/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/insights/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/edge/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/iam/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/learning-resources*": {"url": "http://localhost:9912", "is_chrome": true}, "/learning-resources/creator*": {"url": "http://localhost:9912", "is_chrome": true}}
+      EOF
   - name: e2e-tests-script
     value: |
       #!/bin/bash
