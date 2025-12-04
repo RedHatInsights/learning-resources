@@ -80,7 +80,7 @@ test.describe('all learning resources', async () => {
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
     const expected = 98;
-    await expect(page.getByText('All learning resources (', { exact: false })).toContainText(expected, { timeout: 10000 });
+    await expect(page.getByText('All learning resources (', { exact: false })).toContainText(String(expected), { timeout: 10000 });
   });
 
   test('appears in search results', async ({page}) => {
