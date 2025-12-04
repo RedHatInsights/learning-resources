@@ -50,17 +50,50 @@ spec:
       /iam/$(params.test-app-name)
   - name: frontend-proxy-routes
     value: |
-      /,$(params.chrome-port)
-      /index.html,$(params.chrome-port)
-      /apps/chrome*,$(params.chrome-port)
-      /apps/$(params.test-app-name)*,$(params.test-app-port)
-      /settings/$(params.test-app-name)*,$(params.chrome-port)
-      /openshift/$(params.test-app-name)*,$(params.chrome-port)
-      /ansible/$(params.test-app-name)*,$(params.chrome-port)
-      /insights/$(params.test-app-name)*,$(params.chrome-port)
-      /edge/$(params.test-app-name)*,$(params.chrome-port)
-      /iam/$(params.test-app-name)*,$(params.chrome-port)
-      /$(params.test-app-name)*,$(params.chrome-port)
+      @root path /
+        handle @root {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /index.html {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /apps/chrome* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /apps/learning-resources* {
+            reverse_proxy 127.0.0.1:8000
+        }
+
+        handle /settings/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /openshift/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /ansible/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /insights/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /edge/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /iam/learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
+
+        handle /learning-resources* {
+            reverse_proxy 127.0.0.1:9912
+        }
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -345,9 +378,9 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/RedHatInsights/konflux-pipelines
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: main
+      value: btweed/refactoring
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
