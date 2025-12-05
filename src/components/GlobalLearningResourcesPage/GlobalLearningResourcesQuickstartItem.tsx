@@ -1,5 +1,5 @@
 import React, { SyntheticEvent, useState } from 'react';
-import { QuickStart, QuickStartType } from '@patternfly/quickstarts';
+import { QuickStart } from '@patternfly/quickstarts';
 import {
   Button,
   Card,
@@ -40,9 +40,12 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
     quickStart.spec.link?.href ?? 'https://console.redhat.com/'
   );
   const labelColor = quickStart.spec.type?.color;
-  const QUICK_START_TYPE: QuickStartType = {
-    text: 'Quick start',
-    color: 'green',
+
+  // Helper function to check if this is a quickstart type (case-insensitive, space-insensitive)
+  const isQuickstartType = (typeText?: string): boolean => {
+    if (!typeText) return false;
+    const normalized = typeText.toLowerCase().replace(/\s+/g, '');
+    return normalized === 'quickstart';
   };
 
   const handleBookmark = async (e: SyntheticEvent<Element, Event>) => {
@@ -72,7 +75,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           component="div"
           className="lr-c-global-learning-resources-quickstart__card--title"
           onClick={() => {
-            if (quickStart.spec.type?.text === QUICK_START_TYPE.text) {
+            if (isQuickstartType(quickStart.spec.type?.text)) {
               chrome.quickStarts.activateQuickstart(quickStart.metadata.name);
             } else {
               window.open(quickStart.spec.link?.href, '_blank');
