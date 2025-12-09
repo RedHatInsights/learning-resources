@@ -148,6 +148,8 @@ test.describe('all learning resources', async () => {
     const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
     // expect(cards.length).toEqual(expectedMatches);
     for (const card of cards) {
+      // Scroll card into view before checking visibility
+      await card.scrollIntoViewIfNeeded();
       // print the text of each card to help understand the issue in-pipeline
       console.log(await card.innerText());
       await expect(card.getByText('Quick start')).toBeVisible();
