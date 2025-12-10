@@ -143,15 +143,17 @@ test.describe('all learning resources', async () => {
     await expect(page.getByText(`All learning resources (${expectedMatches})`)).toBeVisible({timeout: 10000});
 
     // Wait for the DOM to stabilize by ensuring the card count matches the expected count
-    // await expect(page.locator('.pf-v6-c-card')).toHaveCount(expectedMatches, {timeout: 10000});
+    await expect(page.locator('.pf-v6-c-card:visible')).toHaveCount(expectedMatches, {timeout: 10000});
 
-    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
-    // expect(cards.length).toEqual(expectedMatches);
+    const cards = await page.locator('.pf-v6-c-card:visible').all();
+    expect(cards.length).toEqual(expectedMatches);
     for (const card of cards) {
-      // Scroll card into view before checking visibility
+      const cardHidden = await card.isHidden();
+      if (cardHidden) {
+        console.log("Somehow we located a hidden quickstart card. Card text follows:");
+        console.log(await card.innerText());
+      }
       await card.scrollIntoViewIfNeeded();
-      // print the text of each card to help understand the issue in-pipeline
-      console.log(await card.innerText());
       await expect(card.getByText('Quick start')).toBeVisible();
     }
   });
