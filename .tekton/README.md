@@ -102,5 +102,5 @@ Both route generation scripts include validation:
 
 ## Related Documentation
 
-- Konflux Pipelines: `/Users/btweed/repos/konflux-pipelines/pipelines/platform-ui/README.md`
+- Konflux Pipelines: https://github.com/RedHatInsights/konflux-pipelines/blob/main/pipelines/platform-ui/README.md
 - Caddy Documentation: https://caddyserver.com/docs/
