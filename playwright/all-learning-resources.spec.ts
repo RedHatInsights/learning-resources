@@ -179,11 +179,28 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
-    // bookmark the first item
-    await page.getByRole('button', { name: 'Bookmark learning resource' }).first().click();
-    await page.waitForLoadState("load");
+    // The holy item chosen for testing
+    const testItemText = "Adding a machine pool";
 
-    // now check that the "unbookmark" option is available on the bookmarked resources tab
+    // Find the card for "Adding a machine pool"
+    const testCard = page.locator('.pf-v6-c-card').filter({ hasText: testItemText }).first();
+    await expect(testCard).toBeVisible();
+
+    // Check if the card is already bookmarked by looking for the unbookmark button
+    const unbookmarkButton = testCard.getByRole('button', { name: 'Unbookmark learning resource' });
+    const isAlreadyBookmarked = await unbookmarkButton.isVisible();
+
+    if (!isAlreadyBookmarked) {
+      // Card is not bookmarked, so bookmark it
+      const bookmarkButton = testCard.getByRole('button', { name: 'Bookmark learning resource' });
+      await bookmarkButton.click();
+      await page.waitForLoadState("load");
+
+      // Confirm it has been bookmarked
+      await expect(testCard.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
+    }
+
+    // Now check that the card appears on the "My bookmarked resources" tab
     await page.getByText('My bookmarked resources').click();
     await page.waitForLoadState("load");
 
