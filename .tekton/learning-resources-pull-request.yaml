@@ -309,6 +309,7 @@ spec:
     value: |
       #!/bin/bash
       set -ex
+      echo "E2E_USER is ${E2E_USER}"
       getent hosts stage.foo.redhat.com
       timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
@@ -331,13 +332,15 @@ spec:
 
       echo "Running Playwright tests ..."
       npx playwright test
+  - name: e2e-credentials-secret
+    value: learning-resources-credentials-secret
   pipelineRef:
     resolver: git
     params:
     - name: url
       value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: btweed/refactoring
+      value: btweed/secrets-handling
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
