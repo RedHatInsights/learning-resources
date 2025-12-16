@@ -340,7 +340,7 @@ spec:
     - name: url
       value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: btweed/secrets-handling
+      value: btweed/refactoring
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
