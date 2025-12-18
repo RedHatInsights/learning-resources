@@ -22,20 +22,31 @@ export type ModelsType = {
   ASK_RED_HAT: string;
 };
 
-const HelpPanelContent = ({
-  toggleDrawer,
-  Models,
-  setVirtualAssistantState,
-}: {
-  toggleDrawer: () => void;
-  Models?: ModelsType;
-  setVirtualAssistantState?: Dispatch<SetStateAction<VirtualAssistantState>>;
-}) => {
+const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
   const searchFlag = useFlag('platform.chrome.help-panel_search');
   const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
   const askRH = useFlag('platform.chrome.help-panel_direct-ask-redhat');
 
+  const { hookResult, loading } = useRemoteHook<
+    [unknown, Dispatch<SetStateAction<VirtualAssistantState>>]
+  >({
+    scope: 'virtualAssistant',
+    module: './state/globalState',
+    importName: 'useVirtualAssistant',
+  });
+
+  const [module] = useLoadModule(
+    {
+      scope: 'virtualAssistant',
+      module: './state/globalState',
+      importName: 'Models',
+    },
+    {}
+  );
+
   const showStatusPageInHeader = searchFlag && kbFlag;
+
+  const [, setVirtualAssistantState] = hookResult || [];
 
   return (
     <>
@@ -64,10 +75,20 @@ const HelpPanelContent = ({
               variant="link"
               component="button"
               onClick={() => {
-                setVirtualAssistantState?.({
-                  isOpen: true,
-                  currentModel: Models?.ASK_RED_HAT,
-                });
+                if (!loading && module && setVirtualAssistantState) {
+                  let Models: ModelsType;
+                  // FIX: temporary solution to have asynchroonous release of insights chrome and learning resources
+                  if (module && !module.ASK_RED_HAT) {
+                    Models = module.Models as ModelsType;
+                  } else {
+                    Models = module as ModelsType;
+                  }
+
+                  setVirtualAssistantState({
+                    isOpen: true,
+                    currentModel: Models.ASK_RED_HAT,
+                  });
+                }
               }}
               className="pf-v6-u-align-items-flex-start"
               icon={<AskRedHatIcon width={20} height={20} />}
@@ -102,38 +123,4 @@ const HelpPanelContent = ({
   );
 };
 
-const HelpPanelContentWrapper = (props: { toggleDrawer: () => void }) => {
-  const { hookResult, loading } = useRemoteHook<
-    [unknown, Dispatch<SetStateAction<VirtualAssistantState>>]
-  >({
-    scope: 'virtualAssistant',
-    module: './state/globalState',
-    importName: 'useVirtualAssistant',
-  });
-
-  const [module] = useLoadModule(
-    {
-      scope: 'virtualAssistant',
-      module: './state/globalState',
-      importName: 'Models',
-    },
-    {}
-  );
-
-  if (loading || !module) {
-    return 'Loading...';
-  }
-
-  const Models = module as ModelsType;
-
-  const [, setState] = hookResult || [];
-  return (
-    <HelpPanelContent
-      {...props}
-      Models={Models}
-      {...(setState && { setVirtualAssistantState: setState })}
-    />
-  );
-};
-
-export default HelpPanelContentWrapper;
+export default HelpPanelContent;
