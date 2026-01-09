@@ -35,7 +35,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
     importName: 'useVirtualAssistant',
   });
 
-  const [module] = useLoadModule(
+  const [module, error] = useLoadModule(
     {
       scope: 'virtualAssistant',
       module: './state/globalState',
@@ -73,6 +73,7 @@ const HelpPanelContent = ({ toggleDrawer }: { toggleDrawer: () => void }) => {
           {askRH ? (
             <Button
               variant="link"
+              isDisabled={!!error || loading}
               component="button"
               onClick={() => {
                 if (!loading && module && setVirtualAssistantState) {
