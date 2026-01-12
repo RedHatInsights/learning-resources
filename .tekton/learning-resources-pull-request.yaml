@@ -56,12 +56,9 @@ spec:
       #!/bin/bash
       set -ex
 
-      # Clone repository for running tests
-      echo "Cloning repository..."
-      cd /tmp
-      git clone {{source_url}} test-repo
-      cd test-repo
-      git checkout {{revision}}
+      # Use shared workspace instead of cloning
+      echo "Using workspace directory..."
+      cd /workspace/workspace
 
       echo "E2E_USER is ${E2E_USER}"
       getent hosts stage.foo.redhat.com
@@ -71,9 +68,13 @@ spec:
       done'
       echo "Dev server ready!"
 
-      #echo "Installing dependencies..."
-      #npm install
-      npm install @playwright/test
+      # Install only if node_modules doesn't exist or @playwright/test is missing
+      if [ ! -d "node_modules/@playwright/test" ]; then
+        echo "Installing Playwright test package..."
+        npm install @playwright/test
+      else
+        echo "Playwright test package already installed, skipping npm install"
+      fi
 
       echo "Installing Playwright browsers..."
       npx playwright install --with-deps
