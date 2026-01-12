@@ -41,7 +41,11 @@ spec:
   - name: chrome-port
     value: "9912"
   - name: unit-tests-script
-    value: ""
+    value: |
+      #!/bin/bash
+      set -ex
+
+      npm install
   - name: run-app-script
     value: |
       #!/bin/sh
@@ -65,10 +69,10 @@ spec:
       echo "Dev server ready!"
 
       echo "Installing Playwright browsers..."
-      npx playwright install --with-deps
+      ./node_modules/.bin/playwright install --with-deps
 
       echo "Running Playwright tests ..."
-      npx playwright test
+      ./node_modules/.bin/playwright test
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
