@@ -64,14 +64,6 @@ spec:
       done'
       echo "Dev server ready!"
 
-      # Install only if node_modules doesn't exist or @playwright/test is missing
-      if [ ! -d "node_modules/@playwright/test" ]; then
-        echo "Installing Playwright test package..."
-        npm install @playwright/test
-      else
-        echo "Playwright test package already installed, skipping npm install"
-      fi
-
       echo "Installing Playwright browsers..."
       npx playwright install --with-deps
 
