@@ -56,10 +56,6 @@ spec:
       #!/bin/bash
       set -ex
 
-      # Use shared workspace instead of cloning
-      echo "Using workspace directory..."
-      cd /workspace/workspace
-
       echo "E2E_USER is ${E2E_USER}"
       getent hosts stage.foo.redhat.com
       timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
