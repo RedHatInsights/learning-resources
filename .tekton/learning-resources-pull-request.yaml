@@ -73,6 +73,7 @@ spec:
 
       #echo "Installing dependencies..."
       #npm install
+      npm install @playwright/test
 
       echo "Installing Playwright browsers..."
       npx playwright install --with-deps
