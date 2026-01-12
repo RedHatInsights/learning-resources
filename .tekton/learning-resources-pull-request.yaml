@@ -46,6 +46,13 @@ spec:
       set -ex
 
       npm install
+
+      echo "DEBUG: Verifying node_modules after install"
+      ls -la node_modules/.bin/playwright
+      echo "DEBUG: Current working directory:"
+      pwd
+      echo "DEBUG: Workspace contents:"
+      ls -la
   - name: run-app-script
     value: |
       #!/bin/sh
@@ -59,6 +66,13 @@ spec:
     value: |
       #!/bin/bash
       set -ex
+
+      echo "DEBUG: E2E tests starting - checking workspace"
+      pwd
+      echo "DEBUG: Workspace contents:"
+      ls -la
+      echo "DEBUG: Checking for node_modules:"
+      ls -la node_modules/.bin/playwright || echo "DEBUG: node_modules/.bin/playwright NOT FOUND"
 
       echo "E2E_USER is ${E2E_USER}"
       getent hosts stage.foo.redhat.com
