@@ -71,8 +71,8 @@ spec:
       done'
       echo "Dev server ready!"
 
-      echo "Installing dependencies..."
-      npm install
+      #echo "Installing dependencies..."
+      #npm install
 
       echo "Installing Playwright browsers..."
       npx playwright install --with-deps
