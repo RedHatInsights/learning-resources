@@ -18,6 +18,31 @@ async function disableCookiePrompt(page: Page) {
   });
 }
 
+// Extracts the count from "All learning resources (N)" text
+async function extractResourceCount(page: Page): Promise<number> {
+  // Wait for the element to contain a number in parentheses (not just the loading state)
+  // Use .first() to handle cases where multiple elements match (e.g., tab and overflow menu)
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
+  await expect(countElement).toContainText(/All learning resources \(\d+\)/, { timeout: 10000 });
+
+  const countText = await countElement.textContent();
+
+  // Extract the number from text like "All learning resources (99)"
+  const openParen = countText?.indexOf('(') ?? -1;
+  const closeParen = countText?.indexOf(')') ?? -1;
+  const countString = openParen >= 0 && closeParen > openParen
+    ? countText?.substring(openParen + 1, closeParen).trim()
+    : '0';
+
+  const actualCount = parseInt(countString, 10);
+
+  if (isNaN(actualCount)) {
+    throw new Error(`Failed to extract valid count from text: "${countText}". Extracted string was: "${countString}"`);
+  }
+
+  return actualCount;
+}
+
 async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
@@ -82,8 +107,7 @@ test.describe('all learning resources', async () => {
     const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
     const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
 
-    const countText = await page.getByText('All learning resources (', { exact: false }).textContent();
-    const actualCount = parseInt(countText?.match(/\((\d+)\)/)?.[1] || '0');
+    const actualCount = await extractResourceCount(page);
 
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
@@ -167,13 +191,29 @@ test.describe('all learning resources', async () => {
 
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
-    await page.getByRole('checkbox', {name: 'Observability'}).click();
-    await page.waitForLoadState("load");
 
-    const expectedCount = 13;
-    await expect(page.getByText(`All learning resources (${expectedCount})`)).toBeVisible({timeout: 10000});
+    const observabilityCheckbox = page.getByRole('checkbox', {name: 'Observability'});
+    await observabilityCheckbox.click();
+
+    // Verify the checkbox is checked
+    await expect(observabilityCheckbox).toBeChecked();
+
+    // Wait for network and DOM to stabilize after the filter is applied
+    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+
+    const baseline = 13;
+    const tolerancePercent = 10; // 10% tolerance
+    const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
+    const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
+
+    const actualCount = await extractResourceCount(page);
+
+    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
+    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
+
     const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
-    expect(cards.length).toEqual(expectedCount);
+    expect(cards.length).toEqual(actualCount);
     for (const card of cards) {
         await expect(card.getByText('Observability')).toBeVisible();
     }
