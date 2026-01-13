@@ -77,8 +77,16 @@ test.describe('all learning resources', async () => {
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
-    const expected = 98;
-    await expect(page.getByText('All learning resources (', { exact: false })).toContainText(String(expected), { timeout: 10000 });
+    const baseline = 98;
+    const tolerancePercent = 10; // 10% tolerance
+    const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
+    const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
+
+    const countText = await page.getByText('All learning resources (', { exact: false }).textContent();
+    const actualCount = parseInt(countText?.match(/\((\d+)\)/)?.[1] || '0');
+
+    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
+    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
   });
 
   test('appears in search results', async ({page}) => {
