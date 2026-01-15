@@ -48,19 +48,22 @@ jobs:
         with:
           path: "**/node_modules"
           key: install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      # Rebuild native bindings for @swc/core after cache restoration
-      - name: Rebuild native modules
-        run: npm rebuild @swc/core
       # custom cypress cache, caches cypress and cypress webpack node module dependencies based on lock file
       - uses: actions/cache@v3
         id: cypress-cache
         with:
-          path: | 
+          path: |
             /home/runner/.cache/Cypress
-            **/.cypress-cache 
+            **/.cypress-cache
           key: cypress-install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+      # Install dependencies fresh (cypress action will handle this)
+      - name: Install dependencies
+        run: npm i
+      # Rebuild native bindings for @swc/core after installation
+      - name: Rebuild native modules
+        run: npm rebuild @swc/core
       - uses: cypress-io/github-action@v5
         with:
             component: true
-            install-command: npm i
+            install: false
             browser: chrome
