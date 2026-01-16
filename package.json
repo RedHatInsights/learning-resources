@@ -21,8 +21,8 @@
     "postinstall": "ts-patch install"
   },
   "dependencies": {
-    "@data-driven-forms/pf4-component-mapper": "^4.1.4",
-    "@data-driven-forms/react-form-renderer": "^4.1.4",
+    "@data-driven-forms/pf4-component-mapper": "^4.1.6",
+    "@data-driven-forms/react-form-renderer": "^4.1.5",
     "@monaco-editor/react": "^4.7.0",
     "@patternfly/quickstarts": "^6.4.0",
     "@patternfly/react-core": "^6.4.0",
@@ -37,14 +37,14 @@
     "monaco-editor": "^0.55.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "^6.30.2",
-    "yaml": "^2.8.1"
+    "react-router-dom": "^6.30.3",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "^1.57.0",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.12",
-    "@redhat-cloud-services/frontend-components-config": "^6.7.4",
-    "@redhat-cloud-services/tsc-transform-imports": "^1.0.26",
+    "@redhat-cloud-services/frontend-components-config": "^6.7.21",
+    "@redhat-cloud-services/tsc-transform-imports": "^1.0.37",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.3.1",
     "@types/react": "18.3.27",
@@ -58,7 +58,7 @@
     "jest_workaround": "^0.79.19",
     "jest-environment-jsdom": "^29.7.0",
     "npm-run-all2": "5.0.2",
-    "ts-jest": "^29.4.5",
+    "ts-jest": "^29.4.6",
     "ts-patch": "^3.3.0",
     "typescript": "^5.9.3",
     "webpack-bundle-analyzer": "4.10.2"
