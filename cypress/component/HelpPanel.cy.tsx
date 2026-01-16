@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlagProvider, IConfig } from '@unleash/proxy-client-react';
+import { IntlProvider } from 'react-intl';
 import * as chrome from '@redhat-cloud-services/frontend-components/useChrome';
 import HelpPanel from '../../src/components/HelpPanel';
 import ScalprumProvider from '@scalprum/react-core';
 import { initialize, removeScalprum } from '@scalprum/core';
+import messages from '../../src/Messages';
 
 const defaultFlags: IConfig['bootstrap'] = [{
       name: 'platform.chrome.help-panel_knowledge-base',
@@ -11,6 +13,11 @@ const defaultFlags: IConfig['bootstrap'] = [{
       impressionData: false,
       variant: {name: 'disabled', enabled: false},
     }]
+
+// Helper function to get message text for testing
+const getMessageText = (messageKey: keyof typeof messages): string => {
+  return messages[messageKey].defaultMessage;
+};
 
 const Wrapper = ({ children, flags = defaultFlags }: { children: React.ReactNode, flags?: IConfig['bootstrap'] }) => {
   const [isReady, setIsReady] = useState(false);
@@ -43,16 +50,18 @@ const Wrapper = ({ children, flags = defaultFlags }: { children: React.ReactNode
     return null;
   }
   return (
-    <ScalprumProvider scalprum={scalprum.current}>
-      <FlagProvider config={{
-        appName: 'test-app',
-        url: 'https://unleash.example.com/api/',
-        clientKey: '123',
-        bootstrap: flags
-      }}>
-        {children}  
-      </FlagProvider>
-    </ScalprumProvider>
+    <IntlProvider locale="en" defaultLocale="en">
+      <ScalprumProvider scalprum={scalprum.current}>
+        <FlagProvider config={{
+          appName: 'test-app',
+          url: 'https://unleash.example.com/api/',
+          clientKey: '123',
+          bootstrap: flags
+        }}>
+          {children}
+        </FlagProvider>
+      </ScalprumProvider>
+    </IntlProvider>
   );
 }
 
@@ -68,7 +77,7 @@ describe('HelpPanel', () => {
     cy.contains('Help').should('be.visible');
     cy.contains('Find help').should('be.visible');
     // Should default to Learn tab
-    cy.contains('Find product documentation, quick starts, learning paths, and more', { timeout: 10000 }).should('be.visible');
+    cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
   })
 
   it('should not display sub tabs hidden by FF', () => {
@@ -85,7 +94,7 @@ describe('HelpPanel', () => {
 
     cy.contains('Help').should('be.visible');
     cy.contains('Find help').should('be.visible');
-    cy.contains('Knowledge base').should('not.exist');
+    cy.contains(getMessageText('knowledgeBaseTitle')).should('not.exist');
   })
 
   it('should call close callback', () => {
@@ -116,10 +125,10 @@ describe('HelpPanel', () => {
 
     cy.contains('Learn').click();
     // Wait for the learn panel to load and check for the description text
-    cy.contains('Find product documentation, quick starts, learning paths, and more', { timeout: 10000 }).should('be.visible');
-    
+    cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
+
     cy.contains('APIs').click();
-    cy.contains('API Documentation').should('be.visible');
+    cy.contains(getMessageText('apiDocumentationCountLabel')).should('be.visible');
   })
 
   it('should display API panel features', () => {
@@ -171,9 +180,9 @@ describe('HelpPanel', () => {
     );
 
     cy.contains('APIs').click();
-    cy.contains('API Documentation').should('be.visible');
+    cy.contains(getMessageText('apiDocumentationCountLabel')).should('be.visible');
 
-    cy.contains('API Documentation (3)', { timeout: 10000 }).should('be.visible');
+    cy.contains(`${getMessageText('apiDocumentationCountLabel')} (3)`, { timeout: 10000 }).should('be.visible');
     cy.contains('Provisioning API').should('be.visible');
     cy.contains('Cost Management API').should('be.visible');
     cy.contains('User Access API').should('be.visible');
@@ -184,7 +193,7 @@ describe('HelpPanel', () => {
     cy.contains('Settings').should('be.visible');
 
     // Check external link
-    cy.contains('API Documentation Catalog')
+    cy.contains(getMessageText('apiDocumentationCatalogLinkText'))
       .should('have.attr', 'href', 'https://developers.redhat.com/api-catalog/')
       .should('have.attr', 'target', '_blank');
   });
@@ -220,12 +229,12 @@ describe('HelpPanel', () => {
 
     cy.contains('Learn').click();
     // Wait for the learn panel to load completely
-    cy.contains('Find product documentation, quick starts, learning paths, and more', { timeout: 10000 }).should('be.visible');
-    cy.contains('All Learning Catalog').should('be.visible');
-    
+    cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
+    cy.contains(getMessageText('allLearningCatalogLinkText')).should('be.visible');
+
     // Check for text content that should be visible after loading
-    cy.contains('Content type').should('be.visible');
-    cy.contains('Show bookmarked only').should('be.visible');
+    cy.contains(getMessageText('contentTypeLabel')).should('be.visible');
+    cy.contains(getMessageText('showBookmarkedOnlyLabel')).should('be.visible');
   })
 
   it('should close tab', () => {
@@ -251,7 +260,7 @@ describe('HelpPanel', () => {
     });
 
     // Should show Learn panel content after closing the extra tab
-    cy.contains('Find product documentation, quick starts, learning paths, and more').should('be.visible');
+    cy.contains(getMessageText('learnPanelDescription')).should('be.visible');
   })
 
   it('should change tab title when switching sub-tabs', () => {
@@ -262,10 +271,10 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
     cy.contains('Find help').should('be.visible');
-    cy.contains('Knowledge base').click();
+    cy.contains(getMessageText('knowledgeBaseTitle')).click();
 
     cy.get('.lr-c-help-panel-custom-tabs').within(() => {
-      cy.get('.pf-v6-c-tabs__item').first().should('contain.text', 'Knowledge base');
+      cy.get('.pf-v6-c-tabs__item').first().should('contain.text', getMessageText('knowledgeBaseTitle'));
     });
   });
 

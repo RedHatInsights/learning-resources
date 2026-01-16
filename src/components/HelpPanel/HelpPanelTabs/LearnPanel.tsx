@@ -38,13 +38,8 @@ import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import axios from 'axios';
 import { API_BASE, FAVORITES } from '../../../hooks/useQuickStarts';
 import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
-
-const CONTENT_TYPE_OPTIONS = [
-  { value: 'documentation', label: 'Documentation' },
-  { value: 'quickstart', label: 'Quick starts' },
-  { value: 'learningPath', label: 'Learning paths' },
-  { value: 'otherResource', label: 'Other' },
-];
+import { useIntl } from 'react-intl';
+import messages from '../../../Messages';
 
 // Bundle name mapping to get abbreviated names
 const getBundleDisplayName = (bundleValue: string): string => {
@@ -164,8 +159,28 @@ const LearningResourceItem: React.FC<{
 const LearnPanelContent: React.FC<{
   setNewActionTitle: (title: string) => void;
 }> = () => {
+  const intl = useIntl();
   const chrome = useChrome();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
+
+  const CONTENT_TYPE_OPTIONS = [
+    {
+      value: 'documentation',
+      label: intl.formatMessage(messages.contentTypeDocumentation),
+    },
+    {
+      value: 'quickstart',
+      label: intl.formatMessage(messages.contentTypeQuickstarts),
+    },
+    {
+      value: 'learningPath',
+      label: intl.formatMessage(messages.contentTypeLearningPaths),
+    },
+    {
+      value: 'otherResource',
+      label: intl.formatMessage(messages.contentTypeOther),
+    },
+  ];
   const [isContentTypeOpen, setIsContentTypeOpen] = useState(false);
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(
     []
@@ -384,7 +399,7 @@ const LearnPanelContent: React.FC<{
         alignItems={{ default: 'alignItemsCenter' }}
         spaceItems={{ default: 'spaceItemsSm' }}
       >
-        <FlexItem>Content type</FlexItem>
+        <FlexItem>{intl.formatMessage(messages.contentTypeLabel)}</FlexItem>
         {selectedContentTypes.length > 0 && (
           <FlexItem>
             <Label color="grey" isCompact>
@@ -408,8 +423,7 @@ const LearnPanelContent: React.FC<{
     >
       <StackItem>
         <Content>
-          Find product documentation, quick starts, learning paths, and more.
-          For a more detailed view, browse the{' '}
+          {intl.formatMessage(messages.learnPanelDescription)}{' '}
           <Button
             variant="link"
             component="a"
@@ -417,7 +431,7 @@ const LearnPanelContent: React.FC<{
             isInline
             iconPosition="end"
           >
-            All Learning Catalog
+            {intl.formatMessage(messages.allLearningCatalogLinkText)}
           </Button>
           .
         </Content>
@@ -455,7 +469,7 @@ const LearnPanelContent: React.FC<{
               <FlexItem>
                 <Checkbox
                   id="show-bookmarked-only"
-                  label="Show bookmarked only"
+                  label={intl.formatMessage(messages.showBookmarkedOnlyLabel)}
                   isChecked={showBookmarkedOnly}
                   onChange={handleBookmarkToggle}
                   data-ouia-component-id="help-panel-bookmarked-only-checkbox"
@@ -493,7 +507,7 @@ const LearnPanelContent: React.FC<{
                     className="pf-v6-u-font-size-sm"
                     data-ouia-component-id="help-panel-clear-filters-button"
                   >
-                    Clear all filters
+                    {intl.formatMessage(messages.clearAllFiltersButtonText)}
                   </Button>
                 </FlexItem>
               </Flex>
@@ -520,7 +534,8 @@ const LearnPanelContent: React.FC<{
               <ToolbarContent>
                 <ToolbarItem>
                   <Content>
-                    Learning resources ({filteredResources.length})
+                    {intl.formatMessage(messages.learningResourcesCountLabel)} (
+                    {filteredResources.length})
                   </Content>
                 </ToolbarItem>
                 <ToolbarItem>
@@ -530,7 +545,7 @@ const LearnPanelContent: React.FC<{
                       data-ouia-component-id="help-panel-scope-toggle"
                     >
                       <ToggleGroupItem
-                        text="All"
+                        text={intl.formatMessage(messages.allToggleText)}
                         buttonId="all-toggle"
                         isSelected={activeToggle === 'all'}
                         onChange={(event, isSelected) =>
@@ -581,7 +596,9 @@ const LearnPanelContent: React.FC<{
                 </DataList>
               ) : (
                 <Content>
-                  <p>No learning resources found matching your criteria.</p>
+                  <p>
+                    {intl.formatMessage(messages.noLearningResourcesMessage)}
+                  </p>
                 </Content>
               )}
             </div>

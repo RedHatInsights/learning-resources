@@ -1,11 +1,14 @@
 import React from 'react';
 import { TextInput } from '@patternfly/react-core';
+import { useIntl } from 'react-intl';
+import messages from '../../../Messages';
 
 const KBPanel = ({
   setNewActionTitle,
 }: {
   setNewActionTitle: (title: string) => void;
 }) => {
+  const intl = useIntl();
   const [searchText, setSearchText] = React.useState('');
   const handleTextInputChange = (_e: unknown, value: string) => {
     setSearchText(value);
@@ -13,7 +16,7 @@ const KBPanel = ({
   };
   return (
     <div>
-      <h3>Knowledge base</h3>
+      <h3>{intl.formatMessage(messages.knowledgeBaseTitle)}</h3>
       <TextInput
         id="help-panel-kb"
         value={searchText}
