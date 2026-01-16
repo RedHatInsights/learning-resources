@@ -41,7 +41,18 @@ spec:
   - name: chrome-port
     value: "9912"
   - name: unit-tests-script
-    value: ""
+    value: |
+      #!/bin/bash
+      set -ex
+
+      npm install
+
+      echo "DEBUG: Verifying node_modules after install"
+      ls -la node_modules/.bin/playwright
+      echo "DEBUG: Current working directory:"
+      pwd
+      echo "DEBUG: Workspace contents:"
+      ls -la
   - name: run-app-script
     value: |
       #!/bin/sh
@@ -56,12 +67,12 @@ spec:
       #!/bin/bash
       set -ex
 
-      # Clone repository for running tests
-      echo "Cloning repository..."
-      cd /tmp
-      git clone {{source_url}} test-repo
-      cd test-repo
-      git checkout {{revision}}
+      echo "DEBUG: E2E tests starting - checking workspace"
+      pwd
+      echo "DEBUG: Workspace contents:"
+      ls -la
+      echo "DEBUG: Checking for node_modules:"
+      ls -la node_modules/.bin/playwright || echo "DEBUG: node_modules/.bin/playwright NOT FOUND"
 
       echo "E2E_USER is ${E2E_USER}"
       getent hosts stage.foo.redhat.com
@@ -71,14 +82,11 @@ spec:
       done'
       echo "Dev server ready!"
 
-      echo "Installing dependencies..."
-      npm install
-
       echo "Installing Playwright browsers..."
-      npx playwright install --with-deps
+      ./node_modules/.bin/playwright install --with-deps
 
       echo "Running Playwright tests ..."
-      npx playwright test
+      ./node_modules/.bin/playwright test
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
@@ -87,9 +95,9 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/RedHatInsights/konflux-pipelines
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: main
+      value: btweed/share-node-modules-workspace
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
@@ -127,7 +135,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 1Gi
+            storage: 3Gi
       status: {}
   - name: git-auth
     secret:
