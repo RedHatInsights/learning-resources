@@ -20,14 +20,13 @@ objects:
           - /apps/learning-resources
       image: ${IMAGE}:${IMAGE_TAG}
       feoConfigEnabled: true
-      bundleSegments:
-        - segmentId: learning-resources-openshift
-          bundleId: openshift
-          position: 10000
+      navigationSegments:
+        - segmentId: openshift-learning-resources
           navItems:
             - id: learningResourcesOpenShift
               title: Learning Resources
               href: /openshift/learning-resources
+      bundleSegments:
         - segmentId: learning-resources-ansible
           bundleId: ansible
           position: 10000

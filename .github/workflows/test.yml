@@ -22,11 +22,16 @@ jobs:
       - uses: actions/cache@v3
         id: node_modules-cache
         with:
-          path: | 
+          path: |
             **/node_modules
             /home/runner/.cache/Cypress
           key: install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
       - run: npm i # use cached modules
+      # Remove cached @swc packages and reinstall with correct platform bindings
+      - name: Fix @swc/core platform bindings
+        run: |
+          rm -rf node_modules/@swc
+          npm install @swc/core
   # cypress component testing
   test-e2e:
     runs-on: ubuntu-latest
@@ -44,17 +49,25 @@ jobs:
         id: node_modules-cache
         with:
           path: "**/node_modules"
-          key: install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}        
+          key: install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
       # custom cypress cache, caches cypress and cypress webpack node module dependencies based on lock file
       - uses: actions/cache@v3
         id: cypress-cache
         with:
-          path: | 
+          path: |
             /home/runner/.cache/Cypress
-            **/.cypress-cache 
+            **/.cypress-cache
           key: cypress-install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+      # Install dependencies fresh (cypress action will handle this)
+      - name: Install dependencies
+        run: npm i
+      # Remove cached @swc packages and reinstall with correct platform bindings
+      - name: Fix @swc/core platform bindings
+        run: |
+          rm -rf node_modules/@swc
+          npm install @swc/core
       - uses: cypress-io/github-action@v5
         with:
             component: true
-            install-command: npm i
+            install: false
             browser: chrome

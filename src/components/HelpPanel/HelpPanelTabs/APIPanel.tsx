@@ -23,6 +23,8 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import { useIntl } from 'react-intl';
+import messages from '../../../Messages';
 import {
   fetchBundleInfo,
   fetchBundles,
@@ -108,6 +110,7 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
 };
 
 const APIPanelContent: React.FC = () => {
+  const intl = useIntl();
   const chrome = useChrome();
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -188,8 +191,7 @@ const APIPanelContent: React.FC = () => {
     >
       <StackItem>
         <Content>
-          Browse the APIs for Hybrid Cloud Console services. See full API
-          documentation on the{' '}
+          {intl.formatMessage(messages.apiPanelDescription)}{' '}
           <Button
             variant="link"
             component="a"
@@ -200,7 +202,7 @@ const APIPanelContent: React.FC = () => {
             iconPosition="end"
             data-ouia-component-id="help-panel-api-docs-link"
           >
-            API Documentation Catalog
+            {intl.formatMessage(messages.apiDocumentationCatalogLinkText)}
           </Button>
         </Content>
       </StackItem>
@@ -212,7 +214,10 @@ const APIPanelContent: React.FC = () => {
         >
           <ToolbarContent>
             <ToolbarItem>
-              <Content>API Documentation ({filteredResources.length})</Content>
+              <Content>
+                {intl.formatMessage(messages.apiDocumentationCountLabel)} (
+                {filteredResources.length})
+              </Content>
             </ToolbarItem>
             <ToolbarItem>
               {!isHomePage && (
@@ -221,7 +226,7 @@ const APIPanelContent: React.FC = () => {
                   data-ouia-component-id="help-panel-api-scope-toggle"
                 >
                   <ToggleGroupItem
-                    text="All"
+                    text={intl.formatMessage(messages.allToggleText)}
                     buttonId="all-toggle"
                     isSelected={activeToggle === 'all'}
                     onChange={(event, isSelected) =>
@@ -268,7 +273,7 @@ const APIPanelContent: React.FC = () => {
             </DataList>
           ) : (
             <Content>
-              <p>No API documentation found matching your criteria.</p>
+              <p>{intl.formatMessage(messages.noApiDocsMessage)}</p>
             </Content>
           )}
         </div>

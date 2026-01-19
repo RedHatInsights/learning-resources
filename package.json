@@ -16,6 +16,7 @@
     "patch:hosts": "fec patch-etc-hosts",
     "start": "fec dev-proxy",
     "static": "fec static",
+    "test": "jest --passWithNoTests",
     "verify": "npm-run-all build lint test",
     "postinstall": "ts-patch install"
   },
@@ -36,6 +37,7 @@
     "monaco-editor": "^0.55.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-intl": "^6.6.2",
     "react-router-dom": "^6.30.2",
     "yaml": "^2.8.1"
   },

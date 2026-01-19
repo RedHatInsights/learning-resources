@@ -26,6 +26,8 @@ import {
   Thead,
   Tr,
 } from '@patternfly/react-table';
+import { useIntl } from 'react-intl';
+import messages from '../../../Messages';
 
 const SUPPORT_CASE_URL =
   'https://access.redhat.com/support/cases/#/case/new/get-support?caseCreate=true';
@@ -64,6 +66,7 @@ export const statusIcons = (status: string) => {
   return statusMapper[status] ?? '';
 };
 const SupportPanel: React.FunctionComponent = () => {
+  const intl = useIntl();
   const [cases, setCases] = useState<Case[]>([]);
   const chrome = useChrome();
   const [isLoading, setIsLoading] = useState(false);
@@ -145,7 +148,7 @@ const SupportPanel: React.FunctionComponent = () => {
           icon={HeadsetIcon}
           titleText={
             <Title headingLevel="h4" size="lg">
-              No open support cases
+              {intl.formatMessage(messages.noOpenSupportCasesTitle)}
             </Title>
           }
           variant={EmptyStateVariant.lg}
@@ -154,7 +157,7 @@ const SupportPanel: React.FunctionComponent = () => {
           <EmptyStateBody>
             <Stack>
               <StackItem>
-                We can&apos;t find any active support cases opened by you.
+                {intl.formatMessage(messages.noSupportCasesMessage)}
               </StackItem>
             </Stack>
           </EmptyStateBody>
@@ -168,27 +171,29 @@ const SupportPanel: React.FunctionComponent = () => {
             }}
             data-ouia-component-id="help-panel-open-support-case-button"
           >
-            Open a support case
+            {intl.formatMessage(messages.openSupportCaseButtonText)}
           </Button>
         </EmptyState>
       ) : (
         <>
           <Content component={ContentVariants.p}>
-            Quickly see the status on all of your open support cases. To manage
-            support cases or open a new one, visit the{' '}
+            {intl.formatMessage(messages.supportPanelDescription)}{' '}
             <Content
               component={ContentVariants.a}
               isVisitedLink
               href={SUPPORT_CASE_URL}
             >
-              Customer Portal
+              {intl.formatMessage(messages.customerPortalLinkText)}
             </Content>
           </Content>
           <Table
             variant={TableVariant.compact}
             data-ouia-component-id="help-panel-support-cases-table"
           >
-            <Thead>My open support cases ({cases.length})</Thead>
+            <Thead>
+              {intl.formatMessage(messages.supportCasesTableTitle)} (
+              {cases.length})
+            </Thead>
             <Tbody>
               {cases.map((c) => (
                 <Tr key={c.id}>
