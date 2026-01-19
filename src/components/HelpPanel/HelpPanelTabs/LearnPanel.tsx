@@ -38,6 +38,7 @@ import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import axios from 'axios';
 import { API_BASE, FAVORITES } from '../../../hooks/useQuickStarts';
 import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
+import { useHelpPanelTabs } from '../HelpPanelTabsContext';
 
 const CONTENT_TYPE_OPTIONS = [
   { value: 'documentation', label: 'Documentation' },
@@ -60,7 +61,8 @@ const getBundleDisplayName = (bundleValue: string): string => {
 const LearningResourceItem: React.FC<{
   resource: ExtendedQuickstart;
   onBookmarkToggle: (resource: ExtendedQuickstart) => void;
-}> = ({ resource, onBookmarkToggle }) => {
+  onOpenQuickstart: (resource: ExtendedQuickstart) => void;
+}> = ({ resource, onBookmarkToggle, onOpenQuickstart }) => {
   const chrome = useChrome();
   const [isBookmarked, setIsBookmarked] = useState(resource.metadata.favorite);
 
@@ -88,7 +90,8 @@ const LearningResourceItem: React.FC<{
 
   const handleResourceClick = () => {
     if (resource.spec.type?.text === 'Quick start') {
-      chrome.quickStarts.activateQuickstart(resource.metadata.name);
+      // Open quickstart in a new tab within the help panel
+      onOpenQuickstart(resource);
     } else if (resource.spec.link?.href) {
       window.open(resource.spec.link.href, '_blank');
     }
@@ -166,6 +169,7 @@ const LearnPanelContent: React.FC<{
 }> = () => {
   const chrome = useChrome();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
+  const { openQuickstartTab } = useHelpPanelTabs();
   const [isContentTypeOpen, setIsContentTypeOpen] = useState(false);
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(
     []
@@ -571,6 +575,7 @@ const LearnPanelContent: React.FC<{
                               <LearningResourceItem
                                 resource={resource}
                                 onBookmarkToggle={handleBookmarkItemToggle}
+                                onOpenQuickstart={openQuickstartTab}
                               />
                             </DataListCell>,
                           ]}

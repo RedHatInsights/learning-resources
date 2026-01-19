@@ -1,23 +1,24 @@
 import React, { useMemo } from 'react';
 import helpPanelTabsMapper, { TabType } from './helpPanelTabsMapper';
+import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 
 const HelpPanelTabContainer = ({
   setNewActionTitle,
   activeTabType,
+  quickstartData,
 }: {
   setNewActionTitle: (title: string) => void;
   activeTabType: TabType;
+  quickstartData?: ExtendedQuickstart;
 }) => {
   const ActiveComponent = useMemo(() => {
     return helpPanelTabsMapper[activeTabType];
   }, [activeTabType]);
   return (
-    <div
-      className="pf-v6-u-p-md"
-      data-ouia-component-id="help-panel-content-container"
-    >
-      <ActiveComponent setNewActionTitle={setNewActionTitle} />
-    </div>
+    <ActiveComponent
+      setNewActionTitle={setNewActionTitle}
+      quickstartData={quickstartData}
+    />
   );
 };
 

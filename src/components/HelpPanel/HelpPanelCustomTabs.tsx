@@ -21,6 +21,8 @@ import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
+import { HelpPanelTabsContext } from './HelpPanelTabsContext';
 
 type TabDefinition = {
   id: string;
@@ -29,6 +31,7 @@ type TabDefinition = {
   closeable?: boolean;
   tabType: TabType;
   isNewTab?: boolean; // Track if this was originally a "New tab"
+  quickstartData?: ExtendedQuickstart; // Optional quickstart data for quickstart tabs
 };
 
 type SubTab = Omit<TabDefinition, 'id'> & {
@@ -222,6 +225,30 @@ const HelpPanelCustomTabs = () => {
   );
   const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
 
+  // Function to open a quickstart in a new tab
+  const openQuickstartTab = useCallback(
+    (quickstart: ExtendedQuickstart) => {
+      const newTabId = crypto.randomUUID();
+      const tab: TabDefinition = {
+        id: newTabId,
+        title: quickstart.spec.displayName,
+        closeable: true,
+        tabType: TabType.quickstart,
+        quickstartData: quickstart,
+      };
+      addTab(tab);
+      setTimeout(() => {
+        setActiveTab(tab);
+      });
+    },
+    [addTab]
+  );
+
+  const contextValue = useMemo(
+    () => ({ openQuickstartTab }),
+    [openQuickstartTab]
+  );
+
   const setNewActionTitleDebounced: (title: string) => void = useCallback(
     debounce((title: string) => {
       console.log({ activeTab });
@@ -293,64 +320,80 @@ const HelpPanelCustomTabs = () => {
   }, [tabs.length]);
 
   return (
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      mountOnEnter
-      unmountOnExit
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
-          }
-        }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
-          <SubTabs
-            activeSubTabKey={tab.tabType ?? TabType.learn}
-            setActiveSubTabKey={(tabType) => {
-              let newTitle = tab.title;
-              if (!tab.closeable) {
-                newTitle = getSubTabTitle(tabType);
-              } else if (tab.isNewTab) {
-                newTitle = getSubTabTitle(tabType);
-              }
-              const nextTab = {
-                ...tab,
-                tabType: tabType,
-                title: newTitle,
-              };
-              updateTab(nextTab);
+    <HelpPanelTabsContext.Provider value={contextValue}>
+      <Tabs
+        className="lr-c-help-panel-custom-tabs"
+        isOverflowHorizontal={{ showTabCount: true }}
+        isBox
+        mountOnEnter
+        unmountOnExit
+        onAdd={handleAddTab}
+        onClose={handleClose}
+        activeKey={activeTab.id}
+        onSelect={(_e, eventKey) => {
+          if (typeof eventKey === 'string') {
+            const nextTab = tabs.find((tab) => tab.id === eventKey);
+            if (nextTab) {
               setActiveTab(nextTab);
-            }}
+            }
+          }
+        }}
+        data-ouia-component-id="help-panel-tabs"
+        addButtonAriaLabel="Add tab"
+      >
+        {tabs.map((tab) => (
+          <Tab
+            // Need to fix the icon as we can't remove it on tab by tab basis
+            isCloseDisabled={!tab.closeable}
+            className={classNames('lr-c-help-panel-custom-tab', {
+              'persistent-tab': !tab.closeable,
+            })}
+            eventKey={tab.id}
+            key={tab.id}
+            title={<TabTitleText>{tab.title}</TabTitleText>}
+            data-ouia-component-id={`help-panel-tab-${tab.id}`}
           >
-            <HelpPanelTabContainer
-              activeTabType={tab.tabType}
-              setNewActionTitle={setNewActionTitleDebounced}
-            />
-          </SubTabs>
-        </Tab>
-      ))}
-    </Tabs>
+            {tab.tabType === TabType.quickstart ? (
+              // Quickstart tabs don't have sub-tabs, render directly
+              <div
+                className="pf-v6-u-p-md"
+                data-ouia-component-id="help-panel-content-container"
+              >
+                <HelpPanelTabContainer
+                  activeTabType={tab.tabType}
+                  setNewActionTitle={setNewActionTitleDebounced}
+                  quickstartData={tab.quickstartData}
+                />
+              </div>
+            ) : (
+              <SubTabs
+                activeSubTabKey={tab.tabType ?? TabType.learn}
+                setActiveSubTabKey={(tabType) => {
+                  let newTitle = tab.title;
+                  if (!tab.closeable) {
+                    newTitle = getSubTabTitle(tabType);
+                  } else if (tab.isNewTab) {
+                    newTitle = getSubTabTitle(tabType);
+                  }
+                  const nextTab = {
+                    ...tab,
+                    tabType: tabType,
+                    title: newTitle,
+                  };
+                  updateTab(nextTab);
+                  setActiveTab(nextTab);
+                }}
+              >
+                <HelpPanelTabContainer
+                  activeTabType={tab.tabType}
+                  setNewActionTitle={setNewActionTitleDebounced}
+                />
+              </SubTabs>
+            )}
+          </Tab>
+        ))}
+      </Tabs>
+    </HelpPanelTabsContext.Provider>
   );
 };
 
