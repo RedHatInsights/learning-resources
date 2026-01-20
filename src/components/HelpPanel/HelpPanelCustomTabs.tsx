@@ -321,38 +321,38 @@ const HelpPanelCustomTabs = () => {
 
   return (
     <HelpPanelTabsContext.Provider value={contextValue}>
-      <Tabs
-        className="lr-c-help-panel-custom-tabs"
-        isOverflowHorizontal={{ showTabCount: true }}
-        isBox
-        mountOnEnter
-        unmountOnExit
-        onAdd={handleAddTab}
-        onClose={handleClose}
-        activeKey={activeTab.id}
-        onSelect={(_e, eventKey) => {
-          if (typeof eventKey === 'string') {
-            const nextTab = tabs.find((tab) => tab.id === eventKey);
-            if (nextTab) {
-              setActiveTab(nextTab);
-            }
+    <Tabs
+      className="lr-c-help-panel-custom-tabs"
+      isOverflowHorizontal={{ showTabCount: true }}
+      isBox
+      mountOnEnter
+      unmountOnExit
+      onAdd={handleAddTab}
+      onClose={handleClose}
+      activeKey={activeTab.id}
+      onSelect={(_e, eventKey) => {
+        if (typeof eventKey === 'string') {
+          const nextTab = tabs.find((tab) => tab.id === eventKey);
+          if (nextTab) {
+            setActiveTab(nextTab);
           }
-        }}
-        data-ouia-component-id="help-panel-tabs"
-        addButtonAriaLabel="Add tab"
-      >
-        {tabs.map((tab) => (
-          <Tab
-            // Need to fix the icon as we can't remove it on tab by tab basis
-            isCloseDisabled={!tab.closeable}
-            className={classNames('lr-c-help-panel-custom-tab', {
-              'persistent-tab': !tab.closeable,
-            })}
-            eventKey={tab.id}
-            key={tab.id}
-            title={<TabTitleText>{tab.title}</TabTitleText>}
-            data-ouia-component-id={`help-panel-tab-${tab.id}`}
-          >
+        }
+      }}
+      data-ouia-component-id="help-panel-tabs"
+      addButtonAriaLabel="Add tab"
+    >
+      {tabs.map((tab) => (
+        <Tab
+          // Need to fix the icon as we can't remove it on tab by tab basis
+          isCloseDisabled={!tab.closeable}
+          className={classNames('lr-c-help-panel-custom-tab', {
+            'persistent-tab': !tab.closeable,
+          })}
+          eventKey={tab.id}
+          key={tab.id}
+          title={<TabTitleText>{tab.title}</TabTitleText>}
+          data-ouia-component-id={`help-panel-tab-${tab.id}`}
+        >
             {tab.tabType === TabType.quickstart ? (
               // Quickstart tabs don't have sub-tabs, render directly
               <div
@@ -366,33 +366,33 @@ const HelpPanelCustomTabs = () => {
                 />
               </div>
             ) : (
-              <SubTabs
-                activeSubTabKey={tab.tabType ?? TabType.learn}
-                setActiveSubTabKey={(tabType) => {
-                  let newTitle = tab.title;
-                  if (!tab.closeable) {
-                    newTitle = getSubTabTitle(tabType);
-                  } else if (tab.isNewTab) {
-                    newTitle = getSubTabTitle(tabType);
-                  }
-                  const nextTab = {
-                    ...tab,
-                    tabType: tabType,
-                    title: newTitle,
-                  };
-                  updateTab(nextTab);
-                  setActiveTab(nextTab);
-                }}
-              >
-                <HelpPanelTabContainer
-                  activeTabType={tab.tabType}
-                  setNewActionTitle={setNewActionTitleDebounced}
-                />
-              </SubTabs>
+          <SubTabs
+            activeSubTabKey={tab.tabType ?? TabType.learn}
+            setActiveSubTabKey={(tabType) => {
+              let newTitle = tab.title;
+              if (!tab.closeable) {
+                newTitle = getSubTabTitle(tabType);
+              } else if (tab.isNewTab) {
+                newTitle = getSubTabTitle(tabType);
+              }
+              const nextTab = {
+                ...tab,
+                tabType: tabType,
+                title: newTitle,
+              };
+              updateTab(nextTab);
+              setActiveTab(nextTab);
+            }}
+          >
+            <HelpPanelTabContainer
+              activeTabType={tab.tabType}
+              setNewActionTitle={setNewActionTitleDebounced}
+            />
+          </SubTabs>
             )}
-          </Tab>
-        ))}
-      </Tabs>
+        </Tab>
+      ))}
+    </Tabs>
     </HelpPanelTabsContext.Provider>
   );
 };

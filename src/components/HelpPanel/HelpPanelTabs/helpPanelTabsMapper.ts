@@ -16,7 +16,7 @@ export enum TabType {
 }
 
 export type SubTabProps = {
-  setNewActionTitle: (title: string) => void;
+  setNewActionTitle?: (title: string) => void;
   quickstartData?: ExtendedQuickstart;
 };
 

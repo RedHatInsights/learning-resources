@@ -21,6 +21,7 @@ import {
   OutlinedClockIcon,
 } from '@patternfly/react-icons';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 import './QuickstartPanel.scss';
 
@@ -54,9 +55,11 @@ const MarkdownContent: React.FC<{ content: string; className?: string }> = ({
   const html = useMemo(() => {
     try {
       const preprocessed = preprocessQuickstartMarkdown(content);
-      return marked.parse(preprocessed) as string;
+      const parsed = marked.parse(preprocessed) as string;
+      // Sanitize the HTML to prevent XSS attacks
+      return DOMPurify.sanitize(parsed);
     } catch {
-      return content;
+      return DOMPurify.sanitize(content);
     }
   }, [content]);
 
@@ -69,7 +72,6 @@ const MarkdownContent: React.FC<{ content: string; className?: string }> = ({
 };
 
 interface QuickstartPanelProps {
-  setNewActionTitle: (title: string) => void;
   quickstartData?: ExtendedQuickstart;
 }
 
