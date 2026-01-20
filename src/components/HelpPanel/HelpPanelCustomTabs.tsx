@@ -15,6 +15,7 @@ import React, {
   useState,
 } from 'react';
 import classNames from 'classnames';
+import { useIntl } from 'react-intl';
 
 import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
@@ -23,6 +24,7 @@ import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import { HelpPanelTabsContext } from './HelpPanelTabsContext';
+import messages from '../../Messages';
 
 type TabDefinition = {
   id: string;
@@ -39,52 +41,59 @@ type SubTab = Omit<TabDefinition, 'id'> & {
   featureFlag?: string;
 };
 
-const baseTabs: TabDefinition[] = [
+// Helper to get translated tabs - takes formatMessage function
+const getBaseTabs = (
+  formatMessage: (descriptor: { id: string; defaultMessage: string }) => string
+): TabDefinition[] => [
   {
     id: 'find-help',
-    title: 'Find help',
+    title: formatMessage(messages.tabFindHelp),
     closeable: false,
     tabType: TabType.learn,
   },
 ];
 
-const subTabs: SubTab[] = [
+const getSubTabs = (
+  formatMessage: (descriptor: { id: string; defaultMessage: string }) => string
+): SubTab[] => [
   {
-    title: 'Search',
+    title: formatMessage(messages.tabSearch),
     tabType: TabType.search,
     featureFlag: 'platform.chrome.help-panel_search',
   },
   {
-    title: 'Learn',
+    title: formatMessage(messages.tabLearn),
     tabType: TabType.learn,
   },
   {
-    title: 'Knowledge base',
+    title: formatMessage(messages.tabKnowledgeBase),
     tabType: TabType.kb,
     featureFlag: 'platform.chrome.help-panel_knowledge-base',
   },
   {
-    title: 'APIs',
+    title: formatMessage(messages.tabApis),
     tabType: TabType.api,
   },
   {
-    title: 'My support cases',
-    tabTitle: 'Support',
+    title: formatMessage(messages.tabMySupportCases),
+    tabTitle: formatMessage(messages.tabSupport),
     tabType: TabType.support,
   },
 ];
 
 // Helper function to get sub-tab title by TabType
-const getSubTabTitle = (tabType: TabType): string => {
+const getSubTabTitle = (
+  tabType: TabType,
+  subTabs: SubTab[],
+  defaultTitle: string
+): string => {
   const subTab = subTabs.find((tab) => tab.tabType === tabType);
-  return subTab?.tabTitle || (subTab?.title as string) || 'Find help';
+  return subTab?.tabTitle || (subTab?.title as string) || defaultTitle;
 };
 
-const NEW_TAB_PLACEHOLDER = 'New tab';
-
 // just mocking the tabs store until we have API
-const createTabsStore = () => {
-  let tabs: TabDefinition[] = [...baseTabs];
+const createTabsStore = (initialTabs: TabDefinition[]) => {
+  let tabs: TabDefinition[] = [...initialTabs];
   const subscribers = new Map<string, () => void>();
   const addTab = (tab: TabDefinition) => {
     tabs.push(tab);
@@ -157,7 +166,12 @@ const SubTabs = ({
   activeSubTabKey: TabType;
   setActiveSubTabKey: (key: TabType) => void;
 }>) => {
+  const intl = useIntl();
   const flags = useFlags();
+  const subTabs = useMemo(
+    () => getSubTabs(intl.formatMessage),
+    [intl.formatMessage]
+  );
   const filteredSubTabs = useMemo(() => {
     return subTabs.filter((tab) => {
       if (typeof tab.featureFlag === 'string') {
@@ -206,7 +220,7 @@ const SubTabs = ({
               iconPosition="end"
               data-ouia-component-id="help-panel-status-page-subtabs-button"
             >
-              Red Hat status page
+              {intl.formatMessage(messages.redHatStatusPage)}
             </Button>
           )}
         </>
@@ -217,8 +231,21 @@ const SubTabs = ({
 };
 
 const HelpPanelCustomTabs = () => {
-  const apiStoreMock = useMemo(() => createTabsStore(), []);
-  const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
+  const intl = useIntl();
+  const baseTabs = useMemo(
+    () => getBaseTabs(intl.formatMessage),
+    [intl.formatMessage]
+  );
+  const subTabs = useMemo(
+    () => getSubTabs(intl.formatMessage),
+    [intl.formatMessage]
+  );
+  const newTabPlaceholder = intl.formatMessage(messages.tabNewTab);
+  const addTabAriaLabel = intl.formatMessage(messages.tabAddTab);
+  const findHelpTitle = intl.formatMessage(messages.tabFindHelp);
+
+  const apiStoreMock = useMemo(() => createTabsStore(baseTabs), [baseTabs]);
+  const [activeTab, setActiveTab] = useState<TabDefinition>(() => baseTabs[0]);
 
   const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
     undefined
@@ -253,7 +280,7 @@ const HelpPanelCustomTabs = () => {
     debounce((title: string) => {
       console.log({ activeTab });
       if (
-        (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
+        (!newActionTitle || activeTab.title === newTabPlaceholder) &&
         activeTab.closeable
       ) {
         setNewActionTitle(title);
@@ -263,7 +290,7 @@ const HelpPanelCustomTabs = () => {
         });
       }
     }, 2000),
-    [activeTab]
+    [activeTab, newTabPlaceholder]
   );
 
   const handleAddTab = () => {
@@ -272,7 +299,7 @@ const HelpPanelCustomTabs = () => {
     const newTabId = crypto.randomUUID();
     const tab = {
       id: newTabId,
-      title: NEW_TAB_PLACEHOLDER,
+      title: newTabPlaceholder,
       closeable: true,
       tabType: TabType.learn,
       isNewTab: true,
@@ -309,7 +336,7 @@ const HelpPanelCustomTabs = () => {
   useEffect(() => {
     // Ensure the Add tab button has a stable OUIA id
     const addButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
+      `[data-ouia-component-id="help-panel-tabs"] button[aria-label="${addTabAriaLabel}"]`
     ) as HTMLButtonElement | null;
     if (addButton) {
       addButton.setAttribute(
@@ -317,42 +344,42 @@ const HelpPanelCustomTabs = () => {
         'help-panel-add-tab-button'
       );
     }
-  }, [tabs.length]);
+  }, [tabs.length, addTabAriaLabel]);
 
   return (
     <HelpPanelTabsContext.Provider value={contextValue}>
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      mountOnEnter
-      unmountOnExit
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
+      <Tabs
+        className="lr-c-help-panel-custom-tabs"
+        isOverflowHorizontal={{ showTabCount: true }}
+        isBox
+        mountOnEnter
+        unmountOnExit
+        onAdd={handleAddTab}
+        onClose={handleClose}
+        activeKey={activeTab.id}
+        onSelect={(_e, eventKey) => {
+          if (typeof eventKey === 'string') {
+            const nextTab = tabs.find((tab) => tab.id === eventKey);
+            if (nextTab) {
+              setActiveTab(nextTab);
+            }
           }
-        }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
+        }}
+        data-ouia-component-id="help-panel-tabs"
+        addButtonAriaLabel={addTabAriaLabel}
+      >
+        {tabs.map((tab) => (
+          <Tab
+            // Need to fix the icon as we can't remove it on tab by tab basis
+            isCloseDisabled={!tab.closeable}
+            className={classNames('lr-c-help-panel-custom-tab', {
+              'persistent-tab': !tab.closeable,
+            })}
+            eventKey={tab.id}
+            key={tab.id}
+            title={<TabTitleText>{tab.title}</TabTitleText>}
+            data-ouia-component-id={`help-panel-tab-${tab.id}`}
+          >
             {tab.tabType === TabType.quickstart ? (
               // Quickstart tabs don't have sub-tabs, render directly
               <div
@@ -366,33 +393,33 @@ const HelpPanelCustomTabs = () => {
                 />
               </div>
             ) : (
-          <SubTabs
-            activeSubTabKey={tab.tabType ?? TabType.learn}
-            setActiveSubTabKey={(tabType) => {
-              let newTitle = tab.title;
-              if (!tab.closeable) {
-                newTitle = getSubTabTitle(tabType);
-              } else if (tab.isNewTab) {
-                newTitle = getSubTabTitle(tabType);
-              }
-              const nextTab = {
-                ...tab,
-                tabType: tabType,
-                title: newTitle,
-              };
-              updateTab(nextTab);
-              setActiveTab(nextTab);
-            }}
-          >
-            <HelpPanelTabContainer
-              activeTabType={tab.tabType}
-              setNewActionTitle={setNewActionTitleDebounced}
-            />
-          </SubTabs>
+              <SubTabs
+                activeSubTabKey={tab.tabType ?? TabType.learn}
+                setActiveSubTabKey={(tabType) => {
+                  let newTitle = tab.title;
+                  if (!tab.closeable) {
+                    newTitle = getSubTabTitle(tabType, subTabs, findHelpTitle);
+                  } else if (tab.isNewTab) {
+                    newTitle = getSubTabTitle(tabType, subTabs, findHelpTitle);
+                  }
+                  const nextTab = {
+                    ...tab,
+                    tabType: tabType,
+                    title: newTitle,
+                  };
+                  updateTab(nextTab);
+                  setActiveTab(nextTab);
+                }}
+              >
+                <HelpPanelTabContainer
+                  activeTabType={tab.tabType}
+                  setNewActionTitle={setNewActionTitleDebounced}
+                />
+              </SubTabs>
             )}
-        </Tab>
-      ))}
-    </Tabs>
+          </Tab>
+        ))}
+      </Tabs>
     </HelpPanelTabsContext.Provider>
   );
 };

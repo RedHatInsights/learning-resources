@@ -40,33 +40,38 @@ type Case = {
   status: string;
 };
 
-const columnNames = {
-  summary: 'Title',
-  status: 'Status',
-};
-
-const statusTypes = {
-  customerWaiting: 'Waiting on Customer',
-  redHatWaiting: 'Waiting on Red Hat',
-};
-
-export const statusIcons = (status: string) => {
-  const statusMapper = {
-    [statusTypes.customerWaiting]: (
-      <Icon className="pf-t--global--icon--color--status--info--default">
-        {status} <AttentionBellIcon />{' '}
-      </Icon>
-    ),
-    [statusTypes.redHatWaiting]: (
-      <Icon>
-        {status} <InProgressIcon />{' '}
-      </Icon>
-    ),
-  };
-  return statusMapper[status] ?? '';
-};
 const SupportPanel: React.FunctionComponent = () => {
   const intl = useIntl();
+
+  // Internationalized column names
+  const columnNames = {
+    summary: intl.formatMessage(messages.supportColumnTitle),
+    status: intl.formatMessage(messages.supportColumnStatus),
+  };
+
+  // Internationalized status types
+  const statusTypes = {
+    customerWaiting: intl.formatMessage(
+      messages.supportStatusWaitingOnCustomer
+    ),
+    redHatWaiting: intl.formatMessage(messages.supportStatusWaitingOnRedHat),
+  };
+
+  const getStatusIcon = (status: string) => {
+    const statusMapper: Record<string, React.ReactNode> = {
+      [statusTypes.customerWaiting]: (
+        <Icon className="pf-t--global--icon--color--status--info--default">
+          {status} <AttentionBellIcon />{' '}
+        </Icon>
+      ),
+      [statusTypes.redHatWaiting]: (
+        <Icon>
+          {status} <InProgressIcon />{' '}
+        </Icon>
+      ),
+    };
+    return statusMapper[status] ?? '';
+  };
   const [cases, setCases] = useState<Case[]>([]);
   const chrome = useChrome();
   const [isLoading, setIsLoading] = useState(false);
@@ -208,7 +213,7 @@ const SupportPanel: React.FunctionComponent = () => {
                     dataLabel={columnNames.status}
                     className="pf-v6-u-text-nowrap"
                   >
-                    {statusIcons(c.status)}
+                    {getStatusIcon(c.status)}
                   </Td>
                 </Tr>
               ))}

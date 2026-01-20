@@ -37,15 +37,10 @@ import {
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import axios from 'axios';
 import { API_BASE, FAVORITES } from '../../../hooks/useQuickStarts';
+import { useIntl } from 'react-intl';
 import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
 import { useHelpPanelTabs } from '../HelpPanelTabsContext';
-
-const CONTENT_TYPE_OPTIONS = [
-  { value: 'documentation', label: 'Documentation' },
-  { value: 'quickstart', label: 'Quick starts' },
-  { value: 'learningPath', label: 'Learning paths' },
-  { value: 'otherResource', label: 'Other' },
-];
+import messages from '../../../Messages';
 
 // Bundle name mapping to get abbreviated names
 const getBundleDisplayName = (bundleValue: string): string => {
@@ -164,12 +159,32 @@ const LearningResourceItem: React.FC<{
   );
 };
 
-const LearnPanelContent: React.FC<{
-  setNewActionTitle: (title: string) => void;
-}> = () => {
+const LearnPanelContent: React.FC = () => {
+  const intl = useIntl();
   const chrome = useChrome();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
   const { openQuickstartTab } = useHelpPanelTabs();
+
+  // Content type options with internationalized labels
+  const contentTypeOptions = [
+    {
+      value: 'documentation',
+      label: intl.formatMessage(messages.contentTypeDocumentation),
+    },
+    {
+      value: 'quickstart',
+      label: intl.formatMessage(messages.contentTypeQuickstarts),
+    },
+    {
+      value: 'learningPath',
+      label: intl.formatMessage(messages.contentTypeLearningPaths),
+    },
+    {
+      value: 'otherResource',
+      label: intl.formatMessage(messages.contentTypeOther),
+    },
+  ];
+
   const [isContentTypeOpen, setIsContentTypeOpen] = useState(false);
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(
     []
@@ -371,7 +386,7 @@ const LearnPanelContent: React.FC<{
 
   const getContentTypeLabel = (value: string) => {
     return (
-      CONTENT_TYPE_OPTIONS.find((option) => option.value === value)?.label ||
+      contentTypeOptions.find((option) => option.value === value)?.label ||
       value
     );
   };
@@ -388,7 +403,7 @@ const LearnPanelContent: React.FC<{
         alignItems={{ default: 'alignItemsCenter' }}
         spaceItems={{ default: 'spaceItemsSm' }}
       >
-        <FlexItem>Content type</FlexItem>
+        <FlexItem>{intl.formatMessage(messages.contentTypeLabel)}</FlexItem>
         {selectedContentTypes.length > 0 && (
           <FlexItem>
             <Label color="grey" isCompact>
@@ -442,7 +457,7 @@ const LearnPanelContent: React.FC<{
                   data-ouia-component-id="help-panel-content-type-select"
                 >
                   <SelectList>
-                    {CONTENT_TYPE_OPTIONS.map((option) => (
+                    {contentTypeOptions.map((option) => (
                       <SelectOption
                         key={option.value}
                         value={option.value}
@@ -459,7 +474,7 @@ const LearnPanelContent: React.FC<{
               <FlexItem>
                 <Checkbox
                   id="show-bookmarked-only"
-                  label="Show bookmarked only"
+                  label={intl.formatMessage(messages.showBookmarkedOnlyLabel)}
                   isChecked={showBookmarkedOnly}
                   onChange={handleBookmarkToggle}
                   data-ouia-component-id="help-panel-bookmarked-only-checkbox"
@@ -497,7 +512,7 @@ const LearnPanelContent: React.FC<{
                     className="pf-v6-u-font-size-sm"
                     data-ouia-component-id="help-panel-clear-filters-button"
                   >
-                    Clear all filters
+                    {intl.formatMessage(messages.clearAllFiltersButtonText)}
                   </Button>
                 </FlexItem>
               </Flex>
@@ -524,17 +539,21 @@ const LearnPanelContent: React.FC<{
               <ToolbarContent>
                 <ToolbarItem>
                   <Content>
-                    Learning resources ({filteredResources.length})
+                    {intl.formatMessage(messages.learningResourcesWithCount, {
+                      count: filteredResources.length,
+                    })}
                   </Content>
                 </ToolbarItem>
                 <ToolbarItem>
                   {!isHomePage && (
                     <ToggleGroup
-                      aria-label="Filter by scope"
+                      aria-label={intl.formatMessage(
+                        messages.filterByScopeAriaLabel
+                      )}
                       data-ouia-component-id="help-panel-scope-toggle"
                     >
                       <ToggleGroupItem
-                        text="All"
+                        text={intl.formatMessage(messages.allToggleText)}
                         buttonId="all-toggle"
                         isSelected={activeToggle === 'all'}
                         onChange={(event, isSelected) =>
@@ -565,7 +584,11 @@ const LearnPanelContent: React.FC<{
               data-ouia-component-id="help-panel-learning-resources-list"
             >
               {filteredResources.length > 0 ? (
-                <DataList aria-label="Learning resources">
+                <DataList
+                  aria-label={intl.formatMessage(
+                    messages.learningResourcesAriaLabel
+                  )}
+                >
                   {paginatedResources.map((resource: ExtendedQuickstart) => (
                     <DataListItem key={resource.metadata.name}>
                       <DataListItemRow>
@@ -586,7 +609,9 @@ const LearnPanelContent: React.FC<{
                 </DataList>
               ) : (
                 <Content>
-                  <p>No learning resources found matching your criteria.</p>
+                  <p>
+                    {intl.formatMessage(messages.noLearningResourcesMessage)}
+                  </p>
                 </Content>
               )}
             </div>
@@ -612,14 +637,10 @@ const LearnPanelContent: React.FC<{
   );
 };
 
-const LearnPanel = ({
-  setNewActionTitle,
-}: {
-  setNewActionTitle: (title: string) => void;
-}) => {
+const LearnPanel = () => {
   return (
     <Suspense fallback={<Spinner size="lg" />}>
-      <LearnPanelContent setNewActionTitle={setNewActionTitle} />
+      <LearnPanelContent />
     </Suspense>
   );
 };

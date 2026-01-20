@@ -222,7 +222,9 @@ const APIPanelContent: React.FC = () => {
             <ToolbarItem>
               {!isHomePage && (
                 <ToggleGroup
-                  aria-label="Filter by scope"
+                  aria-label={intl.formatMessage(
+                    messages.filterByScopeAriaLabel
+                  )}
                   data-ouia-component-id="help-panel-api-scope-toggle"
                 >
                   <ToggleGroupItem
@@ -256,7 +258,9 @@ const APIPanelContent: React.FC = () => {
           data-ouia-component-id="help-panel-api-resources-list"
         >
           {paginatedResources.length > 0 ? (
-            <DataList aria-label="API resources">
+            <DataList
+              aria-label={intl.formatMessage(messages.apiResourcesAriaLabel)}
+            >
               {paginatedResources.map((resource) => (
                 <DataListItem key={resource.name}>
                   <DataListItemRow>

@@ -9,9 +9,11 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useFlag } from '@unleash/proxy-client-react';
+import { useIntl } from 'react-intl';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
 import { AskRedHatIcon } from '../common/AskRedHatIcon';
 import { useLoadModule, useRemoteHook } from '@scalprum/react-core';
+import messages from '../../Messages';
 
 export type VirtualAssistantState = {
   isOpen?: boolean;
@@ -31,6 +33,7 @@ const HelpPanelContent = ({
   Models?: ModelsType;
   setVirtualAssistantState?: Dispatch<SetStateAction<VirtualAssistantState>>;
 }) => {
+  const intl = useIntl();
   const searchFlag = useFlag('platform.chrome.help-panel_search');
   const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
   const askRH = useFlag('platform.chrome.help-panel_direct-ask-redhat');
@@ -41,7 +44,7 @@ const HelpPanelContent = ({
     <>
       <DrawerHead>
         <Title headingLevel="h2" data-ouia-component-id="help-panel-title">
-          Help
+          {intl.formatMessage(messages.helpPanelTitle)}
           {showStatusPageInHeader && (
             <Button
               variant="link"
@@ -54,7 +57,7 @@ const HelpPanelContent = ({
               iconPosition="end"
               data-ouia-component-id="help-panel-status-page-header-button"
             >
-              Red Hat status page
+              {intl.formatMessage(messages.redHatStatusPage)}
             </Button>
           )}
         </Title>
@@ -73,7 +76,7 @@ const HelpPanelContent = ({
               icon={<AskRedHatIcon width={20} height={20} />}
               data-ouia-component-id="help-panel-ask-red-hat-button"
             >
-              Ask Red Hat
+              {intl.formatMessage(messages.askRedHat)}
             </Button>
           ) : (
             <Button
@@ -86,7 +89,7 @@ const HelpPanelContent = ({
               icon={<AskRedHatIcon width={20} height={20} />}
               data-ouia-component-id="help-panel-ask-red-hat-button"
             >
-              Ask Red Hat
+              {intl.formatMessage(messages.askRedHat)}
             </Button>
           )}
           <DrawerCloseButton
@@ -103,6 +106,7 @@ const HelpPanelContent = ({
 };
 
 const HelpPanelContentWrapper = (props: { toggleDrawer: () => void }) => {
+  const intl = useIntl();
   const { hookResult, loading } = useRemoteHook<
     [unknown, Dispatch<SetStateAction<VirtualAssistantState>>]
   >({
@@ -121,7 +125,7 @@ const HelpPanelContentWrapper = (props: { toggleDrawer: () => void }) => {
   );
 
   if (loading || !module) {
-    return 'Loading...';
+    return intl.formatMessage(messages.loading);
   }
 
   const Models = module as ModelsType;

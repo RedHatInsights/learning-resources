@@ -20,9 +20,11 @@ import {
   ExternalLinkAltIcon,
   OutlinedClockIcon,
 } from '@patternfly/react-icons';
+import { useIntl } from 'react-intl';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
+import messages from '../../../Messages';
 import './QuickstartPanel.scss';
 
 // Configure marked for safe rendering
@@ -78,6 +80,7 @@ interface QuickstartPanelProps {
 const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
   quickstartData,
 }) => {
+  const intl = useIntl();
   const [currentTaskIndex, setCurrentTaskIndex] = useState<number>(-1); // -1 means overview
   const [isPrerequisitesExpanded, setIsPrerequisitesExpanded] = useState(false);
   const [completedTasks, setCompletedTasks] = useState<Set<number>>(new Set());
@@ -85,7 +88,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
   if (!quickstartData) {
     return (
       <Content>
-        <p>No quickstart data available.</p>
+        <p>{intl.formatMessage(messages.quickstartNoDataAvailable)}</p>
       </Content>
     );
   }
@@ -142,7 +145,9 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                   component="a"
                   href={spec.link.href}
                   target="_blank"
-                  aria-label="Open in new window"
+                  aria-label={intl.formatMessage(
+                    messages.quickstartOpenInNewWindow
+                  )}
                   icon={<ExternalLinkAltIcon />}
                 />
               </FlexItem>
@@ -154,7 +159,9 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
         {spec.durationMinutes && (
           <StackItem>
             <Label color="blue" icon={<OutlinedClockIcon />}>
-              Quick start | {spec.durationMinutes} minutes
+              {intl.formatMessage(messages.quickstartDurationLabel, {
+                minutes: spec.durationMinutes,
+              })}
             </Label>
           </StackItem>
         )}
@@ -164,9 +171,12 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
           <StackItem>
             <Progress
               value={progress}
-              title="Progress"
+              title={intl.formatMessage(messages.quickstartProgressTitle)}
               measureLocation="outside"
-              label={`${completedTasks.size} of ${tasks.length} tasks completed`}
+              label={intl.formatMessage(messages.quickstartTasksCompleted, {
+                completed: completedTasks.size,
+                total: tasks.length,
+              })}
             />
           </StackItem>
         )}
@@ -189,7 +199,10 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
         {spec.prerequisites && spec.prerequisites.length > 0 && (
           <StackItem>
             <ExpandableSection
-              toggleText={`View prerequisites (${spec.prerequisites.length})`}
+              toggleText={intl.formatMessage(
+                messages.quickstartViewPrerequisites,
+                { count: spec.prerequisites.length }
+              )}
               isExpanded={isPrerequisitesExpanded}
               onToggle={(_event, expanded) =>
                 setIsPrerequisitesExpanded(expanded)
@@ -215,8 +228,9 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
           <StackItem>
             <Content component={ContentVariants.p} className="pf-v6-u-mb-sm">
               <strong>
-                In this quick start, you will complete {tasks.length} task
-                {tasks.length > 1 ? 's' : ''}:
+                {intl.formatMessage(messages.quickstartTaskListIntro, {
+                  count: tasks.length,
+                })}
               </strong>
             </Content>
             <List isPlain className="lr-c-quickstart-task-list">
@@ -262,7 +276,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
               onClick={() => setCurrentTaskIndex(0)}
               data-ouia-component-id="help-panel-quickstart-start-button"
             >
-              Start
+              {intl.formatMessage(messages.quickstartStartButton)}
             </Button>
           </StackItem>
         )}
@@ -286,14 +300,19 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
           isInline
           className="pf-v6-u-p-0"
         >
-          {currentTaskIndex === 0 ? 'Back to overview' : 'Back'}
+          {currentTaskIndex === 0
+            ? intl.formatMessage(messages.quickstartBackToOverview)
+            : intl.formatMessage(messages.quickstartBack)}
         </Button>
       </StackItem>
 
       {/* Task progress indicator */}
       <StackItem>
         <Label color="blue" isCompact>
-          {currentTaskIndex + 1} of {tasks.length}
+          {intl.formatMessage(messages.quickstartTaskProgress, {
+            current: currentTaskIndex + 1,
+            total: tasks.length,
+          })}
         </Label>
       </StackItem>
 
@@ -312,7 +331,9 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
       {/* Review section */}
       {currentTask?.review?.instructions && (
         <StackItem>
-          <Title headingLevel="h4">Check your work</Title>
+          <Title headingLevel="h4">
+            {intl.formatMessage(messages.quickstartCheckYourWork)}
+          </Title>
           <MarkdownContent content={currentTask.review.instructions} />
         </StackItem>
       )}
@@ -328,8 +349,8 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                 data-ouia-component-id="help-panel-quickstart-complete-button"
               >
                 {currentTaskIndex < tasks.length - 1
-                  ? 'Mark complete & next'
-                  : 'Mark complete'}
+                  ? intl.formatMessage(messages.quickstartMarkCompleteAndNext)
+                  : intl.formatMessage(messages.quickstartMarkComplete)}
               </Button>
             </FlexItem>
           )}
@@ -341,7 +362,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                   onClick={handleNext}
                   data-ouia-component-id="help-panel-quickstart-next-button"
                 >
-                  Next
+                  {intl.formatMessage(messages.quickstartNext)}
                 </Button>
               </FlexItem>
             )}
@@ -353,7 +374,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                   onClick={() => setCurrentTaskIndex(-1)}
                   data-ouia-component-id="help-panel-quickstart-finish-button"
                 >
-                  Back to overview
+                  {intl.formatMessage(messages.quickstartBackToOverview)}
                 </Button>
               </FlexItem>
             )}

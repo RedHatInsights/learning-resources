@@ -1,6 +1,62 @@
 import { defineMessages } from 'react-intl';
 
 const messages = defineMessages({
+  // Common / Tabs
+  tabFindHelp: {
+    id: 'helpPanel.tabs.findHelp',
+    defaultMessage: 'Find help',
+  },
+  tabSearch: {
+    id: 'helpPanel.tabs.search',
+    defaultMessage: 'Search',
+  },
+  tabLearn: {
+    id: 'helpPanel.tabs.learn',
+    defaultMessage: 'Learn',
+  },
+  tabKnowledgeBase: {
+    id: 'helpPanel.tabs.knowledgeBase',
+    defaultMessage: 'Knowledge base',
+  },
+  tabApis: {
+    id: 'helpPanel.tabs.apis',
+    defaultMessage: 'APIs',
+  },
+  tabMySupportCases: {
+    id: 'helpPanel.tabs.mySupportCases',
+    defaultMessage: 'My support cases',
+  },
+  tabSupport: {
+    id: 'helpPanel.tabs.support',
+    defaultMessage: 'Support',
+  },
+  tabNewTab: {
+    id: 'helpPanel.tabs.newTab',
+    defaultMessage: 'New tab',
+  },
+  tabAddTab: {
+    id: 'helpPanel.tabs.addTab',
+    defaultMessage: 'Add tab',
+  },
+
+  // Help Panel Header
+  helpPanelTitle: {
+    id: 'helpPanel.title',
+    defaultMessage: 'Help',
+  },
+  redHatStatusPage: {
+    id: 'helpPanel.redHatStatusPage',
+    defaultMessage: 'Red Hat status page',
+  },
+  askRedHat: {
+    id: 'helpPanel.askRedHat',
+    defaultMessage: 'Ask Red Hat',
+  },
+  loading: {
+    id: 'helpPanel.loading',
+    defaultMessage: 'Loading...',
+  },
+
   // Search Panel
   searchPanelDescription: {
     id: 'helpPanel.search.description',
@@ -54,6 +110,18 @@ const messages = defineMessages({
     id: 'helpPanel.learn.noResourcesFound',
     defaultMessage: 'No learning resources found matching your criteria.',
   },
+  learningResourcesWithCount: {
+    id: 'helpPanel.learn.resourcesWithCount',
+    defaultMessage: 'Learning resources ({count})',
+  },
+  filterByScopeAriaLabel: {
+    id: 'helpPanel.learn.filterByScopeAriaLabel',
+    defaultMessage: 'Filter by scope',
+  },
+  learningResourcesAriaLabel: {
+    id: 'helpPanel.learn.learningResourcesAriaLabel',
+    defaultMessage: 'Learning resources',
+  },
 
   // API Panel
   apiPanelDescription: {
@@ -72,6 +140,14 @@ const messages = defineMessages({
   noApiDocsMessage: {
     id: 'helpPanel.api.noDocsFound',
     defaultMessage: 'No API documentation found matching your criteria.',
+  },
+  apiDocumentationWithCount: {
+    id: 'helpPanel.api.documentationWithCount',
+    defaultMessage: 'API Documentation ({count})',
+  },
+  apiResourcesAriaLabel: {
+    id: 'helpPanel.api.resourcesAriaLabel',
+    defaultMessage: 'API resources',
   },
 
   // Support Panel
@@ -100,6 +176,22 @@ const messages = defineMessages({
     id: 'helpPanel.support.casesTableTitle',
     defaultMessage: 'My open support cases',
   },
+  supportColumnTitle: {
+    id: 'helpPanel.support.columnTitle',
+    defaultMessage: 'Title',
+  },
+  supportColumnStatus: {
+    id: 'helpPanel.support.columnStatus',
+    defaultMessage: 'Status',
+  },
+  supportStatusWaitingOnCustomer: {
+    id: 'helpPanel.support.statusWaitingOnCustomer',
+    defaultMessage: 'Waiting on Customer',
+  },
+  supportStatusWaitingOnRedHat: {
+    id: 'helpPanel.support.statusWaitingOnRedHat',
+    defaultMessage: 'Waiting on Red Hat',
+  },
 
   // Knowledge Base Panel
   knowledgeBaseTitle: {
@@ -123,6 +215,69 @@ const messages = defineMessages({
   contentTypeOther: {
     id: 'helpPanel.contentType.other',
     defaultMessage: 'Other',
+  },
+
+  // Quickstart Panel
+  quickstartNoDataAvailable: {
+    id: 'helpPanel.quickstart.noDataAvailable',
+    defaultMessage: 'No quickstart data available.',
+  },
+  quickstartOpenInNewWindow: {
+    id: 'helpPanel.quickstart.openInNewWindow',
+    defaultMessage: 'Open in new window',
+  },
+  quickstartDurationLabel: {
+    id: 'helpPanel.quickstart.durationLabel',
+    defaultMessage: 'Quick start | {minutes} minutes',
+  },
+  quickstartProgressTitle: {
+    id: 'helpPanel.quickstart.progressTitle',
+    defaultMessage: 'Progress',
+  },
+  quickstartTasksCompleted: {
+    id: 'helpPanel.quickstart.tasksCompleted',
+    defaultMessage: '{completed} of {total} tasks completed',
+  },
+  quickstartViewPrerequisites: {
+    id: 'helpPanel.quickstart.viewPrerequisites',
+    defaultMessage: 'View prerequisites ({count})',
+  },
+  quickstartTaskListIntro: {
+    id: 'helpPanel.quickstart.taskListIntro',
+    defaultMessage:
+      'In this quick start, you will complete {count, plural, one {# task} other {# tasks}}:',
+  },
+  quickstartStartButton: {
+    id: 'helpPanel.quickstart.startButton',
+    defaultMessage: 'Start',
+  },
+  quickstartBackToOverview: {
+    id: 'helpPanel.quickstart.backToOverview',
+    defaultMessage: 'Back to overview',
+  },
+  quickstartBack: {
+    id: 'helpPanel.quickstart.back',
+    defaultMessage: 'Back',
+  },
+  quickstartTaskProgress: {
+    id: 'helpPanel.quickstart.taskProgress',
+    defaultMessage: '{current} of {total}',
+  },
+  quickstartCheckYourWork: {
+    id: 'helpPanel.quickstart.checkYourWork',
+    defaultMessage: 'Check your work',
+  },
+  quickstartMarkCompleteAndNext: {
+    id: 'helpPanel.quickstart.markCompleteAndNext',
+    defaultMessage: 'Mark complete & next',
+  },
+  quickstartMarkComplete: {
+    id: 'helpPanel.quickstart.markComplete',
+    defaultMessage: 'Mark complete',
+  },
+  quickstartNext: {
+    id: 'helpPanel.quickstart.next',
+    defaultMessage: 'Next',
   },
 });
 
