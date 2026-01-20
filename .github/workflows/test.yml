@@ -33,7 +33,7 @@ jobs:
           rm -rf node_modules/@swc
           npm install @swc/core
   # cypress component testing
-  test-e2e:
+  test-component:
     runs-on: ubuntu-latest
     needs: [install]
     steps:
@@ -48,7 +48,9 @@ jobs:
       - uses: actions/cache@v3
         id: node_modules-cache
         with:
-          path: "**/node_modules"
+          path: |
+            **/node_modules
+            /home/runner/.cache/Cypress
           key: install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
       # custom cypress cache, caches cypress and cypress webpack node module dependencies based on lock file
       - uses: actions/cache@v3
