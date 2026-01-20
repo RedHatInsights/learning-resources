@@ -301,7 +301,7 @@ const APIPanelContent: React.FC = () => {
 };
 
 const APIPanel: React.FC<{
-  setNewActionTitle: (title: string) => void;
+  setNewActionTitle?: (title: string) => void;
 }> = () => {
   return (
     <Suspense fallback={<Spinner size="lg" />}>

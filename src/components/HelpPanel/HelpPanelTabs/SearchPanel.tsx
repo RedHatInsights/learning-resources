@@ -6,13 +6,13 @@ import messages from '../../../Messages';
 const SearchPanel = ({
   setNewActionTitle,
 }: {
-  setNewActionTitle: (title: string) => void;
+  setNewActionTitle?: (title: string) => void;
 }) => {
   const intl = useIntl();
   const [searchText, setSearchText] = React.useState('');
   const handleTextInputChange = (_e: unknown, value: string) => {
     setSearchText(value);
-    setNewActionTitle(value);
+    setNewActionTitle?.(value);
   };
   return (
     <Stack
