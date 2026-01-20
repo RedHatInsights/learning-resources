@@ -1,6 +1,14 @@
 import React from 'react';
+import { IntlProvider } from 'react-intl';
 import QuickstartPanel from '../../src/components/HelpPanel/HelpPanelTabs/QuickstartPanel';
 import { ExtendedQuickstart } from '../../src/utils/fetchQuickstarts';
+
+// Wrapper component to provide IntlProvider context
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <IntlProvider locale="en" defaultLocale="en">
+    {children}
+  </IntlProvider>
+);
 
 // Mock quickstart data for testing
 const createMockQuickstart = (
@@ -71,16 +79,19 @@ const createMockQuickstart = (
 describe('QuickstartPanel', () => {
   describe('Empty State', () => {
     it('should display "No quickstart data available" when no data is provided', () => {
-      cy.mount(<QuickstartPanel setNewActionTitle={cy.stub()} />);
+      cy.mount(
+        <TestWrapper>
+          <QuickstartPanel />
+        </TestWrapper>
+      );
       cy.contains('No quickstart data available.').should('be.visible');
     });
 
     it('should display "No quickstart data available" when quickstartData is undefined', () => {
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={undefined}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={undefined} />
+        </TestWrapper>
       );
       cy.contains('No quickstart data available.').should('be.visible');
     });
@@ -90,10 +101,9 @@ describe('QuickstartPanel', () => {
     it('should render the quickstart title', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('h2', 'Test Quickstart Title').should('be.visible');
     });
@@ -101,10 +111,9 @@ describe('QuickstartPanel', () => {
     it('should render the duration badge', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('Quick start | 15 minutes').should('be.visible');
     });
@@ -112,10 +121,9 @@ describe('QuickstartPanel', () => {
     it('should not render duration badge when durationMinutes is not provided', () => {
       const mockData = createMockQuickstart({ durationMinutes: undefined });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('minutes').should('not.exist');
     });
@@ -123,10 +131,9 @@ describe('QuickstartPanel', () => {
     it('should render the introduction with markdown parsed', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       // Check that markdown is rendered as HTML (bold text becomes <strong>)
       cy.get('.lr-c-markdown-content')
@@ -145,10 +152,9 @@ describe('QuickstartPanel', () => {
         description: 'Fallback description text',
       });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('Fallback description text').should('be.visible');
     });
@@ -156,10 +162,9 @@ describe('QuickstartPanel', () => {
     it('should render external link button when link is provided', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.get('a[aria-label="Open in new window"]')
         .should('have.attr', 'href', 'https://example.com/quickstart')
@@ -169,10 +174,9 @@ describe('QuickstartPanel', () => {
     it('should render the Start button', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]')
         .should('be.visible')
@@ -184,10 +188,9 @@ describe('QuickstartPanel', () => {
     it('should render prerequisites toggle with correct count', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('View prerequisites (3)').should('be.visible');
     });
@@ -195,10 +198,9 @@ describe('QuickstartPanel', () => {
     it('should expand prerequisites when clicked', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       // Prerequisites should be collapsed by default
       cy.contains('You need prerequisite one').should('not.be.visible');
@@ -215,10 +217,9 @@ describe('QuickstartPanel', () => {
     it('should collapse prerequisites when clicked again', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       // Expand
       cy.contains('View prerequisites (3)').click();
@@ -232,10 +233,9 @@ describe('QuickstartPanel', () => {
     it('should not render prerequisites section when none exist', () => {
       const mockData = createMockQuickstart({ prerequisites: [] });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('View prerequisites').should('not.exist');
     });
@@ -245,10 +245,9 @@ describe('QuickstartPanel', () => {
     it('should render task count text', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('In this quick start, you will complete 3 tasks:').should(
         'be.visible'
@@ -265,10 +264,9 @@ describe('QuickstartPanel', () => {
         ],
       });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
       cy.contains('In this quick start, you will complete 1 task:').should(
         'be.visible'
@@ -278,10 +276,9 @@ describe('QuickstartPanel', () => {
     it('should render all task titles with numbers', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Check task numbers
@@ -298,10 +295,9 @@ describe('QuickstartPanel', () => {
     it('should navigate to task when clicking on task in list', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Click on second task
@@ -319,10 +315,9 @@ describe('QuickstartPanel', () => {
     it('should navigate to first task when clicking Start', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -340,10 +335,9 @@ describe('QuickstartPanel', () => {
     it('should show "Back to overview" on first task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -355,10 +349,9 @@ describe('QuickstartPanel', () => {
     it('should navigate back to overview when clicking "Back to overview"', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Go to first task
@@ -380,10 +373,9 @@ describe('QuickstartPanel', () => {
     it('should show "Back" on subsequent tasks', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Navigate to second task via task list
@@ -400,10 +392,9 @@ describe('QuickstartPanel', () => {
     it('should navigate back to previous task when clicking "Back"', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Navigate to second task
@@ -425,10 +416,9 @@ describe('QuickstartPanel', () => {
     it('should render task description with markdown', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -444,10 +434,9 @@ describe('QuickstartPanel', () => {
     it('should render "Check your work" section with review instructions', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -463,10 +452,9 @@ describe('QuickstartPanel', () => {
     it('should show "Mark complete & next" button on non-final tasks', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -481,10 +469,9 @@ describe('QuickstartPanel', () => {
     it('should show "Mark complete" button on final task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Navigate to last task
@@ -500,10 +487,9 @@ describe('QuickstartPanel', () => {
     it('should mark task complete and navigate to next task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -523,10 +509,9 @@ describe('QuickstartPanel', () => {
     it('should show Next button after completing a task and going back', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Start and complete first task
@@ -552,10 +537,9 @@ describe('QuickstartPanel', () => {
     it('should show "Back to overview" button after completing final task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Navigate to last task and complete it
@@ -579,10 +563,9 @@ describe('QuickstartPanel', () => {
     it('should not show progress bar initially', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get('.pf-v6-c-progress').should('not.exist');
@@ -591,10 +574,9 @@ describe('QuickstartPanel', () => {
     it('should show progress bar after completing a task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Start and complete first task
@@ -617,10 +599,9 @@ describe('QuickstartPanel', () => {
     it('should show checkmark icon for completed tasks in overview', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Complete first task
@@ -652,10 +633,9 @@ describe('QuickstartPanel', () => {
     it('should update progress correctly when completing multiple tasks', () => {
       const mockData = createMockQuickstart();
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Complete all three tasks
@@ -690,10 +670,9 @@ describe('QuickstartPanel', () => {
     it('should handle quickstart with no tasks', () => {
       const mockData = createMockQuickstart({ tasks: [] });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       // Should show overview without task list
@@ -714,10 +693,9 @@ describe('QuickstartPanel', () => {
         ],
       });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(
@@ -737,10 +715,9 @@ describe('QuickstartPanel', () => {
         ],
       });
       cy.mount(
-        <QuickstartPanel
-          setNewActionTitle={cy.stub()}
-          quickstartData={mockData}
-        />
+        <TestWrapper>
+          <QuickstartPanel quickstartData={mockData} />
+        </TestWrapper>
       );
 
       cy.get(

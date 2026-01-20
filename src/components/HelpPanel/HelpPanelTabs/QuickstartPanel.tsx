@@ -243,7 +243,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                       isInline
                       onClick={() => handleTaskClick(index)}
                       className="lr-c-quickstart-task-link"
-                      data-ouia-component-id={`help-panel-quickstart-task-${index}`}
+                      ouiaId={`help-panel-quickstart-task-${index}`}
                     >
                       <Flex
                         spaceItems={{ default: 'spaceItemsSm' }}
@@ -274,7 +274,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
             <Button
               variant="primary"
               onClick={() => setCurrentTaskIndex(0)}
-              data-ouia-component-id="help-panel-quickstart-start-button"
+              ouiaId="help-panel-quickstart-start-button"
             >
               {intl.formatMessage(messages.quickstartStartButton)}
             </Button>
@@ -346,7 +346,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
               <Button
                 variant="primary"
                 onClick={handleMarkComplete}
-                data-ouia-component-id="help-panel-quickstart-complete-button"
+                ouiaId="help-panel-quickstart-complete-button"
               >
                 {currentTaskIndex < tasks.length - 1
                   ? intl.formatMessage(messages.quickstartMarkCompleteAndNext)
@@ -360,7 +360,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                 <Button
                   variant="primary"
                   onClick={handleNext}
-                  data-ouia-component-id="help-panel-quickstart-next-button"
+                  ouiaId="help-panel-quickstart-next-button"
                 >
                   {intl.formatMessage(messages.quickstartNext)}
                 </Button>
@@ -372,7 +372,7 @@ const QuickstartPanel: React.FC<QuickstartPanelProps> = ({
                 <Button
                   variant="secondary"
                   onClick={() => setCurrentTaskIndex(-1)}
-                  data-ouia-component-id="help-panel-quickstart-finish-button"
+                  ouiaId="help-panel-quickstart-finish-button"
                 >
                   {intl.formatMessage(messages.quickstartBackToOverview)}
                 </Button>
