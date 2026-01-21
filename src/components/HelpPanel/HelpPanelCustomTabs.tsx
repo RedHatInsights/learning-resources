@@ -15,7 +15,6 @@ import React, {
   useState,
 } from 'react';
 import classNames from 'classnames';
-import { useIntl } from 'react-intl';
 
 import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
@@ -24,7 +23,6 @@ import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import { HelpPanelTabsContext } from './HelpPanelTabsContext';
-import messages from '../../Messages';
 
 type TabDefinition = {
   id: string;
@@ -41,59 +39,52 @@ type SubTab = Omit<TabDefinition, 'id'> & {
   featureFlag?: string;
 };
 
-// Helper to get translated tabs - takes formatMessage function
-const getBaseTabs = (
-  formatMessage: (descriptor: { id: string; defaultMessage: string }) => string
-): TabDefinition[] => [
+const baseTabs: TabDefinition[] = [
   {
     id: 'find-help',
-    title: formatMessage(messages.tabFindHelp),
+    title: 'Learn',
     closeable: false,
     tabType: TabType.learn,
   },
 ];
 
-const getSubTabs = (
-  formatMessage: (descriptor: { id: string; defaultMessage: string }) => string
-): SubTab[] => [
+const subTabs: SubTab[] = [
   {
-    title: formatMessage(messages.tabSearch),
+    title: 'Search',
     tabType: TabType.search,
     featureFlag: 'platform.chrome.help-panel_search',
   },
   {
-    title: formatMessage(messages.tabLearn),
+    title: 'Learn',
     tabType: TabType.learn,
   },
   {
-    title: formatMessage(messages.tabKnowledgeBase),
+    title: 'Knowledge base',
     tabType: TabType.kb,
     featureFlag: 'platform.chrome.help-panel_knowledge-base',
   },
   {
-    title: formatMessage(messages.tabApis),
+    title: 'APIs',
     tabType: TabType.api,
   },
   {
-    title: formatMessage(messages.tabMySupportCases),
-    tabTitle: formatMessage(messages.tabSupport),
+    title: 'My support cases',
+    tabTitle: 'Support',
     tabType: TabType.support,
   },
 ];
 
 // Helper function to get sub-tab title by TabType
-const getSubTabTitle = (
-  tabType: TabType,
-  subTabs: SubTab[],
-  defaultTitle: string
-): string => {
+const getSubTabTitle = (tabType: TabType): string => {
   const subTab = subTabs.find((tab) => tab.tabType === tabType);
-  return subTab?.tabTitle || (subTab?.title as string) || defaultTitle;
+  return subTab?.tabTitle || (subTab?.title as string) || 'Learn';
 };
 
+const NEW_TAB_PLACEHOLDER = 'New tab';
+
 // just mocking the tabs store until we have API
-const createTabsStore = (initialTabs: TabDefinition[]) => {
-  let tabs: TabDefinition[] = [...initialTabs];
+const createTabsStore = () => {
+  let tabs: TabDefinition[] = [...baseTabs];
   const subscribers = new Map<string, () => void>();
   const addTab = (tab: TabDefinition) => {
     tabs.push(tab);
@@ -166,12 +157,7 @@ const SubTabs = ({
   activeSubTabKey: TabType;
   setActiveSubTabKey: (key: TabType) => void;
 }>) => {
-  const intl = useIntl();
   const flags = useFlags();
-  const subTabs = useMemo(
-    () => getSubTabs(intl.formatMessage),
-    [intl.formatMessage]
-  );
   const filteredSubTabs = useMemo(() => {
     return subTabs.filter((tab) => {
       if (typeof tab.featureFlag === 'string') {
@@ -220,7 +206,7 @@ const SubTabs = ({
               iconPosition="end"
               data-ouia-component-id="help-panel-status-page-subtabs-button"
             >
-              {intl.formatMessage(messages.redHatStatusPage)}
+              Red Hat status page
             </Button>
           )}
         </>
@@ -231,21 +217,8 @@ const SubTabs = ({
 };
 
 const HelpPanelCustomTabs = () => {
-  const intl = useIntl();
-  const baseTabs = useMemo(
-    () => getBaseTabs(intl.formatMessage),
-    [intl.formatMessage]
-  );
-  const subTabs = useMemo(
-    () => getSubTabs(intl.formatMessage),
-    [intl.formatMessage]
-  );
-  const newTabPlaceholder = intl.formatMessage(messages.tabNewTab);
-  const addTabAriaLabel = intl.formatMessage(messages.tabAddTab);
-  const findHelpTitle = intl.formatMessage(messages.tabFindHelp);
-
-  const apiStoreMock = useMemo(() => createTabsStore(baseTabs), [baseTabs]);
-  const [activeTab, setActiveTab] = useState<TabDefinition>(() => baseTabs[0]);
+  const apiStoreMock = useMemo(() => createTabsStore(), []);
+  const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
 
   const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
     undefined
@@ -280,7 +253,7 @@ const HelpPanelCustomTabs = () => {
     debounce((title: string) => {
       console.log({ activeTab });
       if (
-        (!newActionTitle || activeTab.title === newTabPlaceholder) &&
+        (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
         activeTab.closeable
       ) {
         setNewActionTitle(title);
@@ -290,7 +263,7 @@ const HelpPanelCustomTabs = () => {
         });
       }
     }, 2000),
-    [activeTab, newTabPlaceholder]
+    [activeTab]
   );
 
   const handleAddTab = () => {
@@ -299,7 +272,7 @@ const HelpPanelCustomTabs = () => {
     const newTabId = crypto.randomUUID();
     const tab = {
       id: newTabId,
-      title: newTabPlaceholder,
+      title: NEW_TAB_PLACEHOLDER,
       closeable: true,
       tabType: TabType.learn,
       isNewTab: true,
@@ -336,7 +309,7 @@ const HelpPanelCustomTabs = () => {
   useEffect(() => {
     // Ensure the Add tab button has a stable OUIA id
     const addButton = document.querySelector(
-      `[data-ouia-component-id="help-panel-tabs"] button[aria-label="${addTabAriaLabel}"]`
+      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
     ) as HTMLButtonElement | null;
     if (addButton) {
       addButton.setAttribute(
@@ -344,7 +317,7 @@ const HelpPanelCustomTabs = () => {
         'help-panel-add-tab-button'
       );
     }
-  }, [tabs.length, addTabAriaLabel]);
+  }, [tabs.length]);
 
   return (
     <HelpPanelTabsContext.Provider value={contextValue}>
@@ -366,7 +339,7 @@ const HelpPanelCustomTabs = () => {
           }
         }}
         data-ouia-component-id="help-panel-tabs"
-        addButtonAriaLabel={addTabAriaLabel}
+        addButtonAriaLabel="Add tab"
       >
         {tabs.map((tab) => (
           <Tab
@@ -398,9 +371,9 @@ const HelpPanelCustomTabs = () => {
                 setActiveSubTabKey={(tabType) => {
                   let newTitle = tab.title;
                   if (!tab.closeable) {
-                    newTitle = getSubTabTitle(tabType, subTabs, findHelpTitle);
+                    newTitle = getSubTabTitle(tabType);
                   } else if (tab.isNewTab) {
-                    newTitle = getSubTabTitle(tabType, subTabs, findHelpTitle);
+                    newTitle = getSubTabTitle(tabType);
                   }
                   const nextTab = {
                     ...tab,
@@ -411,10 +384,15 @@ const HelpPanelCustomTabs = () => {
                   setActiveTab(nextTab);
                 }}
               >
-                <HelpPanelTabContainer
-                  activeTabType={tab.tabType}
-                  setNewActionTitle={setNewActionTitleDebounced}
-                />
+                <div
+                  className="pf-v6-u-p-md"
+                  data-ouia-component-id="help-panel-content-container"
+                >
+                  <HelpPanelTabContainer
+                    activeTabType={tab.tabType}
+                    setNewActionTitle={setNewActionTitleDebounced}
+                  />
+                </div>
               </SubTabs>
             )}
           </Tab>

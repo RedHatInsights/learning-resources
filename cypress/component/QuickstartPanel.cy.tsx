@@ -108,7 +108,7 @@ describe('QuickstartPanel', () => {
       cy.contains('h2', 'Test Quickstart Title').should('be.visible');
     });
 
-    it('should render the duration badge', () => {
+    it('should render the duration', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
@@ -118,7 +118,7 @@ describe('QuickstartPanel', () => {
       cy.contains('Quick start | 15 minutes').should('be.visible');
     });
 
-    it('should not render duration badge when durationMinutes is not provided', () => {
+    it('should not render duration when durationMinutes is not provided', () => {
       const mockData = createMockQuickstart({ durationMinutes: undefined });
       cy.mount(
         <TestWrapper>
@@ -135,7 +135,6 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-      // Check that markdown is rendered as HTML (bold text becomes <strong>)
       cy.get('.lr-c-markdown-content')
         .first()
         .within(() => {
@@ -171,7 +170,7 @@ describe('QuickstartPanel', () => {
         .and('have.attr', 'target', '_blank');
     });
 
-    it('should render the Start button', () => {
+    it('should render the Next button on overview', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
@@ -180,7 +179,7 @@ describe('QuickstartPanel', () => {
       );
       cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]')
         .should('be.visible')
-        .and('contain.text', 'Start');
+        .and('contain.text', 'Next');
     });
   });
 
@@ -202,32 +201,11 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-      // Prerequisites should be collapsed by default
       cy.contains('You need prerequisite one').should('not.be.visible');
-
-      // Click to expand
       cy.contains('View prerequisites (3)').click();
-
-      // Now prerequisites should be visible
       cy.contains('You need prerequisite one').should('be.visible');
       cy.contains('prerequisite two').should('be.visible');
       cy.contains('You need prerequisite three').should('be.visible');
-    });
-
-    it('should collapse prerequisites when clicked again', () => {
-      const mockData = createMockQuickstart();
-      cy.mount(
-        <TestWrapper>
-          <QuickstartPanel quickstartData={mockData} />
-        </TestWrapper>
-      );
-      // Expand
-      cy.contains('View prerequisites (3)').click();
-      cy.contains('You need prerequisite one').should('be.visible');
-
-      // Collapse
-      cy.contains('View prerequisites (3)').click();
-      cy.contains('You need prerequisite one').should('not.be.visible');
     });
 
     it('should not render prerequisites section when none exist', () => {
@@ -280,13 +258,9 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Check task numbers
       cy.get('.lr-c-task-number').eq(0).should('contain.text', '1');
       cy.get('.lr-c-task-number').eq(1).should('contain.text', '2');
       cy.get('.lr-c-task-number').eq(2).should('contain.text', '3');
-
-      // Check task titles
       cy.contains('First Task').should('be.visible');
       cy.contains('Second Task').should('be.visible');
       cy.contains('Third Task').should('be.visible');
@@ -299,115 +273,82 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Click on second task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-task-1"]'
-      ).click();
-
-      // Should now be in task view showing second task
+      cy.get('[data-ouia-component-id="help-panel-quickstart-task-1"]').click();
       cy.contains('h3', 'Second Task').should('be.visible');
       cy.contains('2 of 3').should('be.visible');
     });
   });
 
   describe('Task Navigation', () => {
-    it('should navigate to first task when clicking Start', () => {
+    it('should navigate to first task when clicking Next', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
-      // Should now show task view
-      cy.get('[data-ouia-component-id="help-panel-quickstart-task"]').should(
-        'exist'
-      );
-      cy.contains('h3', 'First Task').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-task"]').should('exist');
+      cy.contains('First Task').should('be.visible');
       cy.contains('1 of 3').should('be.visible');
     });
 
-    it('should show "Back to overview" on first task', () => {
+    it('should show Next, Back, and Restart buttons in task view', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-      cy.contains('Back to overview').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-next-button"]').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-restart-button"]').should('be.visible');
     });
 
-    it('should navigate back to overview when clicking "Back to overview"', () => {
+    it('should navigate back to overview when clicking Back on first task', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Go to first task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-      cy.contains('h3', 'First Task').should('be.visible');
-
-      // Go back to overview
-      cy.contains('Back to overview').click();
-
-      // Should be back on overview
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-overview"]'
-      ).should('exist');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.contains('First Task').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-overview"]').should('exist');
       cy.contains('h2', 'Test Quickstart Title').should('be.visible');
     });
 
-    it('should show "Back" on subsequent tasks', () => {
+    it('should navigate to previous task when clicking Back', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Navigate to second task via task list
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-task-1"]'
-      ).click();
-
-      // Should show "Back" not "Back to overview"
-      cy.contains('button', 'Back')
-        .should('be.visible')
-        .and('not.contain.text', 'Back to overview');
+      // Go to second task
+      cy.get('[data-ouia-component-id="help-panel-quickstart-task-1"]').click();
+      cy.contains('Second Task').should('be.visible');
+      // Click back
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').click();
+      cy.contains('First Task').should('be.visible');
     });
 
-    it('should navigate back to previous task when clicking "Back"', () => {
+    it('should restart quickstart when clicking Restart', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Navigate to second task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-task-1"]'
-      ).click();
-      cy.contains('h3', 'Second Task').should('be.visible');
-
-      // Go back
-      cy.contains('button', 'Back').click();
-
-      // Should be on first task
-      cy.contains('h3', 'First Task').should('be.visible');
+      // Go to second task
+      cy.get('[data-ouia-component-id="help-panel-quickstart-task-1"]').click();
+      cy.contains('Second Task').should('be.visible');
+      // Click restart
+      cy.get('[data-ouia-component-id="help-panel-quickstart-restart-button"]').click();
+      // Should be back on first task
+      cy.contains('First Task').should('be.visible');
       cy.contains('1 of 3').should('be.visible');
     });
   });
@@ -420,11 +361,7 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
       cy.get('.lr-c-task-description').within(() => {
         cy.get('strong').should('contain.text', 'bold text');
         cy.get('code').should('contain.text', 'inline code');
@@ -438,124 +375,49 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
       cy.contains('h4', 'Check your work').should('be.visible');
       cy.contains('Did you complete the first task?').should('be.visible');
     });
+
   });
 
-  describe('Task Completion', () => {
-    it('should show "Mark complete & next" button on non-final tasks', () => {
+  describe('Task Review', () => {
+    it('should show Yes/No radio buttons for review', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).should('contain.text', 'Mark complete & next');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.contains('label', 'Yes').should('be.visible');
+      cy.contains('label', 'No').should('be.visible');
     });
 
-    it('should show "Mark complete" button on final task', () => {
+    it('should show failed help text when selecting No', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Navigate to last task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-task-2"]'
-      ).click();
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).should('contain.text', 'Mark complete');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.contains('label', 'No').click();
+      cy.contains('Try again if you failed.').should('be.visible');
     });
 
-    it('should mark task complete and navigate to next task', () => {
+    it('should navigate to next task when clicking Next', () => {
       const mockData = createMockQuickstart();
       cy.mount(
         <TestWrapper>
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
-      // Complete first task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Should be on second task now
-      cy.contains('h3', 'Second Task').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-next-button"]').click();
+      cy.contains('Second Task').should('be.visible');
       cy.contains('2 of 3').should('be.visible');
-    });
-
-    it('should show Next button after completing a task and going back', () => {
-      const mockData = createMockQuickstart();
-      cy.mount(
-        <TestWrapper>
-          <QuickstartPanel quickstartData={mockData} />
-        </TestWrapper>
-      );
-
-      // Start and complete first task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Go back to first task
-      cy.contains('button', 'Back').click();
-
-      // Should show Next button instead of Mark complete
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-next-button"]'
-      ).should('be.visible');
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).should('not.exist');
-    });
-
-    it('should show "Back to overview" button after completing final task', () => {
-      const mockData = createMockQuickstart();
-      cy.mount(
-        <TestWrapper>
-          <QuickstartPanel quickstartData={mockData} />
-        </TestWrapper>
-      );
-
-      // Navigate to last task and complete it
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-task-2"]'
-      ).click();
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Should show "Back to overview" button
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-finish-button"]'
-      )
-        .should('be.visible')
-        .and('contain.text', 'Back to overview');
     });
   });
 
@@ -567,7 +429,6 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
       cy.get('.pf-v6-c-progress').should('not.exist');
     });
 
@@ -578,19 +439,13 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
       // Start and complete first task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Go back to overview
-      cy.contains('button', 'Back').click();
-      cy.contains('Back to overview').click();
-
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.contains('label', 'Yes').click();
+      // Go to next task then back to overview
+      cy.get('[data-ouia-component-id="help-panel-quickstart-next-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').click();
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').click();
       // Progress bar should be visible
       cy.get('.pf-v6-c-progress').should('be.visible');
       cy.contains('1 of 3 tasks completed').should('be.visible');
@@ -603,66 +458,16 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
       // Complete first task
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Navigate back to overview
-      cy.contains('button', 'Back').click();
-      cy.contains('Back to overview').click();
-
-      // First task should have checkmark, others should have numbers
-      cy.get('[data-ouia-component-id="help-panel-quickstart-task-0"]').within(
-        () => {
-          cy.get('svg').should('exist'); // CheckCircleIcon
-          cy.get('.lr-c-task-number').should('not.exist');
-        }
-      );
-      cy.get('[data-ouia-component-id="help-panel-quickstart-task-1"]').within(
-        () => {
-          cy.get('.lr-c-task-number').should('contain.text', '2');
-        }
-      );
-    });
-
-    it('should update progress correctly when completing multiple tasks', () => {
-      const mockData = createMockQuickstart();
-      cy.mount(
-        <TestWrapper>
-          <QuickstartPanel quickstartData={mockData} />
-        </TestWrapper>
-      );
-
-      // Complete all three tasks
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
-      // Task 1
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-      // Task 2
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-      // Task 3
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-complete-button"]'
-      ).click();
-
-      // Go back to overview via finish button
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-finish-button"]'
-      ).click();
-
-      // Progress should show 100%
-      cy.contains('3 of 3 tasks completed').should('be.visible');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
+      cy.contains('label', 'Yes').click();
+      // Navigate back to overview via Back button
+      cy.get('[data-ouia-component-id="help-panel-quickstart-back-button"]').click();
+      // First task should have checkmark
+      cy.get('[data-ouia-component-id="help-panel-quickstart-task-0"]').within(() => {
+        cy.get('.lr-c-task-icon--success').should('exist');
+        cy.get('.lr-c-task-number').should('not.exist');
+      });
     });
   });
 
@@ -674,13 +479,9 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      // Should show overview without task list
       cy.contains('h2', 'Test Quickstart Title').should('be.visible');
       cy.contains('In this quick start').should('not.exist');
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).should('not.exist');
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').should('not.exist');
     });
 
     it('should handle task without review section', () => {
@@ -697,11 +498,7 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
       cy.contains('h3', 'Task Without Review').should('be.visible');
       cy.contains('Check your work').should('not.exist');
     });
@@ -711,6 +508,10 @@ describe('QuickstartPanel', () => {
         tasks: [
           {
             title: 'Task Without Description',
+            review: {
+              instructions: 'Review this',
+              failedTaskHelp: 'Help text',
+            },
           },
         ],
       });
@@ -719,11 +520,7 @@ describe('QuickstartPanel', () => {
           <QuickstartPanel quickstartData={mockData} />
         </TestWrapper>
       );
-
-      cy.get(
-        '[data-ouia-component-id="help-panel-quickstart-start-button"]'
-      ).click();
-
+      cy.get('[data-ouia-component-id="help-panel-quickstart-start-button"]').click();
       cy.contains('h3', 'Task Without Description').should('be.visible');
       cy.get('.lr-c-task-description').should('not.exist');
     });

@@ -4,7 +4,7 @@ const messages = defineMessages({
   // Common / Tabs
   tabFindHelp: {
     id: 'helpPanel.tabs.findHelp',
-    defaultMessage: 'Find help',
+    defaultMessage: 'Learn',
   },
   tabSearch: {
     id: 'helpPanel.tabs.search',
@@ -278,6 +278,22 @@ const messages = defineMessages({
   quickstartNext: {
     id: 'helpPanel.quickstart.next',
     defaultMessage: 'Next',
+  },
+  quickstartContinue: {
+    id: 'helpPanel.quickstart.continue',
+    defaultMessage: 'Continue',
+  },
+  quickstartReviewYes: {
+    id: 'helpPanel.quickstart.reviewYes',
+    defaultMessage: 'Yes',
+  },
+  quickstartReviewNo: {
+    id: 'helpPanel.quickstart.reviewNo',
+    defaultMessage: 'No',
+  },
+  quickstartRestart: {
+    id: 'helpPanel.quickstart.restart',
+    defaultMessage: 'Restart',
   },
 });
 
