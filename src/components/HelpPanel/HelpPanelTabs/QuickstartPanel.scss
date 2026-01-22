@@ -314,7 +314,24 @@
   }
 }
 
-// Admonition / Note box styles
+// PatternFly Admonition styles (rendered as PF Alert components)
+// The .pfext-markdown-admonition class is added by the PF quickstarts library
+.pfext-markdown-admonition {
+  margin: var(--pf-t--global--spacer--md) 0;
+  
+  // Ensure links in admonitions are styled correctly
+  a {
+    color: var(--pf-t--global--color--link--default);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--pf-t--global--color--link--hover);
+      text-decoration: underline;
+    }
+  }
+}
+
+// Legacy admonition styles (fallback for custom rendering)
 .lr-c-admonition {
   display: flex;
   flex-direction: column;
@@ -363,5 +380,62 @@
         text-decoration: underline;
       }
     }
+  }
+}
+
+// Accordion styles (for {{accordion}} syntax)
+.lr-c-accordion {
+  margin: var(--pf-t--global--spacer--md) 0;
+  border: 1px solid var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+
+  &__title {
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    font-weight: var(--pf-t--global--font--weight--bold);
+    cursor: pointer;
+    background-color: var(--pf-t--global--background--color--secondary--default);
+
+    &:hover {
+      background-color: var(--pf-t--global--background--color--secondary--hover);
+    }
+  }
+
+  &__content {
+    padding: var(--pf-t--global--spacer--md);
+  }
+
+  &[open] {
+    .lr-c-accordion__title {
+      border-bottom: 1px solid var(--pf-t--global--border--color--default);
+    }
+  }
+}
+
+// ClipboardCopy component styles (for {{copy}} syntax using PF ClipboardCopy)
+.lr-c-clipboard-copy {
+  margin: var(--pf-t--global--spacer--sm) 0;
+}
+
+// Legacy copyable code styles (fallback)
+.lr-c-copyable-code {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  padding: 2px 6px;
+  border-radius: var(--pf-t--global--border--radius--tiny);
+  font-family: var(--pf-t--global--font--family--mono);
+  font-size: var(--pf-t--global--font--size--sm);
+}
+
+.lr-c-copyable-code-block {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  padding: var(--pf-t--global--spacer--md);
+  border-radius: var(--pf-t--global--border--radius--small);
+  overflow-x: auto;
+  margin: var(--pf-t--global--spacer--sm) 0;
+
+  code {
+    background-color: transparent;
+    padding: 0;
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
   }
 }

@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
+  AlertVariant,
   Button,
+  ClipboardCopy,
+  ClipboardCopyVariant,
   Content,
   ContentVariants,
   ExpandableSection,
@@ -18,9 +22,12 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   ExternalLinkAltIcon,
+  FireIcon,
   InfoCircleIcon,
+  LightbulbIcon,
   TimesIcon,
 } from '@patternfly/react-icons';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { useIntl } from 'react-intl';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -51,27 +58,128 @@ enum TaskStatus {
   FAILED = 'failed',
 }
 
+// Admonition type mapping matching PatternFly quickstarts
+type AdmonitionConfig = {
+  variant: AlertVariant;
+  customIcon?: React.ReactNode;
+};
+
+const admonitionToAlertVariantMap: Record<string, AdmonitionConfig> = {
+  NOTE: { variant: AlertVariant.info },
+  TIP: { variant: AlertVariant.custom, customIcon: <LightbulbIcon /> },
+  IMPORTANT: { variant: AlertVariant.danger },
+  CAUTION: { variant: AlertVariant.warning, customIcon: <FireIcon /> },
+  WARNING: { variant: AlertVariant.warning },
+};
+
+/**
+ * Creates a PatternFly Alert component as HTML string for admonitions.
+ * This matches how the PF quickstarts library renders admonitions.
+ */
+const createAdmonitionHtml = (type: string, content: string): string => {
+  const normalizedType = type.toUpperCase();
+  const config = admonitionToAlertVariantMap[normalizedType] || admonitionToAlertVariantMap.NOTE;
+  
+  // Parse inline markdown in the content
+  const processedContent = marked.parseInline(content) as string;
+  const sanitizedContent = DOMPurify.sanitize(processedContent);
+  
+  // Render PatternFly Alert as static HTML
+  const alertElement = (
+    <Alert
+      variant={config.variant}
+      {...(config.customIcon && { customIcon: config.customIcon })}
+      isInline
+      title={normalizedType}
+      className="pfext-markdown-admonition"
+    >
+      <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
+    </Alert>
+  );
+  
+  return renderToStaticMarkup(alertElement);
+};
+
+/**
+ * Creates a ClipboardCopy component as HTML string for copyable code.
+ */
+const createClipboardCopyHtml = (code: string, isBlock: boolean): string => {
+  const clipboardElement = (
+    <ClipboardCopy
+      isReadOnly
+      hoverTip="Copy"
+      clickTip="Copied"
+      variant={isBlock ? ClipboardCopyVariant.expansion : ClipboardCopyVariant.inline}
+      className="lr-c-clipboard-copy"
+    >
+      {code.trim()}
+    </ClipboardCopy>
+  );
+  
+  return renderToStaticMarkup(clipboardElement);
+};
+
 /**
  * Processes PatternFly quickstart syntax in markdown content.
- * Converts admonitions to styled HTML and handles other custom syntax.
+ * Handles the following PF quickstart extensions:
+ * - [content]{{admonition type}} - note/warning boxes (renders as PF Alert)
+ * - `code`{{copy}} - inline copyable code (renders as PF ClipboardCopy)
+ * - ```code```{{copy}} - block copyable code (renders as PF ClipboardCopy)
+ * - [content]{{accordion "title"}} - collapsible sections
+ * - {{highlight selector}} - UI highlighting (removed, not applicable in panel)
+ * - [text]{{highlight selector}} - clickable highlights (extract text only)
  */
 const preprocessQuickstartMarkdown = (content: string): string => {
   let processed = content;
 
-  // Convert admonition blocks to styled HTML
+  // Handle PF quickstart admonition format: [content]{{admonition type}}
   processed = processed.replace(
-    /\{\{#?admonition\s+(\w+)\}\}([\s\S]*?)\{\{\/admonition\}\}/gi,
-    (_match, type: string, admonitionContent: string) => {
-      const normalizedType = type.toLowerCase();
-      return `<div class="lr-c-admonition lr-c-admonition--${normalizedType}"><div class="lr-c-admonition__title">${normalizedType.toUpperCase()}</div><div class="lr-c-admonition__body">${admonitionContent.trim()}</div></div>`;
+    /\[([^\]]+)\]\{\{admonition\s+(\w+)\}\}/gi,
+    (_match, admonitionContent: string, type: string) => {
+      return createAdmonitionHtml(type, admonitionContent);
     }
   );
 
-  // Remove remaining {{...}} template syntax
-  processed = processed.replace(/\{\{[^}]*\}\}/g, '');
+  // Handle legacy/alternative admonition format: {{#admonition type}}...{{/admonition}}
+  processed = processed.replace(
+    /\{\{#?admonition\s+(\w+)\}\}([\s\S]*?)\{\{\/admonition\}\}/gi,
+    (_match, type: string, admonitionContent: string) => {
+      return createAdmonitionHtml(type, admonitionContent);
+    }
+  );
 
-  // Clean up orphaned brackets
-  processed = processed.replace(/\[([^\]]+)\](?!\()/g, '$1');
+  // Handle accordion format: [content]{{accordion "title"}}
+  // Convert to a simple expandable section appearance
+  processed = processed.replace(
+    /\[([^\]]+)\]\{\{accordion\s+["']([^"']+)["']\}\}/gi,
+    (_match, accordionContent: string, title: string) => {
+      return `<details class="lr-c-accordion"><summary class="lr-c-accordion__title">${title}</summary><div class="lr-c-accordion__content">${accordionContent.trim()}</div></details>`;
+    }
+  );
+
+  // Handle inline copy: `code`{{copy}} - render as PF ClipboardCopy
+  processed = processed.replace(
+    /`([^`]+)`\{\{copy\}\}/gi,
+    (_match, code: string) => createClipboardCopyHtml(code, false)
+  );
+
+  // Handle block copy: ```code```{{copy}} - render as PF ClipboardCopy
+  processed = processed.replace(
+    /```([\s\S]*?)```\{\{copy\}\}/gi,
+    (_match, code: string) => createClipboardCopyHtml(code, true)
+  );
+
+  // Handle highlight with text: [text]{{highlight selector}} - extract just the text
+  processed = processed.replace(
+    /\[([^\]]+)\]\{\{highlight\s+[^}]+\}\}/gi,
+    (_match, text: string) => `<strong>${text}</strong>`
+  );
+
+  // Remove standalone highlight directives: {{highlight selector}}
+  processed = processed.replace(/\{\{highlight\s+[^}]+\}\}/gi, '');
+
+  // Remove any remaining {{...}} template syntax
+  processed = processed.replace(/\{\{[^}]*\}\}/g, '');
 
   return processed;
 };
