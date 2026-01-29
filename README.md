@@ -42,3 +42,20 @@ Update `config/dev.webpack.config.js` according to your application URL. [Read m
     - `prod-stable` (deployed by pushing to `prod-stable` on this repo)
 - Travis uploads results to RedHatInsight's [codecov](https://codecov.io) account. To change the account, modify CODECOV_TOKEN on https://travis-ci.com/.
 
+## HelpPanelLink
+
+A link component that opens the help panel drawer with specific content in a new tab. Uses Chrome's drawer API to open the help panel.
+
+```tsx
+import { HelpPanelLink, TabType } from '@redhat-cloud-services/learning-resources';
+
+<HelpPanelLink
+  title="Configure Slack Integration"
+  tabType={TabType.learn}
+  url="https://docs.example.com/slack-config"
+>
+  Learn how to configure Slack
+</HelpPanelLink>
+```
+
+

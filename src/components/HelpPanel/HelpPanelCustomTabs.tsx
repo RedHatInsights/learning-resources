@@ -10,6 +10,7 @@ import React, {
   ReactNode,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useReducer,
   useState,
@@ -21,6 +22,7 @@ import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { HelpPanelTabContent } from './HelpPanelLink';
 
 type TabDefinition = {
   id: string;
@@ -29,6 +31,12 @@ type TabDefinition = {
   closeable?: boolean;
   tabType: TabType;
   isNewTab?: boolean; // Track if this was originally a "New tab"
+  customContent?: ReactNode; // For custom content in tabs
+  url?: string; // For URL-based content
+};
+
+export type HelpPanelCustomTabsRef = {
+  openTabWithContent: (content: HelpPanelTabContent) => void;
 };
 
 type SubTab = Omit<TabDefinition, 'id'> & {
@@ -213,145 +221,176 @@ const SubTabs = ({
   );
 };
 
-const HelpPanelCustomTabs = () => {
-  const apiStoreMock = useMemo(() => createTabsStore(), []);
-  const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
+const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
+  (_, ref) => {
+    const apiStoreMock = useMemo(() => createTabsStore(), []);
+    const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
 
-  const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
-    undefined
-  );
-  const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
+    const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
+      undefined
+    );
+    const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
 
-  const setNewActionTitleDebounced: (title: string) => void = useCallback(
-    debounce((title: string) => {
-      console.log({ activeTab });
-      if (
-        (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
-        activeTab.closeable
-      ) {
-        setNewActionTitle(title);
-        updateTab({
-          ...activeTab,
-          title,
-        });
-      }
-    }, 2000),
-    [activeTab]
-  );
-
-  const handleAddTab = () => {
-    // The title will be a placeholder until action is taken by the user
-    setNewActionTitle(undefined);
-    const newTabId = crypto.randomUUID();
-    const tab = {
-      id: newTabId,
-      title: NEW_TAB_PLACEHOLDER,
-      closeable: true,
-      tabType: TabType.learn,
-      isNewTab: true,
-    };
-    addTab(tab);
-    setTimeout(() => {
-      // just make sure the tab is added
-      // once async is done, we should use optimistic UI pattern
-      setActiveTab(tab);
-    });
-  };
-
-  const handleClose = (_e: unknown, tabId: number | string) => {
-    if (typeof tabId === 'string') {
-      const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
-      const isClosingActiveTab = activeTab.id === tabId;
-
-      removeTab(tabId);
-      if (isClosingActiveTab) {
-        const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
-
-        if (remainingTabs.length > 0) {
-          const newActiveIndex =
-            closingTabIndex >= remainingTabs.length
-              ? remainingTabs.length - 1
-              : closingTabIndex;
-
-          setActiveTab(remainingTabs[newActiveIndex]);
+    const setNewActionTitleDebounced: (title: string) => void = useCallback(
+      debounce((title: string) => {
+        console.log({ activeTab });
+        if (
+          (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
+          activeTab.closeable
+        ) {
+          setNewActionTitle(title);
+          updateTab({
+            ...activeTab,
+            title,
+          });
         }
-      }
-    }
-  };
+      }, 2000),
+      [activeTab]
+    );
 
-  useEffect(() => {
-    // Ensure the Add tab button has a stable OUIA id
-    const addButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
-    ) as HTMLButtonElement | null;
-    if (addButton) {
-      addButton.setAttribute(
-        'data-ouia-component-id',
-        'help-panel-add-tab-button'
-      );
-    }
-  }, [tabs.length]);
+    const handleAddTab = () => {
+      // The title will be a placeholder until action is taken by the user
+      setNewActionTitle(undefined);
+      const newTabId = crypto.randomUUID();
+      const tab = {
+        id: newTabId,
+        title: NEW_TAB_PLACEHOLDER,
+        closeable: true,
+        tabType: TabType.learn,
+        isNewTab: true,
+      };
+      addTab(tab);
+      setTimeout(() => {
+        setActiveTab(tab);
+      });
+    };
 
-  return (
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      mountOnEnter
-      unmountOnExit
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
+    const openTabWithContent = useCallback(
+      (content: HelpPanelTabContent) => {
+        const newTabId = content.id || crypto.randomUUID();
+        const tab: TabDefinition = {
+          id: newTabId,
+          title: content.title,
+          closeable: true,
+          tabType: content.tabType,
+          customContent: content.content,
+          url: content.url,
+          isNewTab: false,
+        };
+        addTab(tab);
+        setTimeout(() => {
+          setActiveTab(tab);
+        });
+      },
+      [addTab]
+    );
+
+    // Expose methods to parent via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        openTabWithContent,
+      }),
+      [openTabWithContent]
+    );
+
+    const handleClose = (_e: unknown, tabId: number | string) => {
+      if (typeof tabId === 'string') {
+        const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
+        const isClosingActiveTab = activeTab.id === tabId;
+
+        removeTab(tabId);
+        if (isClosingActiveTab) {
+          const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
+
+          if (remainingTabs.length > 0) {
+            const newActiveIndex =
+              closingTabIndex >= remainingTabs.length
+                ? remainingTabs.length - 1
+                : closingTabIndex;
+
+            setActiveTab(remainingTabs[newActiveIndex]);
           }
         }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
-          <SubTabs
-            activeSubTabKey={tab.tabType ?? TabType.learn}
-            setActiveSubTabKey={(tabType) => {
-              let newTitle = tab.title;
-              if (!tab.closeable) {
-                newTitle = getSubTabTitle(tabType);
-              } else if (tab.isNewTab) {
-                newTitle = getSubTabTitle(tabType);
-              }
-              const nextTab = {
-                ...tab,
-                tabType: tabType,
-                title: newTitle,
-              };
-              updateTab(nextTab);
+      }
+    };
+
+    useEffect(() => {
+      // Ensure the Add tab button has a stable OUIA id
+      const addButton = document.querySelector(
+        '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
+      ) as HTMLButtonElement | null;
+      if (addButton) {
+        addButton.setAttribute(
+          'data-ouia-component-id',
+          'help-panel-add-tab-button'
+        );
+      }
+    }, [tabs.length]);
+
+    return (
+      <Tabs
+        className="lr-c-help-panel-custom-tabs"
+        isOverflowHorizontal={{ showTabCount: true }}
+        isBox
+        mountOnEnter
+        unmountOnExit
+        onAdd={handleAddTab}
+        onClose={handleClose}
+        activeKey={activeTab.id}
+        onSelect={(_e, eventKey) => {
+          if (typeof eventKey === 'string') {
+            const nextTab = tabs.find((tab) => tab.id === eventKey);
+            if (nextTab) {
               setActiveTab(nextTab);
-            }}
+            }
+          }
+        }}
+        data-ouia-component-id="help-panel-tabs"
+        addButtonAriaLabel="Add tab"
+      >
+        {tabs.map((tab) => (
+          <Tab
+            // Need to fix the icon as we can't remove it on tab by tab basis
+            isCloseDisabled={!tab.closeable}
+            className={classNames('lr-c-help-panel-custom-tab', {
+              'persistent-tab': !tab.closeable,
+            })}
+            eventKey={tab.id}
+            key={tab.id}
+            title={<TabTitleText>{tab.title}</TabTitleText>}
+            data-ouia-component-id={`help-panel-tab-${tab.id}`}
           >
-            <HelpPanelTabContainer
-              activeTabType={tab.tabType}
-              setNewActionTitle={setNewActionTitleDebounced}
-            />
-          </SubTabs>
-        </Tab>
-      ))}
-    </Tabs>
-  );
-};
+            <SubTabs
+              activeSubTabKey={tab.tabType ?? TabType.learn}
+              setActiveSubTabKey={(tabType) => {
+                let newTitle = tab.title;
+                if (!tab.closeable) {
+                  newTitle = getSubTabTitle(tabType);
+                } else if (tab.isNewTab) {
+                  newTitle = getSubTabTitle(tabType);
+                }
+                const nextTab = {
+                  ...tab,
+                  tabType: tabType,
+                  title: newTitle,
+                };
+                updateTab(nextTab);
+                setActiveTab(nextTab);
+              }}
+            >
+              <HelpPanelTabContainer
+                activeTabType={tab.tabType}
+                setNewActionTitle={setNewActionTitleDebounced}
+              />
+            </SubTabs>
+          </Tab>
+        ))}
+      </Tabs>
+    );
+  }
+);
+
+HelpPanelCustomTabs.displayName = 'HelpPanelCustomTabs';
 
 export default HelpPanelCustomTabs;
