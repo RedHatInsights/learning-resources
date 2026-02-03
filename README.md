@@ -30,6 +30,10 @@ Update `config/dev.webpack.config.js` according to your application URL. [Read m
 
 `npm run verify` will run `npm run lint` (eslint) and `npm test` (Jest)
 
+## Documentation
+
+- [QuickStarts API](docs/quickstarts-api.md) - Shared store and scoped controller for QuickStarts
+
 ## Deploying
 
 - The starter repo uses Travis to deploy the webpack build to another Github repo defined in `.travis.yml`
