@@ -39,6 +39,7 @@ module.exports = {
       ),
       './Creator': path.resolve(__dirname, './src/Creator.tsx'),
       './HelpPanel': path.resolve(__dirname, './src/components/HelpPanel/index.ts'),
+      './quickstarts/useQuickstartsStore': path.resolve(__dirname, './src/stores/quickstartsStore.ts'),
     },
     exclude: ['react-router-dom'],
     shared: [

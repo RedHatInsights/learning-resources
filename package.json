@@ -2,6 +2,9 @@
   "name": "learning-resources-app",
   "version": "1.1.0",
   "private": false,
+  "overrides": {
+    "@scalprum/core": "^0.9.0"
+  },
   "engines": {
     "node": ">=16.20.2",
     "npm": ">=7.24.2"
@@ -30,6 +33,7 @@
     "@redhat-cloud-services/frontend-components": "^6.1.1",
     "@redhat-cloud-services/frontend-components-utilities": "^6.1.1",
     "@redhat-cloud-services/types": "^2.0.3",
+    "@scalprum/core": "^0.9.0",
     "@scalprum/react-core": "^0.11.1",
     "@unleash/proxy-client-react": "^4.5.2",
     "axios": "^1.13.2",
