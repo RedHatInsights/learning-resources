@@ -38,8 +38,6 @@ spec:
     value: learning-resources
   - name: test-app-port
     value: "8000"
-  - name: chrome-port
-    value: "9912"
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -76,14 +74,14 @@ spec:
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
-    value: learning-resources-dev-proxy-caddyfile
+    value: learning-resources-dev-proxy-caddyfile-v2
   pipelineRef:
     resolver: git
     params:
     - name: url
-      value: https://github.com/RedHatInsights/konflux-pipelines
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: main
+      value: btweed/remove-chrome-sidecar
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
@@ -104,7 +102,7 @@ spec:
         volumes:
           - name: test-app-caddyfile
             configMap:
-              name: learning-resources-test-app-caddyfile
+              name: learning-resources-test-app-caddyfile-v2
       sidecarSpecs:
         # Mount test app Caddyfile into run-application sidecar
         - name: run-application
