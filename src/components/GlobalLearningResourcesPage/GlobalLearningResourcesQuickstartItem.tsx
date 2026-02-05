@@ -14,6 +14,7 @@ import {
 import { TagIcon } from '@patternfly/react-icons';
 import { API_BASE, FAVORITES } from '../../hooks/useQuickStarts';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import { useQuickstartsStore } from '../../stores/quickstartsStore';
 import axios from 'axios';
 import './GlobalLearningResourcesQuickstartItem.scss';
 import { BookmarkedIcon, OutlinedBookmarkedIcon } from '../common/BookmarkIcon';
@@ -33,6 +34,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
   GlobalLearningResourcesQuickstartItemProps
 > = ({ quickStart, purgeCache, quickStartTags }) => {
   const chrome = useChrome();
+  const { activateQuickstart } = useQuickstartsStore();
   const [isBookmarked, setIsBookmarked] = useState(
     quickStart.metadata.favorite
   );
@@ -76,7 +78,7 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           className="lr-c-global-learning-resources-quickstart__card--title"
           onClick={() => {
             if (isQuickstartType(quickStart.spec.type?.text)) {
-              chrome.quickStarts.activateQuickstart(quickStart.metadata.name);
+              activateQuickstart(quickStart.metadata.name);
             } else {
               window.open(quickStart.spec.link?.href, '_blank');
             }

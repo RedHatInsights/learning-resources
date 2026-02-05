@@ -22,7 +22,7 @@ import { useRemoteHook } from '@scalprum/react-core';
 
 function MyComponent() {
   const { hookResult, loading, error } = useRemoteHook({
-    scope: 'learning-resources',
+    scope: 'learningResources',
     module: './quickstarts/useQuickstartsStore'
   });
 
@@ -85,7 +85,7 @@ import { useRemoteHook } from '@scalprum/react-core';
 
 function MyHelpPanel() {
   const { hookResult: useScopedQuickStart, loading } = useRemoteHook({
-    scope: 'learning-resources',
+    scope: 'learningResources',
     module: './quickstarts/useScopedQuickStart'
   });
 
@@ -190,7 +190,7 @@ quickStarts.set('myApp', myQuickstartsArray);
 **After:**
 ```tsx
 const { hookResult } = useRemoteHook({
-  scope: 'learning-resources',
+  scope: 'learningResources',
   module: './quickstarts/useQuickstartsStore'
 });
 hookResult?.setQuickstarts('myApp', myQuickstartsArray);
@@ -207,7 +207,7 @@ await quickStarts.activateQuickstart('my-quickstart');
 **After:**
 ```tsx
 const { hookResult } = useRemoteHook({
-  scope: 'learning-resources',
+  scope: 'learningResources',
   module: './quickstarts/useQuickstartsStore'
 });
 await hookResult?.activateQuickstart('my-quickstart');
@@ -224,7 +224,7 @@ const controller = quickStarts.useScopedQuickStart({ quickStarts: myQS });
 **After:**
 ```tsx
 const { hookResult: useScopedQuickStart } = useRemoteHook({
-  scope: 'learning-resources',
+  scope: 'learningResources',
   module: './quickstarts/useScopedQuickStart'
 });
 const controller = useScopedQuickStart?.({ quickStarts: myQS });

@@ -27,6 +27,7 @@ import {
   ToolbarItem,
 } from '@patternfly/react-core';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import { useQuickstartsStore } from '../../../stores/quickstartsStore';
 import { suspenseLoader as useSuspenseLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
 import fetchAllData from '../../../utils/fetchAllData';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
@@ -57,6 +58,7 @@ const LearningResourceItem: React.FC<{
   onBookmarkToggle: (resource: ExtendedQuickstart) => void;
 }> = ({ resource, onBookmarkToggle }) => {
   const chrome = useChrome();
+  const { activateQuickstart } = useQuickstartsStore();
   const [isBookmarked, setIsBookmarked] = useState(resource.metadata.favorite);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
@@ -83,7 +85,7 @@ const LearningResourceItem: React.FC<{
 
   const handleResourceClick = () => {
     if (resource.spec.type?.text === 'Quick start') {
-      chrome.quickStarts.activateQuickstart(resource.metadata.name);
+      activateQuickstart(resource.metadata.name);
     } else if (resource.spec.link?.href) {
       window.open(resource.spec.link.href, '_blank');
     }

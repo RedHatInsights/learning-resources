@@ -1,7 +1,47 @@
 [![Build Status](https://travis-ci.org/RedHatInsights/frontend-starter-app.svg?branch=master)](https://travis-ci.org/RedHatInsights/frontend-starter-app)
 
-# Learning resources
-React.js starter app for Red Hat Insights products that includes Patternfly 5 and shared Red Hat cloud service frontend components.
+# Learning Resources
+
+Learning Resources provides educational content and QuickStart tutorials for the Hybrid Cloud Console.
+
+## Features
+
+- **QuickStart Catalog** - Browse and manage QuickStart tutorials
+- **QuickStart Creator** - Create custom QuickStart content
+- **HelpPanel Integration** - Embedded help and learning resources
+- **QuickStarts API** - Shared store for QuickStart state management
+
+## QuickStarts API
+
+Learning Resources owns the QuickStarts API, providing shared state management for QuickStart tutorials across all federated modules.
+
+### Available Hooks (via Module Federation)
+
+| Hook | Module Path | Purpose |
+|------|-------------|---------|
+| `useQuickstartsStore` | `learning-resources/quickstarts/useQuickstartsStore` | Shared QuickStart state (Chrome drawer) |
+| `useScopedQuickStart` | `learning-resources/quickstarts/useScopedQuickStart` | Isolated state for custom UI |
+
+### Quick Example
+
+```tsx
+import { useRemoteHook } from '@scalprum/react-core';
+
+function MyComponent() {
+  const { hookResult } = useRemoteHook({
+    scope: 'learningResources',
+    module: './quickstarts/useQuickstartsStore'
+  });
+
+  // Set quickstarts for your app
+  hookResult?.setQuickstarts('myApp', myQuickstartsArray);
+
+  // Activate a quickstart
+  hookResult?.activateQuickstart('my-quickstart-name');
+}
+```
+
+**[Full QuickStarts API Documentation →](./docs/quickstarts-api.md)**
 
 ## Initial etc/hosts setup
 In order to access the https://[env].foo.redhat.com in your browser, you have to add entries to your `/etc/hosts` file. This is a **one-time** setup (unless you modify hosts) on each machine.

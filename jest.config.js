@@ -19,9 +19,6 @@ module.exports = {
       {
         $schema: 'http://json.schemastore.org/swcrc',
         jsc: {
-          experimental: {
-            plugins: [['jest_workaround', {}]],
-          },
           parser: {
             jsx: true,
             syntax: 'typescript',

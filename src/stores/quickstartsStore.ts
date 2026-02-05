@@ -61,101 +61,114 @@ const initialState: QuickStartsStoreState = {
   accountId: undefined,
 };
 
-let store: ReturnType<
+// Use window-level global to ensure store is truly shared across all microfrontends
+const STORE_KEY = '__QUICKSTARTS_SHARED_STORE__';
+
+type QuickstartsStore = ReturnType<
   typeof createSharedStore<QuickStartsStoreState, typeof EVENTS>
-> | null = null;
+>;
+
+declare global {
+  interface Window {
+    [STORE_KEY]?: QuickstartsStore;
+  }
+}
 
 /**
  * Gets or creates the QuickStarts shared store singleton.
- * The store is shared across all federated modules that import it.
+ * The store is shared across all federated modules using a window-level global.
  */
-export const getQuickstartsStore = () => {
-  if (!store) {
-    store = createSharedStore<QuickStartsStoreState, typeof EVENTS>({
-      initialState,
-      events: EVENTS,
-      onEventChange: (state, event, payload): QuickStartsStoreState => {
-        switch (event as QuickStartsEvent) {
-          case 'SET_QUICKSTARTS': {
-            const { app, quickstarts } =
-              payload as EventPayload['SET_QUICKSTARTS'];
-            return {
-              ...state,
-              quickstarts: {
-                ...state.quickstarts,
-                [app]: quickstarts,
-              },
-            };
-          }
-          case 'ADD_QUICKSTART': {
-            const { app, quickstart } =
-              payload as EventPayload['ADD_QUICKSTART'];
-            return {
-              ...state,
-              quickstarts: {
-                ...state.quickstarts,
-                [app]: [...(state.quickstarts[app] ?? []), quickstart],
-              },
-            };
-          }
-          case 'CLEAR_QUICKSTARTS': {
-            const { activeQuickStartID } =
-              (payload as EventPayload['CLEAR_QUICKSTARTS']) || {};
-            // Keep currently opened quickstart
-            const clearedQuickstarts = Object.entries(
-              state.quickstarts
-            ).reduce<{ [key: string]: QuickStart[] }>(
-              (acc, [namespace, quickstarts]) => {
-                const filtered = quickstarts.filter(
-                  (qs) => qs?.metadata?.name === activeQuickStartID
-                );
-                if (filtered.length > 0) {
-                  acc[namespace] = filtered;
-                }
-                return acc;
-              },
-              {}
-            );
-            return {
-              ...state,
-              quickstarts: clearedQuickstarts,
-            };
-          }
-          case 'SET_ACTIVE_QUICKSTART': {
-            const id = payload as EventPayload['SET_ACTIVE_QUICKSTART'];
-            // Handle body class for drawer visibility
-            if (typeof document !== 'undefined') {
-              if (id !== '' && typeof id !== 'function') {
-                document.body.classList.add('quickstarts-open');
-              } else {
-                document.body.classList.remove('quickstarts-open');
-              }
-            }
-            return {
-              ...state,
-              activeQuickStartID: id,
-            };
-          }
-          case 'SET_ALL_STATES': {
-            const states = payload as EventPayload['SET_ALL_STATES'];
-            return {
-              ...state,
-              allQuickStartStates: states,
-            };
-          }
-          case 'SET_ACCOUNT_ID': {
-            return {
-              ...state,
-              accountId: payload as EventPayload['SET_ACCOUNT_ID'],
-            };
-          }
-          case 'INITIALIZE':
-          default:
-            return state;
-        }
-      },
-    });
+export const getQuickstartsStore = (): QuickstartsStore => {
+  if (typeof window !== 'undefined' && window[STORE_KEY]) {
+    return window[STORE_KEY];
   }
+
+  const store = createSharedStore<QuickStartsStoreState, typeof EVENTS>({
+    initialState,
+    events: EVENTS,
+    onEventChange: (state, event, payload): QuickStartsStoreState => {
+      switch (event as QuickStartsEvent) {
+        case 'SET_QUICKSTARTS': {
+          const { app, quickstarts } =
+            payload as EventPayload['SET_QUICKSTARTS'];
+          return {
+            ...state,
+            quickstarts: {
+              ...state.quickstarts,
+              [app]: quickstarts,
+            },
+          };
+        }
+        case 'ADD_QUICKSTART': {
+          const { app, quickstart } = payload as EventPayload['ADD_QUICKSTART'];
+          return {
+            ...state,
+            quickstarts: {
+              ...state.quickstarts,
+              [app]: [...(state.quickstarts[app] ?? []), quickstart],
+            },
+          };
+        }
+        case 'CLEAR_QUICKSTARTS': {
+          const { activeQuickStartID } =
+            (payload as EventPayload['CLEAR_QUICKSTARTS']) || {};
+          // Keep currently opened quickstart
+          const clearedQuickstarts = Object.entries(state.quickstarts).reduce<{
+            [key: string]: QuickStart[];
+          }>((acc, [namespace, quickstarts]) => {
+            const filtered = quickstarts.filter(
+              (qs) => qs?.metadata?.name === activeQuickStartID
+            );
+            if (filtered.length > 0) {
+              acc[namespace] = filtered;
+            }
+            return acc;
+          }, {});
+          return {
+            ...state,
+            quickstarts: clearedQuickstarts,
+          };
+        }
+        case 'SET_ACTIVE_QUICKSTART': {
+          const id = payload as EventPayload['SET_ACTIVE_QUICKSTART'];
+          // Handle body class for drawer visibility
+          if (typeof document !== 'undefined') {
+            if (id !== '' && typeof id !== 'function') {
+              document.body.classList.add('quickstarts-open');
+            } else {
+              document.body.classList.remove('quickstarts-open');
+            }
+          }
+          return {
+            ...state,
+            activeQuickStartID: id,
+          };
+        }
+        case 'SET_ALL_STATES': {
+          const states = payload as EventPayload['SET_ALL_STATES'];
+          return {
+            ...state,
+            allQuickStartStates: states,
+          };
+        }
+        case 'SET_ACCOUNT_ID': {
+          return {
+            ...state,
+            accountId: payload as EventPayload['SET_ACCOUNT_ID'],
+          };
+        }
+        case 'INITIALIZE':
+        default:
+          return state;
+      }
+    },
+  });
+
+  // Store in window global for cross-microfrontend sharing
+  if (typeof window !== 'undefined') {
+    window[STORE_KEY] = store;
+  }
+
   return store;
 };
 
@@ -235,12 +248,19 @@ export const useQuickstartsStore = () => {
   /**
    * Updates all quickstart progress states.
    * Also persists the active quickstart's progress to the API.
-   * @param states - Object mapping quickstart IDs to their states
+   * @param value - Either an object mapping quickstart IDs to their states,
+   *                or a function that receives current states and returns new states
    */
-  const setAllQuickStartStates = (states: {
-    [key: string | number]: QuickStartState;
-  }) => {
-    const activeState = states[state.activeQuickStartID];
+  const setAllQuickStartStates = (
+    value:
+      | { [key: string | number]: QuickStartState }
+      | ((states: { [key: string | number]: QuickStartState }) => {
+          [key: string | number]: QuickStartState;
+        })
+  ) => {
+    const newStates =
+      typeof value === 'function' ? value(state.allQuickStartStates) : value;
+    const activeState = newStates[state.activeQuickStartID];
 
     // Persist progress to API if we have an active quickstart with state
     if (typeof activeState === 'object' && state.accountId) {
@@ -258,7 +278,7 @@ export const useQuickstartsStore = () => {
         });
     }
 
-    store.updateState('SET_ALL_STATES', states);
+    store.updateState('SET_ALL_STATES', newStates);
   };
 
   /**
@@ -318,7 +338,8 @@ export const useQuickstartsStore = () => {
       }
 
       // 4. Populate both main and referenced quickstarts
-      setQuickstarts('default', [...mainQuickstarts, ...nextQuickstarts]);
+      const allQuickstarts = [...mainQuickstarts, ...nextQuickstarts];
+      setQuickstarts('default', allQuickstarts);
       setActiveQuickStartID(name);
     } catch (error) {
       console.error('Unable to activate quickstart called: ', name, error);
@@ -357,9 +378,12 @@ export const useQuickstartsStore = () => {
 
   /**
    * Returns all quickstarts as a flat array.
+   * Filters out any undefined/null entries.
    */
   const getAllQuickstarts = (): QuickStart[] => {
-    return Object.values(state.quickstarts).flat();
+    return Object.values(state.quickstarts)
+      .flatMap((qs) => qs)
+      .filter((qs): qs is QuickStart => qs != null && qs.metadata != null);
   };
 
   /**

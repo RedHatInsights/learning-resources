@@ -4,6 +4,7 @@ import {
   ContentVariants,
 } from '@patternfly/react-core/dist/dynamic/components/Content';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import { useQuickstartsStore } from '../../stores/quickstartsStore';
 import { Link } from 'react-router-dom';
 import { Label } from '@patternfly/react-core/dist/dynamic/components/Label';
 import LearningResourcesEmptyState from './EmptyState';
@@ -49,7 +50,8 @@ const constructQuickStartUrl: (metadata: ObjectMetadata) => string = ({
 const LearningResourcesWidget: React.FunctionComponent<{
   loader: UnwrappedLoader<typeof fetchAllData>;
 }> = ({ loader }) => {
-  const { auth, quickStarts } = useChrome();
+  const { auth } = useChrome();
+  const { activateQuickstart } = useQuickstartsStore();
 
   const [, quickstartsData] = loader(auth.getUser);
   const { bookmarks } = useQuickStarts(quickstartsData);
@@ -71,9 +73,9 @@ const LearningResourcesWidget: React.FunctionComponent<{
                     ({ kind }: { kind: string }) => kind === 'content'
                   )?.value === 'quickstart' ? (
                     <Link
-                      onClick={() =>
-                        quickStarts.activateQuickstart(metadata.name)
-                      }
+                      onClick={() => {
+                        activateQuickstart(metadata.name);
+                      }}
                       to={spec.link?.href || constructQuickStartUrl(metadata)}
                     >
                       {spec.displayName}
