@@ -62,7 +62,6 @@ export const QuickStartProvider: React.FC<QuickStartProviderProps> = ({
       setAccountId(accountId);
       loadProgress();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]); // Only depend on accountId prop
 
   // Get quickstarts - this will update when store state changes

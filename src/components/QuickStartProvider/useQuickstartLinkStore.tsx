@@ -30,7 +30,9 @@ function useQuickstartLinkStore() {
               href
             );
             // Dispatch popstate to notify listeners
-            window.dispatchEvent(new PopStateEvent('popstate', { state: { quickstartLink: true } }));
+            window.dispatchEvent(
+              new PopStateEvent('popstate', { state: { quickstartLink: true } })
+            );
           });
           clearInterval(findInterval);
         }
