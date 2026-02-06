@@ -51,6 +51,15 @@ spec:
 
       set -e
 
+      echo "=== run-application Environment Variables Debug ==="
+      echo "HCC_ENV_URL: ${HCC_ENV_URL:-NOT_SET}"
+      echo "STAGE_ACTUAL_HOSTNAME: ${STAGE_ACTUAL_HOSTNAME:-NOT_SET}"
+      echo "===================================================="
+
+      echo "=== Caddyfile Content ==="
+      cat /etc/caddy/Caddyfile
+      echo "========================="
+
       echo "Starting application with Caddy using ConfigMap Caddyfile..."
       exec caddy run --config /etc/caddy/Caddyfile
   - name: e2e-tests-script
