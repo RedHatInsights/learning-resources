@@ -27,9 +27,15 @@ The v2 configmap references suggest that proxy routing configurations were updat
 
 ### Issues Discovered and Fixed
 
+#### Issue 1: Missing environment variables in run-application sidecar
 During initial testing, e2e tests failed with authentication errors. The root cause was that the `run-application` sidecar (which uses `learning-resources-test-app-caddyfile-v2`) did not have access to the `HCC_ENV_URL` environment variable needed for chrome redirects.
 
-**Fix applied**: Added `HCC_ENV_URL` and `STAGE_ACTUAL_HOSTNAME` environment variables to the `run-application` sidecar in `konflux-pipelines/pipelines/platform-ui/docker-build-run-all-tests.yaml` (line 953-963). These environment variables are sourced from the `e2e-credentials-secret` Kubernetes secret, which is populated from vault.
+**Fix applied**: Added `HCC_ENV_URL` and `STAGE_ACTUAL_HOSTNAME` environment variables to the `run-application` sidecar in `konflux-pipelines/pipelines/platform-ui/docker-build-run-all-tests.yaml`. These environment variables are sourced from the `e2e-credentials-secret` Kubernetes secret, which is populated from vault.
+
+#### Issue 2: Caddy not expanding {env.HCC_ENV_URL} placeholders
+After fixing the environment variables, tests still failed with 502 Bad Gateway errors. The ConfigMap routes contained `{env.HCC_ENV_URL}` placeholders that Caddy was not expanding to the actual URL value, causing all proxied routes to fail.
+
+**Fix applied**: Modified the frontend-dev-proxy script to use shell variable substitution (`sed`) to replace `{env.HCC_ENV_URL}` with the actual URL value before injecting the routes into the Caddyfile. This matches how the catch-all reverse_proxy route works and ensures all routes have concrete URLs rather than unresolved placeholders.
 
 ### Related Files
 - `.tekton/learning-resources-pull-request.yaml` - Pipeline configuration

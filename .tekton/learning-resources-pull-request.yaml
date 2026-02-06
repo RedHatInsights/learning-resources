@@ -51,15 +51,6 @@ spec:
 
       set -e
 
-      echo "=== run-application Environment Variables Debug ==="
-      echo "HCC_ENV_URL: ${HCC_ENV_URL:-NOT_SET}"
-      echo "STAGE_ACTUAL_HOSTNAME: ${STAGE_ACTUAL_HOSTNAME:-NOT_SET}"
-      echo "===================================================="
-
-      echo "=== Caddyfile Content ==="
-      cat /etc/caddy/Caddyfile
-      echo "========================="
-
       echo "Starting application with Caddy using ConfigMap Caddyfile..."
       exec caddy run --config /etc/caddy/Caddyfile
   - name: e2e-tests-script
@@ -67,8 +58,6 @@ spec:
       #!/bin/bash
       set -ex
 
-      echo "E2E_USER is ${E2E_USER}"
-      getent hosts stage.foo.redhat.com
       timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
         sleep 5
