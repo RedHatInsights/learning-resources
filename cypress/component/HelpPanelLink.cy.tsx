@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FlagProvider, IConfig } from '@unleash/proxy-client-react';
 import { IntlProvider } from 'react-intl';
-import * as chrome from '@redhat-cloud-services/frontend-components/useChrome';
 import { HelpPanelLink, TabType } from '../../src/components/HelpPanel';
+import ScalprumProvider from '@scalprum/react-core';
+import { initialize, removeScalprum } from '@scalprum/core';
 
 const defaultFlags: IConfig['bootstrap'] = [
   {
@@ -16,36 +17,59 @@ const defaultFlags: IConfig['bootstrap'] = [
 const Wrapper = ({
   children,
   flags = defaultFlags,
+  chrome,
 }: {
   children: React.ReactNode;
   flags?: IConfig['bootstrap'];
+  chrome?: any;
 }) => {
+  const [isReady, setIsReady] = useState(false);
+  const scalprum = useRef(
+    initialize({
+      appsConfig: {},
+      api: chrome ? { chrome } : {},
+    })
+  );
+
+  useEffect(() => {
+    setIsReady(true);
+    return () => {
+      removeScalprum();
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
   return (
     <IntlProvider locale="en" defaultLocale="en">
-      <FlagProvider
-        config={{
-          appName: 'test-app',
-          url: 'https://unleash.example.com/api/',
-          clientKey: '123',
-          bootstrap: flags,
-        }}
-      >
-        {children}
-      </FlagProvider>
+      <ScalprumProvider scalprum={scalprum.current}>
+        <FlagProvider
+          config={{
+            appName: 'test-app',
+            url: 'https://unleash.example.com/api/',
+            clientKey: '123',
+            bootstrap: flags,
+          }}
+        >
+          {children}
+        </FlagProvider>
+      </ScalprumProvider>
     </IntlProvider>
   );
 };
 
 describe('HelpPanelLink', () => {
   it('should render as a link button by default', () => {
-    const chromeStub = cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
+    };
 
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink title="Test Help" tabType={TabType.learn}>
           Click for help
         </HelpPanelLink>
@@ -58,14 +82,13 @@ describe('HelpPanelLink', () => {
   });
 
   it('should render with OpenDrawerRightIcon', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink title="Test Help" tabType={TabType.learn}>
           Click for help
         </HelpPanelLink>
@@ -77,14 +100,13 @@ describe('HelpPanelLink', () => {
 
   it('should call Chrome drawer API with correct parameters when clicked', () => {
     const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: toggleDrawerContentSpy,
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink title="Test Help" tabType={TabType.learn}>
           Click for help
         </HelpPanelLink>
@@ -107,14 +129,13 @@ describe('HelpPanelLink', () => {
 
   it('should pass URL prop to Chrome drawer API', () => {
     const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: toggleDrawerContentSpy,
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink
           title="Documentation"
           tabType={TabType.learn}
@@ -140,11 +161,11 @@ describe('HelpPanelLink', () => {
 
   it('should pass custom content prop to Chrome drawer API', () => {
     const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: toggleDrawerContentSpy,
       },
-    } as any);
+    };
 
     const customContent = (
       <div>
@@ -154,7 +175,7 @@ describe('HelpPanelLink', () => {
     );
 
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink
           title="Custom Help"
           tabType={TabType.learn}
@@ -182,14 +203,13 @@ describe('HelpPanelLink', () => {
 
   it('should support different tab types', () => {
     const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: toggleDrawerContentSpy,
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <div>
           <HelpPanelLink title="Learn" tabType={TabType.learn}>
             Learn
@@ -252,14 +272,13 @@ describe('HelpPanelLink', () => {
   });
 
   it('should support different button variants', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <div>
           <HelpPanelLink title="Primary" tabType={TabType.learn} variant="primary">
             Primary Button
@@ -280,14 +299,13 @@ describe('HelpPanelLink', () => {
   });
 
   it('should apply custom className', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink
           title="Test"
           tabType={TabType.learn}
@@ -302,36 +320,35 @@ describe('HelpPanelLink', () => {
   });
 
   it('should include data-ouia-component-id when provided', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink
           title="Test"
           tabType={TabType.learn}
-          data-ouia-component-id="test-help-link"
+          ouiaId="test-help-link"
         >
           Click me
         </HelpPanelLink>
       </Wrapper>
     );
 
-    cy.get('[data-ouia-component-id="test-help-link"]').should('exist');
+    cy.get('button').should('have.attr', 'data-ouia-component-id', 'test-help-link');
   });
 
   it('should log warning when Chrome API is not available', () => {
-    cy.stub(chrome, 'useChrome').returns({} as any);
+    const emptyChrome = {};
 
     cy.window().then((win) => {
       cy.spy(win.console, 'warn').as('consoleWarn');
     });
 
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={emptyChrome}>
         <HelpPanelLink title="Test" tabType={TabType.learn}>
           Click me
         </HelpPanelLink>
@@ -347,16 +364,16 @@ describe('HelpPanelLink', () => {
   });
 
   it('should handle click when drawerActions is undefined', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const chromeWithoutDrawer = {
       drawerActions: undefined,
-    } as any);
+    };
 
     cy.window().then((win) => {
       cy.spy(win.console, 'warn').as('consoleWarn');
     });
 
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={chromeWithoutDrawer}>
         <HelpPanelLink title="Test" tabType={TabType.learn}>
           Click me
         </HelpPanelLink>
@@ -369,14 +386,13 @@ describe('HelpPanelLink', () => {
   });
 
   it('should render link variant as inline by default', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink title="Test" tabType={TabType.learn} variant="link">
           Inline link
         </HelpPanelLink>
@@ -387,14 +403,13 @@ describe('HelpPanelLink', () => {
   });
 
   it('should not render non-link variants as inline', () => {
-    cy.stub(chrome, 'useChrome').returns({
+    const mockChrome = {
       drawerActions: {
         toggleDrawerContent: cy.spy().as('toggleDrawerContent'),
       },
-    } as any);
-
+    };
     cy.mount(
-      <Wrapper>
+      <Wrapper chrome={mockChrome}>
         <HelpPanelLink title="Test" tabType={TabType.learn} variant="primary">
           Primary button
         </HelpPanelLink>

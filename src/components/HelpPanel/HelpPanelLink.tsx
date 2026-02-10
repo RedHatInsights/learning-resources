@@ -27,8 +27,8 @@ export type HelpPanelLinkProps = {
   className?: string;
   /** Optional variant for the button (defaults to 'link') */
   variant?: ButtonProps['variant'];
-  /** Optional data-ouia-component-id for testing */
-  'data-ouia-component-id'?: string;
+  /** Optional OUIA ID for testing */
+  ouiaId?: string;
 };
 
 /**
@@ -72,7 +72,7 @@ export const HelpPanelLink: React.FC<HelpPanelLinkProps> = ({
   children,
   className,
   variant = 'link',
-  'data-ouia-component-id': ouiaId,
+  ouiaId,
 }) => {
   const chrome = useChrome();
 
@@ -104,7 +104,7 @@ export const HelpPanelLink: React.FC<HelpPanelLinkProps> = ({
       icon={<OpenDrawerRightIcon />}
       iconPosition="end"
       isInline={variant === 'link'}
-      data-ouia-component-id={ouiaId}
+      ouiaId={ouiaId}
     >
       {children}
     </Button>
