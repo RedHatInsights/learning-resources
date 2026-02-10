@@ -267,21 +267,37 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
     const openTabWithContent = useCallback(
       (content: HelpPanelTabContent) => {
         const newTabId = content.id || crypto.randomUUID();
-        const tab: TabDefinition = {
-          id: newTabId,
-          title: content.title,
-          closeable: true,
-          tabType: content.tabType,
-          customContent: content.content,
-          url: content.url,
-          isNewTab: false,
-        };
-        addTab(tab);
-        setTimeout(() => {
-          setActiveTab(tab);
-        });
+        const existingTab = tabs.find((tab) => tab.id === newTabId);
+
+        if (existingTab) {
+          const updatedTab: TabDefinition = {
+            ...existingTab,
+            title: content.title,
+            tabType: content.tabType,
+            customContent: content.content,
+            url: content.url,
+          };
+          updateTab(updatedTab);
+          setTimeout(() => {
+            setActiveTab(updatedTab);
+          });
+        } else {
+          const tab: TabDefinition = {
+            id: newTabId,
+            title: content.title,
+            closeable: true,
+            tabType: content.tabType,
+            customContent: content.content,
+            url: content.url,
+            isNewTab: false,
+          };
+          addTab(tab);
+          setTimeout(() => {
+            setActiveTab(tab);
+          });
+        }
       },
-      [addTab]
+      [addTab, updateTab, tabs]
     );
 
     // Expose methods to parent via ref
