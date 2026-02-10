@@ -46,39 +46,31 @@ Update `config/dev.webpack.config.js` according to your application URL. [Read m
 
 A link component that opens the help panel drawer with specific content in a new tab. Uses Chrome's drawer API to open the help panel.
 
-**Usage via Module Federation:**
+**Usage via Module Federation with Scalprum:**
 
 ```tsx
-import React, { lazy, Suspense } from 'react';
+import React from 'react';
+import { useScalprum } from '@scalprum/react-core';
+import AsyncComponent from '@redhat-cloud-services/frontend-components/AsyncComponent';
 
-// Lazy load the component from the federated module
-const HelpPanelLink = lazy(() =>
-  import('learningResources/HelpPanelLink').then(module => ({
-    default: module.default
-  }))
-);
-
-// Import the TabType enum
-const TabType = lazy(() =>
-  import('learningResources/HelpPanelLink').then(module => ({
-    default: module.TabType
-  }))
-);
-
-// Use it in your component
 function MyComponent() {
+  const scalprum = useScalprum();
+
   return (
     <p>
       Need help?{' '}
-      <Suspense fallback={<span>Loading...</span>}>
-        <HelpPanelLink
-          title="Configure Slack Integration"
-          tabType="learn"
-          url="https://docs.example.com/slack-config"
-        >
-          Learn how to configure Slack
-        </HelpPanelLink>
-      </Suspense>
+      <AsyncComponent
+        appName="learningResources"
+        module="./HelpPanelLink"
+        scope="learningResources"
+        ErrorComponent={<span>Error loading help link</span>}
+        {...scalprum}
+        title="Configure Slack Integration"
+        tabType="learn"
+        url="https://docs.example.com/slack-config"
+      >
+        Learn how to configure Slack
+      </AsyncComponent>
     </p>
   );
 }
@@ -87,7 +79,12 @@ function MyComponent() {
 **Alternative: Using custom content instead of URL**
 
 ```tsx
-<HelpPanelLink
+<AsyncComponent
+  appName="learningResources"
+  module="./HelpPanelLink"
+  scope="learningResources"
+  ErrorComponent={<span>Error loading help link</span>}
+  {...scalprum}
   title="Getting Started"
   tabType="learn"
   content={
@@ -98,13 +95,13 @@ function MyComponent() {
   }
 >
   View getting started guide
-</HelpPanelLink>
+</AsyncComponent>
 ```
 
 **Props:**
 - `title: string` - Title for the tab
-- `tabType: TabType` - Type of content (`'learn'`, `'api'`, `'kb'`, `'support'`, `'search'`)
-- `url?: string` - URL to fetch and display as HTML (note: may be blocked by CORS)
+- `tabType: 'learn' | 'api' | 'kb' | 'support' | 'search'` - Type of content tab
+- `url?: string` - URL to display in iframe (note: may be blocked by X-Frame-Options)
 - `content?: ReactNode` - Custom React content to display (alternative to URL)
 - `children: ReactNode` - Link text
 - `variant?: ButtonProps['variant']` - Button variant (default: `'link'`)

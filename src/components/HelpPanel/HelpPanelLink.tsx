@@ -17,7 +17,7 @@ export type HelpPanelLinkProps = {
   title: string;
   /** The type of tab content to display (learn, api, kb, search, support) */
   tabType: TabType;
-  /** Optional URL to fetch and display as HTML */
+  /** Optional URL to display in iframe */
   url?: string;
   /** Optional custom React content to display in the tab */
   content?: ReactNode;
