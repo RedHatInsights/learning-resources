@@ -46,16 +46,71 @@ Update `config/dev.webpack.config.js` according to your application URL. [Read m
 
 A link component that opens the help panel drawer with specific content in a new tab. Uses Chrome's drawer API to open the help panel.
 
-```tsx
-import { HelpPanelLink, TabType } from '@redhat-cloud-services/learning-resources';
+**Usage via Module Federation:**
 
+```tsx
+import React, { lazy, Suspense } from 'react';
+
+// Lazy load the component from the federated module
+const HelpPanelLink = lazy(() =>
+  import('learningResources/HelpPanelLink').then(module => ({
+    default: module.default
+  }))
+);
+
+// Import the TabType enum
+const TabType = lazy(() =>
+  import('learningResources/HelpPanelLink').then(module => ({
+    default: module.TabType
+  }))
+);
+
+// Use it in your component
+function MyComponent() {
+  return (
+    <p>
+      Need help?{' '}
+      <Suspense fallback={<span>Loading...</span>}>
+        <HelpPanelLink
+          title="Configure Slack Integration"
+          tabType="learn"
+          url="https://docs.example.com/slack-config"
+        >
+          Learn how to configure Slack
+        </HelpPanelLink>
+      </Suspense>
+    </p>
+  );
+}
+```
+
+**Alternative: Using custom content instead of URL**
+
+```tsx
 <HelpPanelLink
-  title="Configure Slack Integration"
-  tabType={TabType.learn}
-  url="https://docs.example.com/slack-config"
+  title="Getting Started"
+  tabType="learn"
+  content={
+    <div>
+      <h3>Welcome!</h3>
+      <p>Here's how to get started...</p>
+    </div>
+  }
 >
-  Learn how to configure Slack
+  View getting started guide
 </HelpPanelLink>
 ```
+
+**Props:**
+- `title: string` - Title for the tab
+- `tabType: TabType` - Type of content (`'learn'`, `'api'`, `'kb'`, `'support'`, `'search'`)
+- `url?: string` - URL to load in iframe (note: may be blocked by some sites due to X-Frame-Options)
+- `content?: ReactNode` - Custom React content to display (alternative to URL)
+- `children: ReactNode` - Link text
+- `variant?: ButtonProps['variant']` - Button variant (default: `'link'`)
+- `className?: string` - Additional CSS class
+- `data-ouia-component-id?: string` - Testing identifier
+
+**Note:** Must be used within insights-chrome environment. The component uses `chrome.drawerActions.toggleDrawerContent()` to open the help panel.
 
 
