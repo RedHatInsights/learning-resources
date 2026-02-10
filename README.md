@@ -104,7 +104,7 @@ function MyComponent() {
 **Props:**
 - `title: string` - Title for the tab
 - `tabType: TabType` - Type of content (`'learn'`, `'api'`, `'kb'`, `'support'`, `'search'`)
-- `url?: string` - URL to load in iframe (note: may be blocked by some sites due to X-Frame-Options)
+- `url?: string` - URL to fetch and display as HTML (note: may be blocked by CORS)
 - `content?: ReactNode` - Custom React content to display (alternative to URL)
 - `children: ReactNode` - Link text
 - `variant?: ButtonProps['variant']` - Button variant (default: `'link'`)

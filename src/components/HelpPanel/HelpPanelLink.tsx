@@ -17,9 +17,9 @@ export type HelpPanelLinkProps = {
   title: string;
   /** The type of tab content to display (learn, api, kb, search, support) */
   tabType: TabType;
-  /** Optional URL to load in the tab */
+  /** Optional URL to fetch and display as HTML */
   url?: string;
-  /** Optional custom content to display in the tab */
+  /** Optional custom React content to display in the tab */
   content?: ReactNode;
   /** The text/content to display in the link */
   children: ReactNode;
@@ -40,12 +40,27 @@ export type HelpPanelLinkProps = {
  *
  * @example
  * ```tsx
+ * // With URL
  * <HelpPanelLink
- *   title="Configure Slack"
+ *   title="Documentation"
  *   tabType={TabType.learn}
- *   url="https://docs.example.com/slack-config"
+ *   url="https://docs.example.com/guide"
  * >
- *   Learn how to configure Slack
+ *   View documentation
+ * </HelpPanelLink>
+ *
+ * // With custom content
+ * <HelpPanelLink
+ *   title="Getting Started"
+ *   tabType={TabType.learn}
+ *   content={
+ *     <div>
+ *       <h3>Welcome!</h3>
+ *       <p>Here's how to get started...</p>
+ *     </div>
+ *   }
+ * >
+ *   View getting started guide
  * </HelpPanelLink>
  * ```
  */

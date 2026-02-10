@@ -233,7 +233,6 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
 
     const setNewActionTitleDebounced: (title: string) => void = useCallback(
       debounce((title: string) => {
-        console.log({ activeTab });
         if (
           (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
           activeTab.closeable
@@ -382,6 +381,8 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
               <HelpPanelTabContainer
                 activeTabType={tab.tabType}
                 setNewActionTitle={setNewActionTitleDebounced}
+                customContent={tab.customContent}
+                url={tab.url}
               />
             </SubTabs>
           </Tab>
