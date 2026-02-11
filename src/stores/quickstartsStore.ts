@@ -61,29 +61,22 @@ const initialState: QuickStartsStoreState = {
   accountId: undefined,
 };
 
-// Use window-level global to ensure store is truly shared across all microfrontends
-const STORE_KEY = '__QUICKSTARTS_SHARED_STORE__';
-
 type QuickstartsStore = ReturnType<
   typeof createSharedStore<QuickStartsStoreState, typeof EVENTS>
 >;
 
-declare global {
-  interface Window {
-    [STORE_KEY]?: QuickstartsStore;
-  }
-}
+let storeInstance: QuickstartsStore | undefined;
 
 /**
  * Gets or creates the QuickStarts shared store singleton.
- * The store is shared across all federated modules using a window-level global.
+ * The store is shared across federated modules via Module Federation.
  */
 export const getQuickstartsStore = (): QuickstartsStore => {
-  if (typeof window !== 'undefined' && window[STORE_KEY]) {
-    return window[STORE_KEY];
+  if (storeInstance) {
+    return storeInstance;
   }
 
-  const store = createSharedStore<QuickStartsStoreState, typeof EVENTS>({
+  storeInstance = createSharedStore<QuickStartsStoreState, typeof EVENTS>({
     initialState,
     events: EVENTS,
     onEventChange: (state, event, payload): QuickStartsStoreState => {
@@ -164,17 +157,26 @@ export const getQuickstartsStore = (): QuickstartsStore => {
     },
   });
 
-  // Store in window global for cross-microfrontend sharing
-  if (typeof window !== 'undefined') {
-    window[STORE_KEY] = store;
-  }
-
-  return store;
+  return storeInstance;
 };
 
 // API response types
 interface QuickStartAPIResponse {
   data: { content: QuickStart }[];
+}
+
+/** Response body may have data as array or single object; normalize to QuickStart[]. */
+function parseQuickstartsResponse(body: {
+  data?: { content: QuickStart }[] | { content: QuickStart };
+}): QuickStart[] {
+  const data = body?.data;
+  if (Array.isArray(data)) {
+    return data.map(({ content }) => content);
+  }
+  if (data && typeof data === 'object' && 'content' in data) {
+    return [data.content];
+  }
+  return [];
 }
 
 /**
@@ -297,15 +299,13 @@ export const useQuickstartsStore = () => {
   const activateQuickstart = async (name: string) => {
     try {
       // 1. Fetch main quickstart
-      const {
-        data: { data },
-      } = await axios.get<QuickStartAPIResponse>(
+      const { data } = await axios.get<QuickStartAPIResponse>(
         '/api/quickstarts/v1/quickstarts',
         {
           params: { name },
         }
       );
-      const mainQuickstarts = data.map(({ content }) => content);
+      const mainQuickstarts = parseQuickstartsResponse(data);
 
       // 2. Extract nextQuickStart references
       const nextQuickStartNames = mainQuickstarts
@@ -326,7 +326,7 @@ export const useQuickstartsStore = () => {
           );
           const responses = await Promise.all(promises);
           nextQuickstarts = responses.flatMap((r) =>
-            r.data.data.map(({ content }) => content)
+            parseQuickstartsResponse(r.data)
           );
         } catch (error) {
           console.warn(
