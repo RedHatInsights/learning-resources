@@ -19,8 +19,10 @@ Learning Resources owns the QuickStarts API, providing shared state management f
 
 | Hook | Module Path | Purpose |
 |------|-------------|---------|
-| `useQuickstartsStore` | `learning-resources/quickstarts/useQuickstartsStore` | Shared QuickStart state (Chrome drawer) |
-| `useScopedQuickStart` | `learning-resources/quickstarts/useScopedQuickStart` | Isolated state for custom UI |
+| `useQuickstartsStore` | `learningResources/quickstarts/useQuickstartsStore` | Shared QuickStart state (Chrome drawer) |
+| `useScopedQuickStart` | `learningResources/quickstarts/useScopedQuickStart` | Isolated state for custom UI |
+
+For `useRemoteHook`, use `scope: 'learningResources'` and `module: './quickstarts/useQuickstartsStore'` (or `'./quickstarts/useScopedQuickStart'`).
 
 ### Quick Example
 
@@ -30,7 +32,7 @@ import { useRemoteHook } from '@scalprum/react-core';
 function MyComponent() {
   const { hookResult } = useRemoteHook({
     scope: 'learningResources',
-    module: './quickstarts/useQuickstartsStore'
+    module: './quickstarts/useQuickstartsStore',
   });
 
   // Set quickstarts for your app

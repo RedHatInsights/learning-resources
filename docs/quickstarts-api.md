@@ -234,17 +234,17 @@ const controller = useScopedQuickStart?.({ quickStarts: myQS });
 
 ## TypeScript Support
 
-Types are exported from the hooks:
+Types are re-exported from the hook modules so external consumers can use the federated module path:
 
 ```typescript
 import type { QuickStart, QuickStartState } from '@patternfly/quickstarts';
 
-// For useScopedQuickStart
+// For useScopedQuickStart: import types from the same federated module as the hook
 import type {
   AllQuickStartStates,
   ScopedControllerOptions,
   ScopedQuickStartController,
-} from 'learning-resources/src/types/quickstarts';
+} from 'learning-resources/quickstarts/useScopedQuickStart';
 ```
 
 ---

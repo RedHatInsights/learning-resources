@@ -265,11 +265,14 @@ export const useQuickstartsStore = () => {
     const activeState = newStates[state.activeQuickStartID];
 
     // Persist progress to API if we have an active quickstart with state
-    if (typeof activeState === 'object' && state.accountId) {
+    const parsedAccountId = state.accountId
+      ? parseInt(state.accountId, 10)
+      : NaN;
+    if (typeof activeState === 'object' && !isNaN(parsedAccountId)) {
       axios
         .post('/api/quickstarts/v1/progress', {
           quickstartName: state.activeQuickStartID,
-          accountId: parseInt(state.accountId),
+          accountId: parsedAccountId,
           progress: activeState,
         })
         .catch((err) => {

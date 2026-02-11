@@ -1,5 +1,11 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+
+interface LinkEntry {
+  intervalId: ReturnType<typeof setInterval>;
+  element: HTMLAnchorElement | null;
+  handler: (e: MouseEvent) => void;
+}
 
 /**
  * Hook for managing quickstart links in markdown content.
@@ -7,40 +13,54 @@ import { renderToStaticMarkup } from 'react-dom/server';
  */
 function useQuickstartLinkStore() {
   const store = useMemo(() => new Map<string, HTMLAnchorElement>(), []);
+  const pendingRef = useRef<Map<string, LinkEntry>>(new Map());
 
   function addLinkElement(id: string) {
+    const handler = (e: MouseEvent) => {
+      const el = e.currentTarget as HTMLAnchorElement;
+      const { href } = el;
+      if (!href) {
+        return;
+      }
+      e.preventDefault();
+      window.history.replaceState({ quickstartLink: true }, '', href);
+      window.dispatchEvent(
+        new PopStateEvent('popstate', { state: { quickstartLink: true } })
+      );
+    };
+
     let iterations = 0;
     setTimeout(() => {
-      // push execution to end of the call stack
       const findInterval = setInterval(() => {
         const element = document.getElementById(id);
+        const entry = pendingRef.current.get(id);
+
         if (element) {
-          store.set(id, element as HTMLAnchorElement);
-          element.addEventListener('click', (e) => {
-            const { href } = element as HTMLAnchorElement;
-            if (!href) {
-              return;
-            }
-            e.preventDefault();
-            window.history.replaceState(
-              {
-                quickstartLink: true,
-              },
-              '',
-              href
-            );
-            // Dispatch popstate to notify listeners
-            window.dispatchEvent(
-              new PopStateEvent('popstate', { state: { quickstartLink: true } })
-            );
-          });
-          clearInterval(findInterval);
+          const anchor = element as HTMLAnchorElement;
+          store.set(id, anchor);
+          anchor.addEventListener('click', handler);
+          if (entry) {
+            clearInterval(entry.intervalId);
+            entry.element = anchor;
+            entry.handler = handler;
+          }
+          return;
         }
+
         iterations += 1;
         if (iterations > 5) {
-          clearInterval(findInterval);
+          if (entry) {
+            clearInterval(entry.intervalId);
+            pendingRef.current.delete(id);
+          }
         }
       }, 1000);
+
+      pendingRef.current.set(id, {
+        intervalId: findInterval,
+        element: null,
+        handler,
+      });
     });
   }
 
@@ -50,6 +70,13 @@ function useQuickstartLinkStore() {
 
   useEffect(() => {
     return () => {
+      pendingRef.current.forEach((entry) => {
+        clearInterval(entry.intervalId);
+        if (entry.element) {
+          entry.element.removeEventListener('click', entry.handler);
+        }
+      });
+      pendingRef.current.clear();
       emptyElements();
     };
   }, []);

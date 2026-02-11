@@ -127,3 +127,8 @@ const useScopedQuickStart = (
 };
 
 export default useScopedQuickStart;
+export type {
+  AllQuickStartStates,
+  ScopedControllerOptions,
+  ScopedQuickStartController,
+} from '../types/quickstarts';
