@@ -75,6 +75,8 @@ Update `config/dev.webpack.config.js` according to your application URL. [Read m
 ## Documentation
 
 - [QuickStarts API](docs/quickstarts-api.md) - Shared store and scoped controller for QuickStarts
+- **[Technical Reference](./docs/TECHNICAL_REFERENCE.md)** - Comprehensive technical documentation covering architecture, deployment, data structures, and API integration
+- **[Creator Guide](./docs/CREATOR_GUIDE.md)** - Complete guide for creating learning resources using the Wizard and YAML Editor
 
 ## Deploying
 
