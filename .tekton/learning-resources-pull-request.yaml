@@ -77,7 +77,7 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/catastrophe-brandon/konflux-pipelines
+      value: https://github.com/RedHatInsights/konflux-pipelines
     - name: revision
       value: btweed/remove-chrome-sidecar
     - name: pathInRepo
