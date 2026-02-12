@@ -318,26 +318,30 @@ export const useQuickstartsStore = () => {
       // 3. Fetch referenced quickstarts
       let nextQuickstarts: QuickStart[] = [];
       if (nextQuickStartNames.length > 0) {
-        try {
-          const promises = nextQuickStartNames.map((nextName) =>
+        const results = await Promise.allSettled(
+          nextQuickStartNames.map((nextName) =>
             axios.get<QuickStartAPIResponse>(
               '/api/quickstarts/v1/quickstarts',
-              {
-                params: { name: nextName },
-              }
+              { params: { name: nextName } }
             )
-          );
-          const responses = await Promise.all(promises);
-          nextQuickstarts = responses.flatMap((r) =>
-            parseQuickstartsResponse(r.data)
-          );
-        } catch (error) {
+          )
+        );
+        const errors: unknown[] = [];
+        const fulfilled: QuickStart[] = [];
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            fulfilled.push(...parseQuickstartsResponse(result.value.data));
+          } else {
+            errors.push(result.reason);
+          }
+        }
+        if (errors.length) {
           console.warn(
             'Some referenced quickstarts could not be fetched:',
-            error
+            errors
           );
-          // Continue without the referenced quickstarts
         }
+        nextQuickstarts = fulfilled;
       }
 
       // 4. Populate both main and referenced quickstarts
