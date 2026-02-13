@@ -20,11 +20,13 @@ import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
+import { useIntl } from 'react-intl';
 import {
   ExternalLinkAltIcon,
   OutlinedCommentsIcon,
   SearchIcon,
 } from '@patternfly/react-icons';
+import messages from '../../Messages';
 
 type TabDefinition = {
   id: string;
@@ -74,6 +76,7 @@ const subTabs: SubTab[] = [
   },
   {
     title: 'APIs',
+    tabTitle: 'API documentation',
     tabType: TabType.api,
   },
   {
@@ -83,11 +86,17 @@ const subTabs: SubTab[] = [
   },
 ];
 
-// Helper function to get sub-tab title by TabType
-const getSubTabTitle = (tabType: TabType): string => {
+// Helper function to get sub-tab title by TabType (intl optional for translatable titles)
+const getSubTabTitle = (
+  tabType: TabType,
+  intl?: ReturnType<typeof useIntl>
+): string => {
   const subTab = subTabs.find((tab) => tab.tabType === tabType);
   if (tabType === TabType.search) {
     return 'Search';
+  }
+  if (tabType === TabType.api && intl) {
+    return intl.formatMessage(messages.apiDocumentation);
   }
   return subTab?.tabTitle || (subTab?.title as string) || 'Find help';
 };
@@ -232,6 +241,7 @@ const SubTabs = ({
 };
 
 const HelpPanelCustomTabs = () => {
+  const intl = useIntl();
   const apiStoreMock = useMemo(() => createTabsStore(), []);
   const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
 
@@ -256,7 +266,7 @@ const HelpPanelCustomTabs = () => {
           const defaultTitle =
             activeTab.tabType === TabType.search
               ? 'Search'
-              : getSubTabTitle(activeTab.tabType);
+              : getSubTabTitle(activeTab.tabType, intl);
           setNewActionTitle(undefined);
           updateTab({
             ...activeTab,
@@ -278,7 +288,7 @@ const HelpPanelCustomTabs = () => {
         });
       }
     }, 100), // Reduced debounce time for search
-    [activeTab, newActionTitle]
+    [activeTab, newActionTitle, intl]
   );
 
   const handleAddTab = () => {
@@ -371,9 +381,9 @@ const HelpPanelCustomTabs = () => {
               setActiveSubTabKey={(tabType) => {
                 let newTitle = tab.title;
                 if (!tab.closeable) {
-                  newTitle = getSubTabTitle(tabType);
+                  newTitle = getSubTabTitle(tabType, intl);
                 } else if (tab.isNewTab) {
-                  newTitle = getSubTabTitle(tabType);
+                  newTitle = getSubTabTitle(tabType, intl);
                 }
                 const nextTab = {
                   ...tab,

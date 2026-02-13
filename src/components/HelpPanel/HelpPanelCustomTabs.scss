@@ -1,3 +1,40 @@
+// Help panel is rendered inside the platform's notification drawer with class "learningResources".
+// Override the notification drawer background so the whole drawer is white.
+.pf-v6-c-notification-drawer.learningResources,
+.pf-v5-c-notification-drawer.learningResources {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+// Top of drawer: header (Help title, Ask Red Hat, close) and tab bar.
+.pf-v6-c-drawer__head {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+.lr-c-help-panel-custom-tabs {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+.lr-c-help-panel-custom-tabs .pf-v6-c-tabs__list {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+// Sub-tabs row (Learn, APIs, etc.): white background on the subtabs container.
+[data-ouia-component-id="help-panel-subtabs"] {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+// Content container (Learn, APIs, Support, etc.) has no background by default; set white
+// so the tab content area does not show the drawer's default background when scrolling.
+[data-ouia-component-id="help-panel-content-container"] {
+  background-color: var(--pf-t--color--white, #fff);
+}
+
+// Make DataList row lines extend full width (content container has padding that insets the list).
+[data-ouia-component-id="help-panel-content-container"] .pf-v6-c-data-list {
+  margin-inline: calc(-1 * var(--pf-t--global--spacer--md, 1rem));
+  width: calc(100% + 2 * var(--pf-t--global--spacer--md, 1rem));
+}
+
 .lr-c-help-panel-custom-tab {
   &.persistent-tab {
     // the disabled close tab action does not hide the action button

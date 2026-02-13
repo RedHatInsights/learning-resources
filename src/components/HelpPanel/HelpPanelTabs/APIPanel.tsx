@@ -29,6 +29,18 @@ import {
   fetchBundleInfo,
   fetchBundles,
 } from '../../../utils/fetchBundleInfoAPI';
+import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
+
+// Same bundle display logic as Learn tab: use FiltersMetadata so "settings" shows as "Settings" not "Console Settings"
+const getBundleDisplayName = (
+  bundleId: string,
+  chromeTitle: string | undefined
+): string => {
+  const mapped = FiltersMetadata[bundleId];
+  if (mapped) return mapped.split(' (')[0];
+  if (chromeTitle) return chromeTitle;
+  return bundleId.charAt(0).toUpperCase() + bundleId.slice(1);
+};
 
 interface APIDoc {
   name: string;
@@ -43,12 +55,15 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
       fetchBundles(),
     ]);
 
-    return bundleInfoList.map((bundleInfo) => {
+    const mapped = bundleInfoList.map((bundleInfo) => {
       const services = bundleInfo.bundleLabels.map((bundleLabel) => {
         const matchingBundle = bundles.find(
           (bundle) => bundle.id === bundleLabel
         );
-        return matchingBundle ? matchingBundle.title : bundleLabel;
+        return getBundleDisplayName(
+          bundleLabel,
+          matchingBundle ? matchingBundle.title : undefined
+        );
       });
 
       return {
@@ -57,6 +72,34 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
         url: bundleInfo.url,
       };
     });
+
+    // Deduplicate by frontendName (same API can have multiple spec URLs, e.g. notifications v1/v2, sources integrations v1/v2 + sources v3)
+    const versionInPath = (u: string) => {
+      const m = u.match(/\/v(\d+)(?:\.(\d+))?\/?/);
+      return m ? parseInt(m[1], 10) * 1000 + parseInt(m[2] || '0', 10) : 0;
+    };
+    const byName = new Map<string, APIDoc>();
+    for (const doc of mapped) {
+      const key = doc.name.toLowerCase().trim();
+      const existing = byName.get(key);
+      if (existing) {
+        const mergedServices = [
+          ...new Set([...existing.services, ...doc.services]),
+        ];
+        const bestUrl =
+          versionInPath(doc.url) > versionInPath(existing.url)
+            ? doc.url
+            : existing.url;
+        byName.set(key, {
+          name: existing.name,
+          services: mergedServices,
+          url: bestUrl,
+        });
+      } else {
+        byName.set(key, doc);
+      }
+    }
+    return Array.from(byName.values());
   } catch (error) {
     console.error('Error mapping bundle info with titles:', error);
     return [];
@@ -135,8 +178,10 @@ const APIPanelContent: React.FC = () => {
   // @ts-ignore
   const availableBundles = chrome.getAvailableBundles?.() || [];
 
-  const displayBundleName =
-    availableBundles.find((b) => b.id === bundleId)?.title || bundleId;
+  const displayBundleName = getBundleDisplayName(
+    bundleId,
+    availableBundles.find((b) => b.id === bundleId)?.title
+  );
 
   const isHomePage =
     !displayBundleName ||

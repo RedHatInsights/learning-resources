@@ -38,6 +38,7 @@ export const FiltersMetadata: Record<string, string> = {
   ansible: 'Ansible',
   openshift: 'OpenShift',
   rhel: 'RHEL (Red Hat Enterprise Linux)',
+  insights: 'RHEL',
   iam: 'IAM (Identity and Access Management)',
   settings: 'Settings',
   'subscriptions-services': 'Subscriptions services',

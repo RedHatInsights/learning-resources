@@ -1,6 +1,20 @@
 import { defineMessages } from 'react-intl';
 
 const messages = defineMessages({
+  // Help Panel header
+  chatWithAssistant: {
+    id: 'helpPanel.header.chatWithAssistant',
+    defaultMessage: 'Chat with an assistant',
+  },
+  redHatStatusPage: {
+    id: 'helpPanel.header.redHatStatusPage',
+    defaultMessage: 'Red Hat status page',
+  },
+  apiDocumentation: {
+    id: 'helpPanel.header.apiDocumentation',
+    defaultMessage: 'API documentation',
+  },
+
   // Search Panel
   searchPanelDescription: {
     id: 'helpPanel.search.description',
