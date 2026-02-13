@@ -187,8 +187,6 @@ const LearnPanelContent: React.FC<{
   );
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [activeToggle, setActiveToggle] = useState<string>('all');
-  const [bundleTitle, setBundleTitle] = useState<string>('');
-  const [bundleId, setBundleId] = useState<string>('');
   const [allQuickStarts, setAllQuickStarts] = useState<ExtendedQuickstart[]>(
     []
   );
@@ -198,20 +196,22 @@ const LearnPanelContent: React.FC<{
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  const {
+    bundleId = '',
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+  } = chrome.getBundleData?.() || {};
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const availableBundles = chrome.getAvailableBundles?.() || [];
+
+  const displayBundleName =
+    availableBundles.find((b) => b.id === bundleId)?.title || bundleId;
+
   // Load data on mount to avoid side effects during render
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get bundle data
-        // FIXME: Add missing type to the types lib
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        const { bundleTitle: currentBundleTitle, bundleId: currentBundleId } =
-          chrome.getBundleData();
-        setBundleTitle(currentBundleTitle);
-        setBundleId(currentBundleId);
-
-        // Load learning resources data
         const [, quickStarts] = await loader(chrome.auth.getUser, {});
         setAllQuickStarts(quickStarts);
         setIsLoading(false);
@@ -225,11 +225,9 @@ const LearnPanelContent: React.FC<{
 
   // Check if we're on the home page (no specific bundle context)
   const isHomePage =
-    !bundleTitle ||
-    bundleTitle.toLowerCase() === 'home' ||
-    bundleTitle.toLowerCase() === 'landing';
-
-  const displayBundleName = bundleId ? getBundleDisplayName(bundleId) : '';
+    !displayBundleName ||
+    displayBundleName.toLowerCase() === 'home' ||
+    displayBundleName.toLowerCase() === 'landing';
 
   // Filter and process learning resources
   const filteredResources = useMemo(() => {
@@ -541,6 +539,7 @@ const LearnPanelContent: React.FC<{
                 <ToolbarItem>
                   {!isHomePage && (
                     <ToggleGroup
+                      isCompact
                       aria-label="Filter by scope"
                       data-ouia-component-id="help-panel-scope-toggle"
                     >

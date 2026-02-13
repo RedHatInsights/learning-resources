@@ -73,7 +73,7 @@ const HelpPanelContent = ({
               icon={<AskRedHatIcon width={20} height={20} />}
               data-ouia-component-id="help-panel-ask-red-hat-button"
             >
-              Ask Red Hat
+              Chat with an assitant
             </Button>
           ) : (
             <Button
@@ -86,7 +86,7 @@ const HelpPanelContent = ({
               icon={<AskRedHatIcon width={20} height={20} />}
               data-ouia-component-id="help-panel-ask-red-hat-button"
             >
-              Ask Red Hat
+              Chat with an assitant
             </Button>
           )}
           <DrawerCloseButton

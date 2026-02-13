@@ -222,6 +222,7 @@ const APIPanelContent: React.FC = () => {
             <ToolbarItem>
               {!isHomePage && (
                 <ToggleGroup
+                  isCompact
                   aria-label="Filter by scope"
                   data-ouia-component-id="help-panel-api-scope-toggle"
                 >

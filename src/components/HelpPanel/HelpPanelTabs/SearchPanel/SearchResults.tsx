@@ -120,6 +120,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           {!isHomePage && bundleId && (
             <FlexItem>
               <ToggleGroup
+                isCompact
                 aria-label={intl.formatMessage(
                   messages.searchScopeToggleAriaLabel
                 )}

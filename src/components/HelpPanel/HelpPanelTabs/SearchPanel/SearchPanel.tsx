@@ -574,6 +574,7 @@ const SearchPanel = ({
                 {!isHomePage && (
                   <FlexItem>
                     <ToggleGroup
+                      isCompact
                       aria-label={intl.formatMessage(
                         messages.filterByScopeAriaLabel
                       )}
