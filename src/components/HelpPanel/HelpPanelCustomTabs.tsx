@@ -10,6 +10,7 @@ import React, {
   ReactNode,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useReducer,
   useState,
@@ -21,6 +22,7 @@ import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { ExternalLinkAltIcon, SearchIcon } from '@patternfly/react-icons';
+import { HelpPanelTabContent } from './HelpPanelLink';
 
 type TabDefinition = {
   id: string;
@@ -29,6 +31,12 @@ type TabDefinition = {
   closeable?: boolean;
   tabType: TabType;
   isNewTab?: boolean; // Track if this was originally a "New tab"
+  customContent?: ReactNode; // For custom content in tabs
+  url?: string; // For URL-based content
+};
+
+export type HelpPanelCustomTabsRef = {
+  openTabWithContent: (content: HelpPanelTabContent) => void;
 };
 
 type SubTab = Omit<TabDefinition, 'id'> & {
@@ -229,169 +237,224 @@ const SubTabs = ({
   );
 };
 
-const HelpPanelCustomTabs = () => {
-  const apiStoreMock = useMemo(() => createTabsStore(), []);
-  const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
+const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
+  (_, ref) => {
+    const apiStoreMock = useMemo(() => createTabsStore(), []);
+    const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
 
-  const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
-    undefined
-  );
-  const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
+    const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
+      undefined
+    );
+    const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
 
-  const setNewActionTitleDebounced: (title: string) => void = useCallback(
-    debounce((title: string) => {
-      // For search tabs, update title immediately when user types
-      if (activeTab.tabType === TabType.search) {
-        if (title.trim()) {
-          const newTitle = title.trim();
-          setNewActionTitle(newTitle);
+    const setNewActionTitleDebounced: (title: string) => void = useCallback(
+      debounce((title: string) => {
+        // For search tabs, update title immediately when user types
+        if (activeTab.tabType === TabType.search) {
+          if (title.trim()) {
+            const newTitle = title.trim();
+            setNewActionTitle(newTitle);
+            updateTab({
+              ...activeTab,
+              title: newTitle,
+            });
+          } else {
+            // When search is cleared, revert based on the actual tab type
+            const defaultTitle =
+              activeTab.tabType === TabType.search
+                ? 'Search'
+                : getSubTabTitle(activeTab.tabType);
+            setNewActionTitle(undefined);
+            updateTab({
+              ...activeTab,
+              title: defaultTitle,
+            });
+          }
+          return;
+        }
+
+        // For other tabs, use the existing logic
+        if (
+          (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
+          activeTab.closeable
+        ) {
+          setNewActionTitle(title);
           updateTab({
             ...activeTab,
-            title: newTitle,
+            title,
+          });
+        }
+      }, 100), // Reduced debounce time for search
+      [activeTab, newActionTitle]
+    );
+
+    const handleAddTab = () => {
+      // The title will be a placeholder until action is taken by the user
+      setNewActionTitle(undefined);
+      const newTabId = crypto.randomUUID();
+      const tab = {
+        id: newTabId,
+        title: NEW_TAB_PLACEHOLDER,
+        closeable: true,
+        tabType: TabType.learn,
+        isNewTab: true,
+      };
+      addTab(tab);
+      setTimeout(() => {
+        // just make sure the tab is added
+        // once async is done, we should use optimistic UI pattern
+        setActiveTab(tab);
+      });
+    };
+
+    const openTabWithContent = useCallback(
+      (content: HelpPanelTabContent) => {
+        const newTabId = content.id || crypto.randomUUID();
+        const existingTab = tabs.find((tab) => tab.id === newTabId);
+
+        if (existingTab) {
+          const updatedTab: TabDefinition = {
+            ...existingTab,
+            title: content.title,
+            tabType: content.tabType,
+            customContent: content.content,
+            url: content.url,
+          };
+          updateTab(updatedTab);
+          setTimeout(() => {
+            setActiveTab(updatedTab);
           });
         } else {
-          // When search is cleared, revert based on the actual tab type
-          const defaultTitle =
-            activeTab.tabType === TabType.search
-              ? 'Search'
-              : getSubTabTitle(activeTab.tabType);
-          setNewActionTitle(undefined);
-          updateTab({
-            ...activeTab,
-            title: defaultTitle,
+          const tab: TabDefinition = {
+            id: newTabId,
+            title: content.title,
+            closeable: true,
+            tabType: content.tabType,
+            customContent: content.content,
+            url: content.url,
+            isNewTab: false,
+          };
+          addTab(tab);
+          setTimeout(() => {
+            setActiveTab(tab);
           });
         }
-        return;
-      }
+      },
+      [addTab, updateTab, tabs]
+    );
 
-      // For other tabs, use the existing logic
-      if (
-        (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
-        activeTab.closeable
-      ) {
-        setNewActionTitle(title);
-        updateTab({
-          ...activeTab,
-          title,
-        });
-      }
-    }, 100), // Reduced debounce time for search
-    [activeTab, newActionTitle]
-  );
+    // Expose methods to parent via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        openTabWithContent,
+      }),
+      [openTabWithContent]
+    );
 
-  const handleAddTab = () => {
-    // The title will be a placeholder until action is taken by the user
-    setNewActionTitle(undefined);
-    const newTabId = crypto.randomUUID();
-    const tab = {
-      id: newTabId,
-      title: NEW_TAB_PLACEHOLDER,
-      closeable: true,
-      tabType: TabType.learn,
-      isNewTab: true,
-    };
-    addTab(tab);
-    setTimeout(() => {
-      // just make sure the tab is added
-      // once async is done, we should use optimistic UI pattern
-      setActiveTab(tab);
-    });
-  };
+    const handleClose = (_e: unknown, tabId: number | string) => {
+      if (typeof tabId === 'string') {
+        const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
+        const isClosingActiveTab = activeTab.id === tabId;
 
-  const handleClose = (_e: unknown, tabId: number | string) => {
-    if (typeof tabId === 'string') {
-      const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
-      const isClosingActiveTab = activeTab.id === tabId;
+        removeTab(tabId);
+        if (isClosingActiveTab) {
+          const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
 
-      removeTab(tabId);
-      if (isClosingActiveTab) {
-        const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
+          if (remainingTabs.length > 0) {
+            const newActiveIndex =
+              closingTabIndex >= remainingTabs.length
+                ? remainingTabs.length - 1
+                : closingTabIndex;
 
-        if (remainingTabs.length > 0) {
-          const newActiveIndex =
-            closingTabIndex >= remainingTabs.length
-              ? remainingTabs.length - 1
-              : closingTabIndex;
-
-          setActiveTab(remainingTabs[newActiveIndex]);
-        }
-      }
-    }
-  };
-
-  useEffect(() => {
-    // Ensure the Add tab button has a stable OUIA id
-    const addButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
-    ) as HTMLButtonElement | null;
-    if (addButton) {
-      addButton.setAttribute(
-        'data-ouia-component-id',
-        'help-panel-add-tab-button'
-      );
-    }
-  }, [tabs.length]);
-
-  return (
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
+            setActiveTab(remainingTabs[newActiveIndex]);
           }
         }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
-          <div style={{ display: activeTab.id === tab.id ? 'block' : 'none' }}>
-            <SubTabs
-              activeSubTabKey={tab.tabType ?? TabType.learn}
-              setActiveSubTabKey={(tabType) => {
-                let newTitle = tab.title;
-                if (!tab.closeable) {
-                  newTitle = getSubTabTitle(tabType);
-                } else if (tab.isNewTab) {
-                  newTitle = getSubTabTitle(tabType);
-                }
-                const nextTab = {
-                  ...tab,
-                  tabType: tabType,
-                  title: newTitle,
-                };
-                updateTab(nextTab);
-                setActiveTab(nextTab);
-              }}
+      }
+    };
+
+    useEffect(() => {
+      // Ensure the Add tab button has a stable OUIA id
+      const addButton = document.querySelector(
+        '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
+      ) as HTMLButtonElement | null;
+      if (addButton) {
+        addButton.setAttribute(
+          'data-ouia-component-id',
+          'help-panel-add-tab-button'
+        );
+      }
+    }, [tabs.length]);
+
+    return (
+      <Tabs
+        className="lr-c-help-panel-custom-tabs"
+        isOverflowHorizontal={{ showTabCount: true }}
+        isBox
+        mountOnEnter
+        unmountOnExit
+        onAdd={handleAddTab}
+        onClose={handleClose}
+        activeKey={activeTab.id}
+        onSelect={(_e, eventKey) => {
+          if (typeof eventKey === 'string') {
+            const nextTab = tabs.find((tab) => tab.id === eventKey);
+            if (nextTab) {
+              setActiveTab(nextTab);
+            }
+          }
+        }}
+        data-ouia-component-id="help-panel-tabs"
+        addButtonAriaLabel="Add tab"
+      >
+        {tabs.map((tab) => (
+          <Tab
+            // Need to fix the icon as we can't remove it on tab by tab basis
+            isCloseDisabled={!tab.closeable}
+            className={classNames('lr-c-help-panel-custom-tab', {
+              'persistent-tab': !tab.closeable,
+            })}
+            eventKey={tab.id}
+            key={tab.id}
+            title={<TabTitleText>{tab.title}</TabTitleText>}
+            data-ouia-component-id={`help-panel-tab-${tab.id}`}
+          >
+            <div
+              style={{ display: activeTab.id === tab.id ? 'block' : 'none' }}
             >
-              <HelpPanelTabContainer
-                activeTabType={tab.tabType}
-                setNewActionTitle={setNewActionTitleDebounced}
-              />
-            </SubTabs>
-          </div>
-        </Tab>
-      ))}
-    </Tabs>
-  );
-};
+              <SubTabs
+                activeSubTabKey={tab.tabType ?? TabType.learn}
+                setActiveSubTabKey={(tabType) => {
+                  let newTitle = tab.title;
+                  if (!tab.closeable) {
+                    newTitle = getSubTabTitle(tabType);
+                  } else if (tab.isNewTab) {
+                    newTitle = getSubTabTitle(tabType);
+                  }
+                  const nextTab = {
+                    ...tab,
+                    tabType: tabType,
+                    title: newTitle,
+                  };
+                  updateTab(nextTab);
+                  setActiveTab(nextTab);
+                }}
+              >
+                <HelpPanelTabContainer
+                  activeTabType={tab.tabType}
+                  setNewActionTitle={setNewActionTitleDebounced}
+                  customContent={tab.customContent}
+                  url={tab.url}
+                />
+              </SubTabs>
+            </div>
+          </Tab>
+        ))}
+      </Tabs>
+    );
+  }
+);
+
+HelpPanelCustomTabs.displayName = 'HelpPanelCustomTabs';
 
 export default HelpPanelCustomTabs;

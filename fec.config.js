@@ -39,6 +39,7 @@ module.exports = {
       ),
       './Creator': path.resolve(__dirname, './src/Creator.tsx'),
       './HelpPanel': path.resolve(__dirname, './src/components/HelpPanel/index.ts'),
+      './HelpPanelLink': path.resolve(__dirname, './src/components/HelpPanel/HelpPanelLink.tsx'),
     },
     exclude: ['react-router-dom'],
     shared: [
