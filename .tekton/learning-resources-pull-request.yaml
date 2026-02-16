@@ -96,11 +96,12 @@ spec:
           - ip: "127.0.0.1"
             hostnames:
               - "stage.foo.redhat.com"
-        # Add ConfigMap volumes
+        # Override all volumes (podTemplate.volumes replaces taskSpec.volumes, not merges)
+        # Must include ALL volumes from upstream taskSpec PLUS our custom ones
         volumes:
-          - name: test-app-caddyfile
-            configMap:
-              name: learning-resources-test-app-caddyfile-v2
+          # From upstream taskSpec
+          - name: proxy-config
+            emptyDir: {}
           - name: proxy-routes-configmap
             configMap:
               name: learning-resources-dev-proxy-caddyfile-v2
@@ -108,6 +109,10 @@ spec:
               items:
               - key: routes
                 path: routes
+          # Custom volume for test app
+          - name: test-app-caddyfile
+            configMap:
+              name: learning-resources-test-app-caddyfile-v2
       sidecarSpecs:
         # Mount test app Caddyfile into run-application sidecar
         - name: run-application
