@@ -101,6 +101,9 @@ spec:
           - name: test-app-caddyfile
             configMap:
               name: learning-resources-test-app-caddyfile-v2
+          - name: proxy-routes-configmap
+            configMap:
+              name: learning-resources-dev-proxy-caddyfile-v2
       sidecarSpecs:
         # Mount test app Caddyfile into run-application sidecar
         - name: run-application
