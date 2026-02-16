@@ -85,7 +85,7 @@ const LearningResourceItem: React.FC<{
     if (resource.spec.type?.text === 'Quick start') {
       chrome.quickStarts.activateQuickstart(resource.metadata.name);
     } else if (resource.spec.link?.href) {
-      window.open(resource.spec.link.href, '_blank');
+      window.open(resource.spec.link.href, '_blank', 'noopener,noreferrer');
     }
   };
 

@@ -27,6 +27,10 @@
 
 }
 
+.pf-v6-c-tabs__list {
+    overflow-y: hidden;
+}
+
 // Align Red Hat status page button with tabs
 .lr-c-status-page-button {
   transform: translateY(8px) !important;

@@ -167,7 +167,7 @@ const SupportPanel: React.FunctionComponent = () => {
             iconPosition="end"
             href={SUPPORT_CASE_URL}
             onClick={() => {
-              window.open(SUPPORT_CASE_URL, '_blank');
+              window.open(SUPPORT_CASE_URL, '_blank', 'noopener,noreferrer');
             }}
             data-ouia-component-id="help-panel-open-support-case-button"
           >

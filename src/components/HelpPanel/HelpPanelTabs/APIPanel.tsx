@@ -65,7 +65,7 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
 
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const handleResourceClick = () => {
-    window.open(resource.url, '_blank');
+    window.open(resource.url, '_blank', 'noopener,noreferrer');
   };
 
   return (

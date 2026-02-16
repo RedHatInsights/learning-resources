@@ -13,11 +13,40 @@ const messages = defineMessages({
   },
   searchPanelRecentSearch: {
     id: 'helpPanel.search.recentSearch',
-    defaultMessage: 'Recent Search queries',
+    defaultMessage: 'Recent search queries',
   },
   searchPanelRecommendedContent: {
     id: 'helpPanel.search.recommendedContent',
     defaultMessage: 'Recommended content',
+  },
+  clearSearchHistoryText: {
+    id: 'helpPanel.search.clearSearchHistory',
+    defaultMessage: 'Clear search history',
+  },
+  noRecentSearchesText: {
+    id: 'helpPanel.search.noRecentSearches',
+    defaultMessage: 'No recent searches',
+  },
+  searchResultsHeader: {
+    id: 'helpPanel.search.searchResultsHeader',
+    defaultMessage: 'Search results',
+  },
+  noResultsFoundTitle: {
+    id: 'helpPanel.search.noResultsFoundTitle',
+    defaultMessage: 'No results found',
+  },
+  noResultsFoundDescription: {
+    id: 'helpPanel.search.noResultsFoundDescription',
+    defaultMessage:
+      'Try adjusting your search terms or browse the different content types.',
+  },
+  searchResultSingular: {
+    id: 'helpPanel.search.resultSingular',
+    defaultMessage: 'result',
+  },
+  searchResultPlural: {
+    id: 'helpPanel.search.resultPlural',
+    defaultMessage: 'results',
   },
 
   // Learn Panel
@@ -123,6 +152,58 @@ const messages = defineMessages({
   contentTypeOther: {
     id: 'helpPanel.contentType.other',
     defaultMessage: 'Other',
+  },
+  clearAllFiltersText: {
+    id: 'helpPanel.filters.clearAll',
+    defaultMessage: 'Clear all filters',
+  },
+
+  // Search Result Item breadcrumbs
+  breadcrumbLearn: {
+    id: 'helpPanel.breadcrumb.learn',
+    defaultMessage: 'Learn',
+  },
+  breadcrumbApis: {
+    id: 'helpPanel.breadcrumb.apis',
+    defaultMessage: 'APIs',
+  },
+  breadcrumbApiDocumentation: {
+    id: 'helpPanel.breadcrumb.apiDocumentation',
+    defaultMessage: 'API documentation',
+  },
+  breadcrumbKnowledgeBase: {
+    id: 'helpPanel.breadcrumb.knowledgeBase',
+    defaultMessage: 'Knowledge base',
+  },
+  breadcrumbKnowledgeBaseArticles: {
+    id: 'helpPanel.breadcrumb.knowledgeBaseArticles',
+    defaultMessage: 'Knowledge base articles',
+  },
+  breadcrumbSupport: {
+    id: 'helpPanel.breadcrumb.support',
+    defaultMessage: 'Support',
+  },
+  breadcrumbSupportTickets: {
+    id: 'helpPanel.breadcrumb.supportTickets',
+    defaultMessage: 'Support tickets',
+  },
+  breadcrumbHybridCloudService: {
+    id: 'helpPanel.breadcrumb.hybridCloudService',
+    defaultMessage: 'Hybrid Cloud Console service',
+  },
+
+  // Recommended content
+  noRecommendedContentMessage: {
+    id: 'helpPanel.recommendedContent.noContent',
+    defaultMessage: 'No recommended content available',
+  },
+  filterByScopeAriaLabel: {
+    id: 'helpPanel.recommendedContent.filterByScope',
+    defaultMessage: 'Filter by scope',
+  },
+  searchScopeToggleAriaLabel: {
+    id: 'helpPanel.search.scopeToggleAriaLabel',
+    defaultMessage: 'Filter search results by scope',
   },
 });
 
