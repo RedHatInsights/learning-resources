@@ -20,7 +20,7 @@ import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
-import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { ExternalLinkAltIcon, SearchIcon } from '@patternfly/react-icons';
 
 type TabDefinition = {
   id: string;
@@ -34,6 +34,7 @@ type TabDefinition = {
 type SubTab = Omit<TabDefinition, 'id'> & {
   tabType: TabType;
   featureFlag?: string;
+  icon?: ReactNode;
 };
 
 const baseTabs: TabDefinition[] = [
@@ -49,6 +50,7 @@ const subTabs: SubTab[] = [
   {
     title: 'Search',
     tabType: TabType.search,
+    icon: <SearchIcon />,
     featureFlag: 'platform.chrome.help-panel_search',
   },
   {
@@ -74,6 +76,9 @@ const subTabs: SubTab[] = [
 // Helper function to get sub-tab title by TabType
 const getSubTabTitle = (tabType: TabType): string => {
   const subTab = subTabs.find((tab) => tab.tabType === tabType);
+  if (tabType === TabType.search) {
+    return 'Search';
+  }
   return subTab?.tabTitle || (subTab?.title as string) || 'Find help';
 };
 
@@ -187,7 +192,18 @@ const SubTabs = ({
             <Tab
               eventKey={tab.tabType}
               key={tab.tabType}
-              title={<TabTitleText>{tab.title}</TabTitleText>}
+              title={
+                <TabTitleText>
+                  {tab.icon && tab.tabType === TabType.search
+                    ? tab.icon
+                    : tab.title}
+                </TabTitleText>
+              }
+              aria-label={
+                tab.icon && tab.tabType === TabType.search
+                  ? (tab.title as string)
+                  : undefined
+              }
               data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
             />
           ))}
@@ -224,7 +240,31 @@ const HelpPanelCustomTabs = () => {
 
   const setNewActionTitleDebounced: (title: string) => void = useCallback(
     debounce((title: string) => {
-      console.log({ activeTab });
+      // For search tabs, update title immediately when user types
+      if (activeTab.tabType === TabType.search) {
+        if (title.trim()) {
+          const newTitle = title.trim();
+          setNewActionTitle(newTitle);
+          updateTab({
+            ...activeTab,
+            title: newTitle,
+          });
+        } else {
+          // When search is cleared, revert based on the actual tab type
+          const defaultTitle =
+            activeTab.tabType === TabType.search
+              ? 'Search'
+              : getSubTabTitle(activeTab.tabType);
+          setNewActionTitle(undefined);
+          updateTab({
+            ...activeTab,
+            title: defaultTitle,
+          });
+        }
+        return;
+      }
+
+      // For other tabs, use the existing logic
       if (
         (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
         activeTab.closeable
@@ -235,8 +275,8 @@ const HelpPanelCustomTabs = () => {
           title,
         });
       }
-    }, 2000),
-    [activeTab]
+    }, 100), // Reduced debounce time for search
+    [activeTab, newActionTitle]
   );
 
   const handleAddTab = () => {
@@ -297,8 +337,6 @@ const HelpPanelCustomTabs = () => {
       className="lr-c-help-panel-custom-tabs"
       isOverflowHorizontal={{ showTabCount: true }}
       isBox
-      mountOnEnter
-      unmountOnExit
       onAdd={handleAddTab}
       onClose={handleClose}
       activeKey={activeTab.id}
@@ -325,29 +363,31 @@ const HelpPanelCustomTabs = () => {
           title={<TabTitleText>{tab.title}</TabTitleText>}
           data-ouia-component-id={`help-panel-tab-${tab.id}`}
         >
-          <SubTabs
-            activeSubTabKey={tab.tabType ?? TabType.learn}
-            setActiveSubTabKey={(tabType) => {
-              let newTitle = tab.title;
-              if (!tab.closeable) {
-                newTitle = getSubTabTitle(tabType);
-              } else if (tab.isNewTab) {
-                newTitle = getSubTabTitle(tabType);
-              }
-              const nextTab = {
-                ...tab,
-                tabType: tabType,
-                title: newTitle,
-              };
-              updateTab(nextTab);
-              setActiveTab(nextTab);
-            }}
-          >
-            <HelpPanelTabContainer
-              activeTabType={tab.tabType}
-              setNewActionTitle={setNewActionTitleDebounced}
-            />
-          </SubTabs>
+          <div style={{ display: activeTab.id === tab.id ? 'block' : 'none' }}>
+            <SubTabs
+              activeSubTabKey={tab.tabType ?? TabType.learn}
+              setActiveSubTabKey={(tabType) => {
+                let newTitle = tab.title;
+                if (!tab.closeable) {
+                  newTitle = getSubTabTitle(tabType);
+                } else if (tab.isNewTab) {
+                  newTitle = getSubTabTitle(tabType);
+                }
+                const nextTab = {
+                  ...tab,
+                  tabType: tabType,
+                  title: newTitle,
+                };
+                updateTab(nextTab);
+                setActiveTab(nextTab);
+              }}
+            >
+              <HelpPanelTabContainer
+                activeTabType={tab.tabType}
+                setNewActionTitle={setNewActionTitleDebounced}
+              />
+            </SubTabs>
+          </div>
         </Tab>
       ))}
     </Tabs>

@@ -38,8 +38,6 @@ spec:
     value: learning-resources
   - name: test-app-port
     value: "8000"
-  - name: chrome-port
-    value: "9912"
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -60,8 +58,6 @@ spec:
       #!/bin/bash
       set -ex
 
-      echo "E2E_USER is ${E2E_USER}"
-      getent hosts stage.foo.redhat.com
       timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
         sleep 5
@@ -76,7 +72,7 @@ spec:
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
-    value: learning-resources-dev-proxy-caddyfile
+    value: learning-resources-dev-proxy-caddyfile-v2
   pipelineRef:
     resolver: git
     params:
@@ -104,7 +100,7 @@ spec:
         volumes:
           - name: test-app-caddyfile
             configMap:
-              name: learning-resources-test-app-caddyfile
+              name: learning-resources-test-app-caddyfile-v2
       sidecarSpecs:
         # Mount test app Caddyfile into run-application sidecar
         - name: run-application
