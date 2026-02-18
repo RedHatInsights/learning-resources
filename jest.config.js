@@ -14,14 +14,20 @@ module.exports = {
   transformIgnorePatterns,
   setupFilesAfterEnv: ['<rootDir>/config/jest.setup.js'],
   transform: {
+    // Setup file: use SWC without plugin (plugin fails on plain .js)
+    'jest\\.setup\\.js$': [
+      '@swc/jest',
+      {
+        jsc: {
+          parser: { syntax: 'ecmascript' },
+        },
+      },
+    ],
+    // SWC without jest_workaround plugin (plugin can fail to invoke on some systems)
     '^.+\\.(ts|js)x?$': [
       '@swc/jest',
       {
-        $schema: 'http://json.schemastore.org/swcrc',
         jsc: {
-          experimental: {
-            plugins: [['jest_workaround', {}]],
-          },
           parser: {
             jsx: true,
             syntax: 'typescript',
