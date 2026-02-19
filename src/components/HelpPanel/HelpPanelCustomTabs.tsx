@@ -32,7 +32,6 @@ type TabDefinition = {
   tabType: TabType;
   isNewTab?: boolean; // Track if this was originally a "New tab"
   customContent?: ReactNode; // For custom content in tabs
-  url?: string; // For URL-based content
 };
 
 export type HelpPanelCustomTabsRef = {
@@ -318,7 +317,6 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
             title: content.title,
             tabType: content.tabType,
             customContent: content.content,
-            url: content.url,
           };
           updateTab(updatedTab);
           setTimeout(() => {
@@ -331,7 +329,6 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
             closeable: true,
             tabType: content.tabType,
             customContent: content.content,
-            url: content.url,
             isNewTab: false,
           };
           addTab(tab);
@@ -444,7 +441,6 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
                   activeTabType={tab.tabType}
                   setNewActionTitle={setNewActionTitleDebounced}
                   customContent={tab.customContent}
-                  url={tab.url}
                 />
               </SubTabs>
             </div>

@@ -9,7 +9,6 @@ export type HelpPanelTabContent = {
   title: string;
   tabType: TabType;
   content?: ReactNode;
-  url?: string;
 };
 
 export type HelpPanelLinkProps = {
@@ -17,8 +16,6 @@ export type HelpPanelLinkProps = {
   title: string;
   /** The type of tab content to display (learn, api, kb, search, support) */
   tabType: TabType;
-  /** Optional URL to display in iframe */
-  url?: string;
   /** Optional custom React content to display in the tab */
   content?: ReactNode;
   /** The text/content to display in the link */
@@ -40,16 +37,6 @@ export type HelpPanelLinkProps = {
  *
  * @example
  * ```tsx
- * // With URL
- * <HelpPanelLink
- *   title="Documentation"
- *   tabType={TabType.learn}
- *   url="https://docs.example.com/guide"
- * >
- *   View documentation
- * </HelpPanelLink>
- *
- * // With custom content
  * <HelpPanelLink
  *   title="Getting Started"
  *   tabType={TabType.learn}
@@ -67,7 +54,6 @@ export type HelpPanelLinkProps = {
 export const HelpPanelLink: React.FC<HelpPanelLinkProps> = ({
   title,
   tabType,
-  url,
   content,
   children,
   className,
@@ -85,7 +71,6 @@ export const HelpPanelLink: React.FC<HelpPanelLinkProps> = ({
         newTab: {
           title,
           tabType,
-          url,
           content,
         },
       });

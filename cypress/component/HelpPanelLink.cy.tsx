@@ -127,38 +127,6 @@ describe('HelpPanelLink', () => {
     });
   });
 
-  it('should pass URL prop to Chrome drawer API', () => {
-    const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
-    const mockChrome = {
-      drawerActions: {
-        toggleDrawerContent: toggleDrawerContentSpy,
-      },
-    };
-    cy.mount(
-      <Wrapper chrome={mockChrome}>
-        <HelpPanelLink
-          title="Documentation"
-          tabType={TabType.learn}
-          url="https://docs.example.com/guide"
-        >
-          View docs
-        </HelpPanelLink>
-      </Wrapper>
-    );
-
-    cy.contains('View docs').click();
-
-    cy.get('@toggleDrawerContent').should('have.been.calledWithMatch', {
-      scope: 'learningResources',
-      module: './HelpPanel',
-      newTab: {
-        title: 'Documentation',
-        tabType: 'learn',
-        url: 'https://docs.example.com/guide',
-      },
-    });
-  });
-
   it('should pass custom content prop to Chrome drawer API', () => {
     const toggleDrawerContentSpy = cy.spy().as('toggleDrawerContent');
     const mockChrome = {
