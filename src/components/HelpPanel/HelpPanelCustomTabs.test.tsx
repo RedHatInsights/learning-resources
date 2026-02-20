@@ -16,6 +16,20 @@ jest.mock('@unleash/proxy-client-react', () => ({
   ],
 }));
 
+// Avoid loading real panel modules (Learn, API, Search, etc.) which depend on chrome and other globals.
+jest.mock('./HelpPanelTabs/helpPanelTabsMapper', () => ({
+  __esModule: true,
+  TabType: {
+    search: 'search',
+    learn: 'learn',
+    kb: 'kb',
+    api: 'api',
+    support: 'support',
+    va: 'va',
+  },
+  default: {},
+}));
+
 jest.mock('./HelpPanelTabs/HelpPanelTabContainer', () => {
   return function MockHelpPanelTabContainer() {
     return (
