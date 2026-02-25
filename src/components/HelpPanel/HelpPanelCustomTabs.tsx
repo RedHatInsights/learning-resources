@@ -330,7 +330,10 @@ const HelpPanelCustomTabs = () => {
     chrome?.auth
       ?.getUser()
       ?.then((user) => {
-        if (!user || cancelled) return;
+        if (!user || cancelled) {
+          if (!cancelled) setHelpPanelQuickStartsLoading(false);
+          return;
+        }
         return fetchQuickstarts(chrome.auth.getUser, {}).then((data) => {
           if (!cancelled) {
             setHelpPanelQuickStarts(data);
@@ -413,22 +416,29 @@ const HelpPanelCustomTabs = () => {
   };
 
   const handleClose = (_e: unknown, tabId: number | string) => {
-    if (typeof tabId === 'string') {
-      const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
-      const isClosingActiveTab = activeTab.id === tabId;
-
-      removeTab(tabId);
-      if (isClosingActiveTab) {
-        const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
-
-        if (remainingTabs.length > 0) {
-          const newActiveIndex =
-            closingTabIndex >= remainingTabs.length
-              ? remainingTabs.length - 1
-              : closingTabIndex;
-
-          setActiveTab(remainingTabs[newActiveIndex]);
-        }
+    if (typeof tabId !== 'string') return;
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab?.tabType === TabType.quickstart && tab.quickstartId) {
+      const status = allQuickStartStates[tab.quickstartId]?.status;
+      if (status === QuickStartStatus.IN_PROGRESS) {
+        setPendingCloseTabId(tabId);
+        setCloseModalOpen(true);
+        return;
+      }
+      closeQuickstartTab(tabId);
+      return;
+    }
+    const closingTabIndex = tabs.findIndex((t) => t.id === tabId);
+    const isClosingActiveTab = activeTab.id === tabId;
+    removeTab(tabId);
+    if (isClosingActiveTab) {
+      const remainingTabs = tabs.filter((t) => t.id !== tabId);
+      if (remainingTabs.length > 0) {
+        const newActiveIndex =
+          closingTabIndex >= remainingTabs.length
+            ? remainingTabs.length - 1
+            : closingTabIndex;
+        setActiveTab(remainingTabs[newActiveIndex]);
       }
     }
   };

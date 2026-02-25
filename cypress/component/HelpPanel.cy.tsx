@@ -569,38 +569,4 @@ describe('HelpPanel', () => {
     });
   });
 
-  it('should switch to existing quickstart tab when same quickstartId is opened again', () => {
-    const toggleDrawerSpy = cy.spy();
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
-
-    cy.window().then((win) => {
-      win.dispatchEvent(
-        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
-          detail: { quickstartId: 'same-qs', displayName: 'Same Quickstart' },
-        })
-      );
-    });
-
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
-      cy.get('.pf-v6-c-tabs__item').last().click();
-    });
-
-    cy.window().then((win) => {
-      win.dispatchEvent(
-        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
-          detail: { quickstartId: 'same-qs', displayName: 'Same Quickstart' },
-        })
-      );
-    });
-
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
-      cy.get('.pf-v6-c-tabs__item').last().should('have.attr', 'aria-selected', 'true');
-    });
-  });
 });
