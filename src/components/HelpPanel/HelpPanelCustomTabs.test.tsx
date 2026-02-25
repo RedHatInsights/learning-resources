@@ -1,10 +1,9 @@
 /**
- * Unit tests for HelpPanel styling work (semantic tokens, layout hooks).
- * Ensures the component keeps the class names and data attributes that
- * HelpPanelCustomTabs.scss and layout depend on.
+ * Unit tests for HelpPanel styling work (semantic tokens, layout hooks)
+ * and UI interactions (sub-tabs, add/close tabs).
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
 
@@ -83,5 +82,80 @@ describe('HelpPanelCustomTabs styling hooks', () => {
   it('shows Find help as default tab', () => {
     renderWithIntl(<HelpPanelCustomTabs />);
     expect(screen.getByText('Find help')).toBeInTheDocument();
+  });
+});
+
+describe('HelpPanelCustomTabs UI interactions', () => {
+  it('switches sub-tab when clicking Learn', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+    const subtabsContainer = document.querySelector(
+      '[data-ouia-component-id="help-panel-subtabs"]'
+    ) as HTMLElement;
+    expect(subtabsContainer).toBeInTheDocument();
+
+    const learnTab = within(subtabsContainer).getByRole('tab', {
+      name: /learn/i,
+    });
+    fireEvent.click(learnTab);
+
+    // Content container still shows (mock always renders "Panel content")
+    expect(screen.getByText('Panel content')).toBeInTheDocument();
+    // Learn tab is selected (PatternFly sets aria-selected on the tab)
+    expect(learnTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('switches sub-tab when clicking APIs', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+    const subtabsContainer = document.querySelector(
+      '[data-ouia-component-id="help-panel-subtabs"]'
+    ) as HTMLElement;
+    const apisTab = within(subtabsContainer).getByRole('tab', {
+      name: /apis/i,
+    });
+    fireEvent.click(apisTab);
+
+    expect(apisTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Panel content')).toBeInTheDocument();
+  });
+
+  it('adds a new tab when clicking Add tab button', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+    const addTabButton = screen.getByRole('button', { name: /add tab/i });
+    fireEvent.click(addTabButton);
+
+    // New tab placeholder appears; main tabs now include "New tab"
+    expect(screen.getByText('New tab')).toBeInTheDocument();
+    // Two main tabs: "Find help" and "New tab"
+    const mainTabs = document.querySelector(
+      '[data-ouia-component-id="help-panel-tabs"]'
+    ) as HTMLElement;
+    const tabs = within(mainTabs).getAllByRole('tab');
+    expect(tabs.length).toBe(2);
+    expect(tabs[0]).toHaveTextContent('Find help');
+    expect(tabs[1]).toHaveTextContent('New tab');
+  });
+
+  it('closes an added tab when clicking its close button', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+    fireEvent.click(screen.getByRole('button', { name: /add tab/i }));
+
+    expect(screen.getByText('New tab')).toBeInTheDocument();
+
+    // Two Close tab buttons exist (Find help has disabled, New tab has enabled); click the enabled one
+    const closeButtons = screen.getAllByRole('button', { name: /close tab/i });
+    const closeNewTab = closeButtons.find(
+      (btn) => !(btn as HTMLButtonElement).disabled
+    );
+    expect(closeNewTab).toBeDefined();
+    fireEvent.click(closeNewTab!);
+
+    // "New tab" is removed; only "Find help" remains
+    expect(screen.queryByText('New tab')).not.toBeInTheDocument();
+    const mainTabs = document.querySelector(
+      '[data-ouia-component-id="help-panel-tabs"]'
+    ) as HTMLElement;
+    const tabs = within(mainTabs).getAllByRole('tab');
+    expect(tabs.length).toBe(1);
+    expect(tabs[0]).toHaveTextContent('Find help');
   });
 });

@@ -1,5 +1,11 @@
 import { FiltersMetadata } from './FiltersCategoryInterface';
 
+export interface GetBundleDisplayNameOptions {
+  allowFallback?: boolean;
+  /** When provided, used as display name when no FiltersMetadata mapping exists (e.g. chrome bundle title). */
+  fallbackTitle?: string;
+}
+
 /**
  * Get the display name for a bundle
  * @param bundleValue - The bundle identifier
@@ -8,13 +14,17 @@ import { FiltersMetadata } from './FiltersCategoryInterface';
  */
 export const getBundleDisplayName = (
   bundleValue: string,
-  options: { allowFallback?: boolean } = { allowFallback: true }
+  options: GetBundleDisplayNameOptions = { allowFallback: true }
 ): string | null => {
   const fullName = FiltersMetadata[bundleValue];
 
   if (fullName) {
     // Extract abbreviated name by taking the part before parentheses
     return fullName.split(' (')[0];
+  }
+
+  if (options.fallbackTitle) {
+    return options.fallbackTitle;
   }
 
   // Return fallback if allowed, otherwise null

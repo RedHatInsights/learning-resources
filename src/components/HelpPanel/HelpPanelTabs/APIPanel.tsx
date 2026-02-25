@@ -29,18 +29,7 @@ import {
   fetchBundleInfo,
   fetchBundles,
 } from '../../../utils/fetchBundleInfoAPI';
-import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
-
-// Same bundle display logic as Learn tab: use FiltersMetadata so "settings" shows as "Settings" not "Console Settings"
-const getBundleDisplayName = (
-  bundleId: string,
-  chromeTitle: string | undefined
-): string => {
-  const mapped = FiltersMetadata[bundleId];
-  if (mapped) return mapped.split(' (')[0];
-  if (chromeTitle) return chromeTitle;
-  return bundleId.charAt(0).toUpperCase() + bundleId.slice(1);
-};
+import { getBundleDisplayName } from '../../../utils/bundleUtils';
 
 interface APIDoc {
   name: string;
@@ -60,9 +49,10 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
         const matchingBundle = bundles.find(
           (bundle) => bundle.id === bundleLabel
         );
-        return getBundleDisplayName(
-          bundleLabel,
-          matchingBundle ? matchingBundle.title : undefined
+        return (
+          getBundleDisplayName(bundleLabel, {
+            fallbackTitle: matchingBundle?.title,
+          }) ?? bundleLabel
         );
       });
 
@@ -178,10 +168,10 @@ const APIPanelContent: React.FC = () => {
   // @ts-ignore
   const availableBundles = chrome.getAvailableBundles?.() || [];
 
-  const displayBundleName = getBundleDisplayName(
-    bundleId,
-    availableBundles.find((b) => b.id === bundleId)?.title
-  );
+  const displayBundleName =
+    getBundleDisplayName(bundleId, {
+      fallbackTitle: availableBundles.find((b) => b.id === bundleId)?.title,
+    }) ?? bundleId;
 
   const isHomePage =
     !displayBundleName ||
