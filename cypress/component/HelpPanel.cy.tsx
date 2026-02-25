@@ -6,6 +6,7 @@ import HelpPanel from '../../src/components/HelpPanel';
 import ScalprumProvider from '@scalprum/react-core';
 import { initialize, removeScalprum } from '@scalprum/core';
 import messages from '../../src/Messages';
+import { OPEN_QUICKSTART_IN_HELP_PANEL_EVENT } from '../../src/utils/openQuickStartInHelpPanel';
 
 const defaultFlags: IConfig['bootstrap'] = [{
       name: 'platform.chrome.help-panel_knowledge-base',
@@ -542,4 +543,64 @@ describe('HelpPanel', () => {
     });
   });
 
+  it('should add a quickstart tab when OPEN_QUICKSTART_IN_HELP_PANEL_EVENT is dispatched', () => {
+    const toggleDrawerSpy = cy.spy();
+    cy.mount(
+      <Wrapper>
+        <HelpPanel toggleDrawer={toggleDrawerSpy} />
+      </Wrapper>
+    );
+
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 1);
+    });
+
+    cy.window().then((win) => {
+      win.dispatchEvent(
+        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
+          detail: { quickstartId: 'adding-machine-pool', displayName: 'Adding a machine pool' },
+        })
+      );
+    });
+
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
+      cy.get('.pf-v6-c-tabs__item').last().should('contain.text', 'Adding a machine pool');
+    });
+  });
+
+  it('should switch to existing quickstart tab when same quickstartId is opened again', () => {
+    const toggleDrawerSpy = cy.spy();
+    cy.mount(
+      <Wrapper>
+        <HelpPanel toggleDrawer={toggleDrawerSpy} />
+      </Wrapper>
+    );
+
+    cy.window().then((win) => {
+      win.dispatchEvent(
+        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
+          detail: { quickstartId: 'same-qs', displayName: 'Same Quickstart' },
+        })
+      );
+    });
+
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
+      cy.get('.pf-v6-c-tabs__item').last().click();
+    });
+
+    cy.window().then((win) => {
+      win.dispatchEvent(
+        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
+          detail: { quickstartId: 'same-qs', displayName: 'Same Quickstart' },
+        })
+      );
+    });
+
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
+      cy.get('.pf-v6-c-tabs__item').last().should('have.attr', 'aria-selected', 'true');
+    });
+  });
 });

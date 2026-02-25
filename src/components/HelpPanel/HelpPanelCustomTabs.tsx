@@ -106,6 +106,9 @@ const getSubTabTitle = (
   tabType: TabType,
   intl?: ReturnType<typeof useIntl>
 ): string => {
+  if (tabType === TabType.quickstart && intl) {
+    return intl.formatMessage(messages.quickstartTabTitle);
+  }
   if (tabType === TabType.quickstart) {
     return 'Quick start';
   }
@@ -435,6 +438,14 @@ const HelpPanelCustomTabs = () => {
       const { quickstartId, displayName } = (
         e as CustomEvent<OpenQuickStartInHelpPanelDetail>
       ).detail;
+      const existing = tabs.find(
+        (t) =>
+          t.tabType === TabType.quickstart && t.quickstartId === quickstartId
+      );
+      if (existing) {
+        setActiveTab(existing);
+        return;
+      }
       const newTab: TabDefinition = {
         id: crypto.randomUUID(),
         title: displayName,
@@ -449,7 +460,7 @@ const HelpPanelCustomTabs = () => {
     return () => {
       window.removeEventListener(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, handler);
     };
-  }, [addTab]);
+  }, [addTab, tabs]);
 
   useEffect(() => {
     // Ensure the Add tab button has a stable OUIA id

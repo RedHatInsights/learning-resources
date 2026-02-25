@@ -6,7 +6,7 @@ export const OPEN_QUICKSTART_IN_HELP_PANEL_EVENT =
 
 export interface OpenQuickStartInHelpPanelDetail {
   quickstartId: string;
-  displayName: React.ReactNode | string;
+  displayName: React.ReactNode;
 }
 
 export interface OpenQuickStartInHelpPanelOptions {
@@ -25,7 +25,7 @@ export interface OpenQuickStartInHelpPanelOptions {
  */
 export function dispatchOpenQuickStartInHelpPanel(
   quickstartId: string,
-  displayName: React.ReactNode | string
+  displayName: React.ReactNode
 ): void {
   window.dispatchEvent(
     new CustomEvent<OpenQuickStartInHelpPanelDetail>(
@@ -50,7 +50,7 @@ const HELP_PANEL_DRAWER = {
  */
 export function openQuickStartInHelpPanel(
   quickstartId: string,
-  displayName: React.ReactNode | string,
+  displayName: React.ReactNode,
   options: OpenQuickStartInHelpPanelOptions & {
     drawerActions?: {
       toggleDrawerContent: (data: typeof HELP_PANEL_DRAWER) => void;
@@ -76,7 +76,7 @@ export function openQuickStartInHelpPanel(
  */
 export function useOpenQuickStartInHelpPanel(): (
   quickstartId: string,
-  displayName: React.ReactNode | string,
+  displayName: React.ReactNode,
   options?: OpenQuickStartInHelpPanelOptions
 ) => void {
   const chrome = useChrome();
@@ -84,7 +84,7 @@ export function useOpenQuickStartInHelpPanel(): (
   return React.useCallback(
     (
       quickstartId: string,
-      displayName: React.ReactNode | string,
+      displayName: React.ReactNode,
       options: OpenQuickStartInHelpPanelOptions = {}
     ) => {
       const { openDrawer = true } = options;

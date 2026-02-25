@@ -53,10 +53,13 @@ const QuickStartsPanel: React.FC<QuickStartsPanelProps> = ({
           ? idOrUpdater(activeQuickStartID)
           : idOrUpdater;
       if (next === '') {
-        onClose(QuickStartStatus.COMPLETE);
+        const status =
+          allQuickStartStates[activeQuickStartID]?.status ??
+          QuickStartStatus.COMPLETE;
+        onClose(status);
       }
     },
-    [activeQuickStartID, onClose]
+    [activeQuickStartID, allQuickStartStates, onClose]
   );
 
   if (loading) {

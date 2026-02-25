@@ -1,3 +1,4 @@
+import type { ComponentType, FC } from 'react';
 import APIPanel from './APIPanel';
 import KBPanel from './KBPanel';
 import LearnPanel from './LearnPanel';
@@ -20,10 +21,10 @@ export type SubTabProps = {
 };
 
 /** Placeholder for quickstart tabs; content is rendered by HelpPanelCustomTabs, not the mapper. */
-const QuickstartPanelPlaceholder: React.FC<SubTabProps> = () => null;
+const QuickstartPanelPlaceholder: FC<SubTabProps> = () => null;
 
 const helpPanelTabsMapper: {
-  [type in TabType]: React.ComponentType<SubTabProps>;
+  [type in TabType]: ComponentType<SubTabProps>;
 } = {
   [TabType.search]: SearchPanel,
   [TabType.learn]: LearnPanel,
