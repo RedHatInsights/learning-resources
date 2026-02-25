@@ -15,6 +15,26 @@ jest.mock('@unleash/proxy-client-react', () => ({
   ],
 }));
 
+jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
+  __esModule: true,
+  default: () => ({
+    auth: { getUser: () => Promise.resolve(null) },
+  }),
+}));
+
+jest.mock('../../utils/fetchQuickstarts', () => ({
+  __esModule: true,
+  default: () => Promise.resolve([]),
+}));
+
+jest.mock('@patternfly/quickstarts', () => ({
+  QuickStartContainer: ({ children }: { children?: React.ReactNode }) =>
+    children ?? null,
+  QuickStartDrawerContent: () => null,
+  QuickStartCloseModal: () => null,
+  QuickStartStatus: { IN_PROGRESS: 1, NOT_STARTED: 0, COMPLETE: 2 },
+}));
+
 // Avoid loading real panel modules (Learn, API, Search, etc.) which depend on chrome and other globals.
 jest.mock('./HelpPanelTabs/helpPanelTabsMapper', () => ({
   __esModule: true,
@@ -25,6 +45,7 @@ jest.mock('./HelpPanelTabs/helpPanelTabsMapper', () => ({
     api: 'api',
     support: 'support',
     va: 'va',
+    quickstart: 'quickstart',
   },
   default: {},
 }));

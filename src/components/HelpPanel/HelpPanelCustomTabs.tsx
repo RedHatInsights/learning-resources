@@ -18,7 +18,12 @@ import classNames from 'classnames';
 
 import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
+import QuickStartsPanel from './HelpPanelTabs/QuickStartsPanel';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
+import {
+  OPEN_QUICKSTART_IN_HELP_PANEL_EVENT,
+  type OpenQuickStartInHelpPanelDetail,
+} from '../../utils/openQuickStartInHelpPanel';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { useIntl } from 'react-intl';
 import {
@@ -26,6 +31,14 @@ import {
   OutlinedCommentsIcon,
   SearchIcon,
 } from '@patternfly/react-icons';
+import {
+  QuickStartCloseModal,
+  QuickStartStatus,
+} from '@patternfly/quickstarts';
+import type { AllQuickStartStates } from '@patternfly/quickstarts';
+import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
+import fetchQuickstarts from '../../utils/fetchQuickstarts';
+import type { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import messages from '../../Messages';
 
 type TabDefinition = {
@@ -35,6 +48,8 @@ type TabDefinition = {
   closeable?: boolean;
   tabType: TabType;
   isNewTab?: boolean; // Track if this was originally a "New tab"
+  /** Set when tabType is TabType.quickstart */
+  quickstartId?: string;
 };
 
 type SubTab = Omit<TabDefinition, 'id'> & {
@@ -91,6 +106,9 @@ const getSubTabTitle = (
   tabType: TabType,
   intl?: ReturnType<typeof useIntl>
 ): string => {
+  if (tabType === TabType.quickstart) {
+    return 'Quick start';
+  }
   const subTab = subTabs.find((tab) => tab.tabType === tabType);
   if (tabType === TabType.search) {
     return 'Search';
@@ -242,6 +260,7 @@ const SubTabs = ({
 
 const HelpPanelCustomTabs = () => {
   const intl = useIntl();
+  const chrome = useChrome();
   const apiStoreMock = useMemo(() => createTabsStore(), []);
   const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
 
@@ -249,6 +268,86 @@ const HelpPanelCustomTabs = () => {
     undefined
   );
   const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
+
+  const [helpPanelQuickStarts, setHelpPanelQuickStarts] = useState<
+    ExtendedQuickstart[]
+  >([]);
+  const [helpPanelQuickStartsLoading, setHelpPanelQuickStartsLoading] =
+    useState(true);
+  const [allQuickStartStates, setAllQuickStartStates] =
+    useState<AllQuickStartStates>({});
+  const [closeModalOpen, setCloseModalOpen] = useState(false);
+  const [pendingCloseTabId, setPendingCloseTabId] = useState<string | null>(
+    null
+  );
+  const closeQuickstartTab = useCallback(
+    (tabId: string) => {
+      const closingIndex = tabs.findIndex((t) => t.id === tabId);
+      removeTab(tabId);
+      const remaining = tabs.filter((t) => t.id !== tabId);
+      if (remaining.length > 0) {
+        const nextIndex = Math.max(
+          0,
+          Math.min(closingIndex, remaining.length - 1)
+        );
+        setActiveTab(remaining[nextIndex]);
+      }
+    },
+    [tabs, removeTab]
+  );
+
+  const handleQuickstartDrawerClose = useCallback(
+    (tabId: string) => (activeQuickStartStatus: string | number) => {
+      if (activeQuickStartStatus === QuickStartStatus.IN_PROGRESS) {
+        setPendingCloseTabId(tabId);
+        setCloseModalOpen(true);
+      } else {
+        closeQuickstartTab(tabId);
+      }
+    },
+    [closeQuickstartTab]
+  );
+
+  const handleQuickstartCloseNotInProgress = useCallback(
+    (tabId: string) => () => {
+      const closingIndex = tabs.findIndex((t) => t.id === tabId);
+      removeTab(tabId);
+      const remaining = tabs.filter((t) => t.id !== tabId);
+      if (remaining.length > 0) {
+        const idx = Math.max(0, closingIndex - 1);
+        setActiveTab(remaining[Math.min(idx, remaining.length - 1)]);
+      }
+    },
+    [tabs, removeTab]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setHelpPanelQuickStartsLoading(true);
+    chrome?.auth
+      ?.getUser()
+      ?.then((user) => {
+        if (!user || cancelled) return;
+        return fetchQuickstarts(chrome.auth.getUser, {}).then((data) => {
+          if (!cancelled) {
+            setHelpPanelQuickStarts(data);
+            setHelpPanelQuickStartsLoading(false);
+          }
+        });
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setHelpPanelQuickStartsLoading(false);
+          console.error('Help Panel: failed to load quickstarts', err);
+        }
+      });
+    if (!chrome?.auth?.getUser) {
+      setHelpPanelQuickStartsLoading(false);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [chrome?.auth]);
 
   const setNewActionTitleDebounced: (title: string) => void = useCallback(
     debounce((title: string) => {
@@ -332,6 +431,27 @@ const HelpPanelCustomTabs = () => {
   };
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const { quickstartId, displayName } = (
+        e as CustomEvent<OpenQuickStartInHelpPanelDetail>
+      ).detail;
+      const newTab: TabDefinition = {
+        id: crypto.randomUUID(),
+        title: displayName,
+        closeable: true,
+        tabType: TabType.quickstart,
+        quickstartId,
+      };
+      addTab(newTab);
+      setActiveTab(newTab);
+    };
+    window.addEventListener(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, handler);
+    return () => {
+      window.removeEventListener(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, handler);
+    };
+  }, [addTab]);
+
+  useEffect(() => {
     // Ensure the Add tab button has a stable OUIA id
     const addButton = document.querySelector(
       '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
@@ -345,64 +465,105 @@ const HelpPanelCustomTabs = () => {
   }, [tabs.length]);
 
   return (
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
-          }
-        }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
-          <div style={{ display: activeTab.id === tab.id ? 'block' : 'none' }}>
-            <SubTabs
-              activeSubTabKey={tab.tabType ?? TabType.learn}
-              setActiveSubTabKey={(tabType) => {
-                let newTitle = tab.title;
-                if (!tab.closeable) {
-                  newTitle = getSubTabTitle(tabType, intl);
-                } else if (tab.isNewTab) {
-                  newTitle = getSubTabTitle(tabType, intl);
-                }
-                const nextTab = {
-                  ...tab,
-                  tabType: tabType,
-                  title: newTitle,
-                };
-                updateTab(nextTab);
+    <>
+      <div className="lr-c-help-panel-tabs-wrapper">
+        <Tabs
+          className="lr-c-help-panel-custom-tabs"
+          isOverflowHorizontal={{ showTabCount: true }}
+          isBox
+          onAdd={handleAddTab}
+          onClose={handleClose}
+          activeKey={activeTab.id}
+          onSelect={(_e, eventKey) => {
+            if (typeof eventKey === 'string') {
+              const nextTab = tabs.find((tab) => tab.id === eventKey);
+              if (nextTab) {
                 setActiveTab(nextTab);
-              }}
+              }
+            }
+          }}
+          data-ouia-component-id="help-panel-tabs"
+          addButtonAriaLabel="Add tab"
+        >
+          {tabs.map((tab) => (
+            <Tab
+              // Need to fix the icon as we can't remove it on tab by tab basis
+              isCloseDisabled={!tab.closeable}
+              className={classNames('lr-c-help-panel-custom-tab', {
+                'persistent-tab': !tab.closeable,
+              })}
+              eventKey={tab.id}
+              key={tab.id}
+              title={<TabTitleText>{tab.title}</TabTitleText>}
+              data-ouia-component-id={`help-panel-tab-${tab.id}`}
             >
-              <HelpPanelTabContainer
-                activeTabType={tab.tabType}
-                setNewActionTitle={setNewActionTitleDebounced}
-              />
-            </SubTabs>
-          </div>
-        </Tab>
-      ))}
-    </Tabs>
+              <div
+                className={
+                  tab.tabType === TabType.quickstart && tab.quickstartId
+                    ? 'lr-c-help-panel-tab-content lr-c-help-panel-tab-content--quickstart'
+                    : 'lr-c-help-panel-tab-content'
+                }
+                style={{ display: activeTab.id === tab.id ? 'block' : 'none' }}
+              >
+                {tab.tabType === TabType.quickstart && tab.quickstartId ? (
+                  <QuickStartsPanel
+                    activeQuickStartID={tab.quickstartId}
+                    quickStarts={helpPanelQuickStarts}
+                    loading={helpPanelQuickStartsLoading}
+                    allQuickStartStates={allQuickStartStates}
+                    setAllQuickStartStates={setAllQuickStartStates}
+                    onClose={handleQuickstartDrawerClose(tab.id)}
+                    onCloseNotInProgress={handleQuickstartCloseNotInProgress(
+                      tab.id
+                    )}
+                  />
+                ) : (
+                  <>
+                    <SubTabs
+                      activeSubTabKey={tab.tabType ?? TabType.learn}
+                      setActiveSubTabKey={(tabType) => {
+                        let newTitle = tab.title;
+                        if (!tab.closeable) {
+                          newTitle = getSubTabTitle(tabType, intl);
+                        } else if (tab.isNewTab) {
+                          newTitle = getSubTabTitle(tabType, intl);
+                        }
+                        const nextTab = {
+                          ...tab,
+                          tabType: tabType,
+                          title: newTitle,
+                        };
+                        updateTab(nextTab);
+                        setActiveTab(nextTab);
+                      }}
+                    >
+                      <HelpPanelTabContainer
+                        activeTabType={tab.tabType}
+                        setNewActionTitle={setNewActionTitleDebounced}
+                      />
+                    </SubTabs>
+                  </>
+                )}
+              </div>
+            </Tab>
+          ))}
+        </Tabs>
+      </div>
+      <QuickStartCloseModal
+        isOpen={closeModalOpen}
+        onConfirm={() => {
+          if (pendingCloseTabId) {
+            closeQuickstartTab(pendingCloseTabId);
+          }
+          setPendingCloseTabId(null);
+          setCloseModalOpen(false);
+        }}
+        onCancel={() => {
+          setPendingCloseTabId(null);
+          setCloseModalOpen(false);
+        }}
+      />
+    </>
   );
 };
 

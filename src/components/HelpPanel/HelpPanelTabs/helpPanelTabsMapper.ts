@@ -12,11 +12,15 @@ export enum TabType {
   'api' = 'api',
   'support' = 'support',
   'va' = 'va',
+  'quickstart' = 'quickstart',
 }
 
 export type SubTabProps = {
   setNewActionTitle: (title: string) => void;
 };
+
+/** Placeholder for quickstart tabs; content is rendered by HelpPanelCustomTabs, not the mapper. */
+const QuickstartPanelPlaceholder: React.FC<SubTabProps> = () => null;
 
 const helpPanelTabsMapper: {
   [type in TabType]: React.ComponentType<SubTabProps>;
@@ -27,6 +31,7 @@ const helpPanelTabsMapper: {
   [TabType.api]: APIPanel,
   [TabType.support]: SupportPanel,
   [TabType.va]: VAPanel,
+  [TabType.quickstart]: QuickstartPanelPlaceholder,
 };
 
 export default helpPanelTabsMapper;
