@@ -327,9 +327,15 @@ const HelpPanelCustomTabs = () => {
   useEffect(() => {
     let cancelled = false;
     setHelpPanelQuickStartsLoading(true);
-    chrome?.auth
-      ?.getUser()
-      ?.then((user) => {
+    if (!chrome?.auth?.getUser) {
+      setHelpPanelQuickStartsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+    chrome.auth
+      .getUser()
+      .then((user) => {
         if (!user || cancelled) {
           if (!cancelled) setHelpPanelQuickStartsLoading(false);
           return;
@@ -347,9 +353,6 @@ const HelpPanelCustomTabs = () => {
           console.error('Help Panel: failed to load quickstarts', err);
         }
       });
-    if (!chrome?.auth?.getUser) {
-      setHelpPanelQuickStartsLoading(false);
-    }
     return () => {
       cancelled = true;
     };
