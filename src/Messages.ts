@@ -14,6 +14,10 @@ const messages = defineMessages({
     id: 'helpPanel.header.apiDocumentation',
     defaultMessage: 'API documentation',
   },
+  quickstartTabTitle: {
+    id: 'helpPanel.tab.quickstart',
+    defaultMessage: 'Quick start',
+  },
 
   // Search Panel
   searchPanelDescription: {

@@ -34,7 +34,7 @@ async function extractResourceCount(page: Page): Promise<number> {
     ? countText?.substring(openParen + 1, closeParen).trim()
     : '0';
 
-  const actualCount = parseInt(countString, 10);
+  const actualCount = parseInt(countString ?? '0', 10);
 
   if (isNaN(actualCount)) {
     throw new Error(`Failed to extract valid count from text: "${countText}". Extracted string was: "${countString}"`);
@@ -256,8 +256,3 @@ test.describe('all learning resources', async () => {
     await expect(page.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
   });
 });
-
-
-
-
-

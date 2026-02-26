@@ -6,6 +6,7 @@ import HelpPanel from '../../src/components/HelpPanel';
 import ScalprumProvider from '@scalprum/react-core';
 import { initialize, removeScalprum } from '@scalprum/core';
 import messages from '../../src/Messages';
+import { OPEN_QUICKSTART_IN_HELP_PANEL_EVENT } from '../../src/utils/openQuickStartInHelpPanel';
 
 const defaultFlags: IConfig['bootstrap'] = [{
       name: 'platform.chrome.help-panel_knowledge-base',
@@ -573,6 +574,24 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 1);
+    });
+
+    cy.window().then((win) => {
+      win.dispatchEvent(
+        new CustomEvent(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, {
+          detail: { quickstartId: 'adding-machine-pool', displayName: 'Adding a machine pool' },
+        })
+      );
+    });
+
+    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+      cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
+      cy.get('.pf-v6-c-tabs__item').last().should('contain.text', 'Adding a machine pool');
+    });
+    // Switch back to "Find help" tab so its subtabs (including Feedback) are visible
+    cy.get('.lr-c-help-panel-custom-tabs .pf-v6-c-tabs__item').first().click();
     // Check that feedback subtab exists and is visible
     cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').should('be.visible');
 
