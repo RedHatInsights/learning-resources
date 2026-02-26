@@ -291,17 +291,18 @@ const HelpPanelCustomTabs = () => {
   const closeQuickstartTab = useCallback(
     (tabId: string) => {
       const closingIndex = tabs.findIndex((t) => t.id === tabId);
+      if (closingIndex === -1) return;
+      const isClosingActiveTab = activeTab.id === tabId;
       removeTab(tabId);
       const remaining = tabs.filter((t) => t.id !== tabId);
-      if (remaining.length > 0) {
-        const nextIndex = Math.max(
-          0,
-          Math.min(closingIndex, remaining.length - 1)
-        );
-        setActiveTab(remaining[nextIndex]);
-      }
+      if (!isClosingActiveTab || remaining.length === 0) return;
+      const nextIndex = Math.max(
+        0,
+        Math.min(closingIndex, remaining.length - 1)
+      );
+      setActiveTab(remaining[nextIndex]);
     },
-    [tabs, removeTab]
+    [tabs, removeTab, activeTab.id]
   );
 
   const handleQuickstartDrawerClose = useCallback(

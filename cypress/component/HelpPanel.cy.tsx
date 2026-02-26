@@ -543,8 +543,6 @@ describe('HelpPanel', () => {
     });
   });
 
-  it('should add a quickstart tab when OPEN_QUICKSTART_IN_HELP_PANEL_EVENT is dispatched', () => {
-    const toggleDrawerSpy = cy.spy();
   it('should display feedback tab and basic functionality', () => {
     const toggleDrawerSpy = cy.spy();
 
@@ -592,6 +590,8 @@ describe('HelpPanel', () => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
       cy.get('.pf-v6-c-tabs__item').last().should('contain.text', 'Adding a machine pool');
     });
+    // Switch back to "Find help" tab so its subtabs (including Feedback) are visible
+    cy.get('.lr-c-help-panel-custom-tabs .pf-v6-c-tabs__item').first().click();
     // Check that feedback subtab exists and is visible
     cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').should('be.visible');
 
