@@ -22,7 +22,7 @@ test.describe('all learning resources', async () => {
       await expect(page.getByText('Invalid login')).not.toBeVisible();
       // long wait for the page to load; stage can be delicate
       await page.waitForTimeout(5000);
-      await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 15000 });
 
       // conditionally accept cookie prompt
       const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
@@ -78,12 +78,13 @@ test.describe('all learning resources', async () => {
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
-    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
     await page.waitForFunction(() => {
       const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
       const match = countText.match(/\((\d+)\)/);
-      return match && parseInt(match[1]) < 80;
-    }, { timeout: 10000 });
+      const count = match ? parseInt(match[1]) : 0;
+      return count >= 5 && count < 80;
+    }, { timeout: 15000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -104,12 +105,13 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
 
-    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    // Wait for filter to apply - count should be between 10 and 80 (filtered but not zero)
     await page.waitForFunction(() => {
       const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
       const match = countText.match(/\((\d+)\)/);
-      return match && parseInt(match[1]) < 80;
-    }, { timeout: 10000 });
+      const count = match ? parseInt(match[1]) : 0;
+      return count >= 10 && count < 80;
+    }, { timeout: 15000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -131,12 +133,13 @@ test.describe('all learning resources', async () => {
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
 
-    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
     await page.waitForFunction(() => {
       const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
       const match = countText.match(/\((\d+)\)/);
-      return match && parseInt(match[1]) < 80;
-    }, { timeout: 10000 });
+      const count = match ? parseInt(match[1]) : 0;
+      return count >= 5 && count < 80;
+    }, { timeout: 15000 });
 
     // Wait for the filter to be applied and extract the actual count
     const actualCount = await extractResourceCount(page);
