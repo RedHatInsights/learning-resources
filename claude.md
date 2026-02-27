@@ -149,6 +149,11 @@ After the initial fix, tests were failing because `extractResourceCount()` was b
 
 **Fix applied**: Added `waitForFunction()` to explicitly wait for the count to drop below 80 before reading it, ensuring the filter has completed. Also fixed the card selector from incorrect `hasNot` syntax to proper `:visible` CSS pseudo-selector.
 
+#### Issue 3: Wait condition accepting zero as valid filtered result
+The `waitForFunction()` condition `count < 80` accepted 0 as valid, causing tests to proceed with zero results when filters were still applying.
+
+**Fix applied**: Changed wait condition to require `count >= minimum && count < 80`, ensuring we only proceed when the filter has returned a valid non-zero result. Also increased timeout from 10s to 15s to give filters more time to apply in slow environments.
+
 ### Related Files
 - `playwright/all-learning-resources.spec.ts` - Filter tests for learning resources
 - `playwright/test-utils.ts` - Contains `extractResourceCount()` helper function
