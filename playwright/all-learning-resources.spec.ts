@@ -77,7 +77,13 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
-    await page.waitForLoadState("load");
+
+    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    await page.waitForFunction(() => {
+      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
+      const match = countText.match(/\((\d+)\)/);
+      return match && parseInt(match[1]) < 80;
+    }, { timeout: 10000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -85,8 +91,8 @@ test.describe('all learning resources', async () => {
     // Verify we have some Ansible resources (at least 5, allowing for data changes)
     expect(actualCount, `Expected at least 5 Ansible resources, but found ${actualCount}`).toBeGreaterThanOrEqual(5);
 
-    // all cards should have Ansible
-    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
+    // all cards should have Ansible - use :visible to get only displayed cards
+    const cards = await page.locator('.pf-v6-c-card:visible').all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Ansible');
@@ -97,7 +103,13 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
-    await page.waitForLoadState("load");
+
+    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    await page.waitForFunction(() => {
+      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
+      const match = countText.match(/\((\d+)\)/);
+      return match && parseInt(match[1]) < 80;
+    }, { timeout: 10000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -105,8 +117,8 @@ test.describe('all learning resources', async () => {
     // Verify we have some Settings resources (at least 10, allowing for data changes)
     expect(actualCount, `Expected at least 10 Settings resources, but found ${actualCount}`).toBeGreaterThanOrEqual(10);
 
-    // all cards should have Settings
-    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
+    // all cards should have Settings - use :visible to get only displayed cards
+    const cards = await page.locator('.pf-v6-c-card:visible').all();
     for (const card of cards) {
       const text = await card.innerText();
       expect(text).toContain('Settings');
@@ -118,6 +130,13 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
+
+    // Wait for filter to apply by ensuring count is less than total (98±10%)
+    await page.waitForFunction(() => {
+      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
+      const match = countText.match(/\((\d+)\)/);
+      return match && parseInt(match[1]) < 80;
+    }, { timeout: 10000 });
 
     // Wait for the filter to be applied and extract the actual count
     const actualCount = await extractResourceCount(page);
