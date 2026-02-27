@@ -245,3 +245,53 @@ The official Playwright images are published at `mcr.microsoft.com/playwright:v{
 
 ### Branch
 `btweed/rhcloud-42248`
+
+## Unit Test Image Fix (February 2026)
+
+### Overview
+Switched from `registry.access.redhat.com/ubi8/nodejs-22` to `registry.redhat.io/ubi9/nodejs-22-minimal:latest` to resolve image pull issues during pipeline execution.
+
+### Changes Made
+
+#### `.tekton/learning-resources-pull-request.yaml`
+- **Updated pipeline reference**: Changed from `RedHatInsights/konflux-pipelines` main branch to `catastrophe-brandon/konflux-pipelines` branch `btweed/nodejs-minimal`
+- **Added patch file**: Created `konflux-pipelines-nodejs-minimal.patch` with instructions for the required fork changes
+
+#### `catastrophe-brandon/konflux-pipelines` (branch: `btweed/nodejs-minimal`)
+Changes needed in `pipelines/platform-ui/docker-build-run-all-tests.yaml`:
+- **setup-workspace task**: Replace `registry.access.redhat.com/ubi8/nodejs-22` with `registry.redhat.io/ubi9/nodejs-22-minimal:latest`
+- **run-unit-tests task**: Replace `registry.access.redhat.com/ubi8/nodejs-22` with `registry.redhat.io/ubi9/nodejs-22-minimal:latest`
+
+### Context for Maintainers
+
+The pipeline was experiencing issues pulling the `registry.access.redhat.com/ubi8/nodejs-22` image. The new image (`registry.redhat.io/ubi9/nodejs-22-minimal:latest`) provides:
+- **UBI9 base**: Newer Universal Base Image 9 (vs UBI8)
+- **Minimal variant**: Smaller image with fewer dependencies
+- **Better availability**: Resolved the image pull issues
+
+#### Why a Fork Was Needed
+
+The upstream `RedHatInsights/konflux-pipelines` has the Node.js image hardcoded with no parameter to override it. Until a parameter is added upstream (similar to `e2e-playwright-image`), we need to use a fork with the modified image.
+
+#### When to Merge Back to Upstream
+
+Once the fork changes are merged back to `RedHatInsights/konflux-pipelines` main branch, update the pipeline reference:
+```yaml
+pipelineRef:
+  resolver: git
+  params:
+  - name: url
+    value: https://github.com/RedHatInsights/konflux-pipelines
+  - name: revision
+    value: main
+```
+
+Alternatively, if a parameter is added to the upstream pipeline, remove the fork and use the parameter instead.
+
+### Related Files
+- `.tekton/learning-resources-pull-request.yaml` - Pipeline configuration
+- `konflux-pipelines-nodejs-minimal.patch` - Instructions for fork changes
+- `catastrophe-brandon/konflux-pipelines` branch `btweed/nodejs-minimal` - Pipeline fork with image change
+
+### Branch
+`btweed/rhcloud-42248`
