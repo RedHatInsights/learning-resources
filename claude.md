@@ -212,7 +212,7 @@ Optimized the Tekton pipeline to use a pre-built Playwright Docker image instead
 ### Changes Made
 
 #### `.tekton/learning-resources-pull-request.yaml`
-- **Added `e2e-playwright-image` parameter**: Set to `mcr.microsoft.com/playwright:v1.56.1-jammy` to match the Playwright version in package.json
+- **Added `e2e-playwright-image` parameter**: Set to `mcr.microsoft.com/playwright:v1.58.0-jammy` to match the Playwright version in package.json (updated from v1.56.1)
 - **Removed browser installation step**: Deleted `playwright install --with-deps` from the e2e-tests-script
 
 ### Context for Maintainers
@@ -222,16 +222,16 @@ The pipeline was previously running `playwright install --with-deps` during ever
 - Installed system dependencies for each browser
 - Added ~1-2 minutes to every test run
 
-By using the official Playwright Docker image that matches the package.json version (v1.56.1), the browsers and their dependencies are already pre-installed in the container image.
+By using the official Playwright Docker image that matches the package.json version (currently v1.58.0), the browsers and their dependencies are already pre-installed in the container image.
 
 #### Keeping the Image Version in Sync
 
 When upgrading Playwright in `package.json`, update the `e2e-playwright-image` parameter to match:
-- package.json: `"@playwright/test": "^1.56.1"`
-- Pipeline: `mcr.microsoft.com/playwright:v1.56.1-jammy`
+- package.json: `"@playwright/test": "^1.58.0"`
+- Pipeline: `mcr.microsoft.com/playwright:v1.58.0-jammy`
 
 The official Playwright images are published at `mcr.microsoft.com/playwright:v{VERSION}-{OS}` where:
-- `{VERSION}` matches the Playwright version (e.g., v1.56.1)
+- `{VERSION}` matches the Playwright version (e.g., v1.58.0)
 - `{OS}` is typically `jammy` (Ubuntu 22.04) or `focal` (Ubuntu 20.04)
 
 ### Performance Impact
