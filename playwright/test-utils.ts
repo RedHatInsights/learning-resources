@@ -1,0 +1,59 @@
+import { Page, expect } from '@playwright/test';
+
+// This can be changed to hit stage directly, but by default devs should be using stage.foo
+export const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+export const LEARNING_RESOURCES_URL = `https://${APP_TEST_HOST_PORT}/learning-resources`;
+
+// Prevents inconsistent cookie prompting that is problematic for UI testing
+export async function disableCookiePrompt(page: Page) {
+  await page.route('**/*', async (route, request) => {
+    if (request.url().includes('consent.trustarc.com') && request.resourceType() !== 'document') {
+      await route.abort();
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+export async function login(page: Page, user: string, password: string): Promise<void> {
+  // Fail in a friendly way if the proxy config is not set up correctly
+  await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
+
+  await disableCookiePrompt(page)
+
+  // Wait for and fill username field
+  await page.getByLabel('Red Hat login').first().fill(user);
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  // Wait for and fill password field
+  await page.getByLabel('Password').first().fill(password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  // confirm login was valid
+  await expect(page.getByText('Invalid login')).not.toBeVisible();
+}
+
+// Extracts the count from "All learning resources (N)" text
+export async function extractResourceCount(page: Page): Promise<number> {
+  // Wait for the element to contain a number in parentheses (not just the loading state)
+  // Use .first() to handle cases where multiple elements match (e.g., tab and overflow menu)
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
+  await expect(countElement).toContainText(/All learning resources \(\d+\)/, { timeout: 10000 });
+
+  const countText = await countElement.textContent();
+
+  // Extract the number from text like "All learning resources (99)"
+  const openParen = countText?.indexOf('(') ?? -1;
+  const closeParen = countText?.indexOf(')') ?? -1;
+  const countString = openParen >= 0 && closeParen > openParen
+    ? countText?.substring(openParen + 1, closeParen).trim()
+    : '0';
+
+  const actualCount = parseInt(countString, 10);
+
+  if (isNaN(actualCount)) {
+    throw new Error(`Failed to extract valid count from text: "${countText}". Extracted string was: "${countString}"`);
+  }
+
+  return actualCount;
+}
