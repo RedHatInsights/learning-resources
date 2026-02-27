@@ -1,35 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { APP_TEST_HOST_PORT, login } from './test-utils';
+import { ensureLoggedIn } from './test-utils';
 
 test.use({ ignoreHTTPSErrors: true });
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-
-    await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
-
-    const loggedIn = await page.getByText('Hi,').isVisible();
-
-    if (!loggedIn) {
-      const user = process.env.E2E_USER!;
-      const password = process.env.E2E_PASSWORD!;
-      // make sure the SSO prompt is loaded for login
-      await page.waitForLoadState("load");
-      await expect(page.locator("#username-verification")).toBeVisible();
-      await login(page, user, password);
-      await page.waitForLoadState("load");
-      await expect(page.getByText('Invalid login')).not.toBeVisible();
-      // long wait for the page to load; stage can be delicate
-      await page.waitForTimeout(5000);
-      await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 15000 });
-
-      // conditionally accept cookie prompt
-      const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
-      if (await acceptAllButton.isVisible()) {
-        await acceptAllButton.click();
-      }
-    }
+    await ensureLoggedIn(page);
   });
 
   test('opens and displays panel title', async ({page}) => {
