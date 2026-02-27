@@ -53,6 +53,8 @@ spec:
 
       echo "Starting application with Caddy using ConfigMap Caddyfile..."
       exec caddy run --config /etc/caddy/Caddyfile
+  - name: e2e-playwright-image
+    value: mcr.microsoft.com/playwright:v1.56.1-jammy
   - name: e2e-tests-script
     value: |
       #!/bin/bash
@@ -63,9 +65,6 @@ spec:
         sleep 5
       done'
       echo "Dev server ready!"
-
-      echo "Installing Playwright browsers..."
-      ./node_modules/.bin/playwright install --with-deps
 
       echo "Running Playwright tests ..."
       ./node_modules/.bin/playwright test
