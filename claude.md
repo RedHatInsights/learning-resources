@@ -166,3 +166,40 @@ The "filters by content type" test expects Quick start content to exist, but the
 
 ### Branch
 `btweed/rhcloud-42248`
+
+## Test Utilities Refactoring (February 2026)
+
+### Overview
+Extracted duplicated login logic into a shared helper function to improve maintainability.
+
+### Changes Made
+
+#### `playwright/test-utils.ts`
+- **Added `ensureLoggedIn()` function**: Shared helper that handles the complete login flow used in test beforeEach blocks
+
+#### `playwright/help-panel.spec.ts`
+- **Replaced duplicated login logic**: Now uses `ensureLoggedIn()` helper
+- **Removed 23 lines** of duplicated code
+
+#### `playwright/all-learning-resources.spec.ts`
+- **Replaced duplicated login logic**: Now uses `ensureLoggedIn()` helper
+- **Removed 23 lines** of duplicated code
+
+### Context for Maintainers
+
+Both test files were duplicating the entire beforeEach login flow:
+- Navigate to dashboard
+- Check if already logged in
+- If not logged in: perform SSO login, wait for dashboard, accept cookie prompt
+
+This made the login flow harder to maintain - any changes needed to be duplicated across both files.
+
+The new `ensureLoggedIn()` helper provides a single source of truth for this logic. Future test files can import and use this helper instead of duplicating the login flow.
+
+### Related Files
+- `playwright/test-utils.ts` - Shared test utilities
+- `playwright/help-panel.spec.ts` - Help panel tests
+- `playwright/all-learning-resources.spec.ts` - Learning resources tests
+
+### Branch
+`btweed/rhcloud-42248`
