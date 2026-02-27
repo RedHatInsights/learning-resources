@@ -203,3 +203,45 @@ The new `ensureLoggedIn()` helper provides a single source of truth for this log
 
 ### Branch
 `btweed/rhcloud-42248`
+
+## Playwright Pipeline Optimization (February 2026)
+
+### Overview
+Optimized the Tekton pipeline to use a pre-built Playwright Docker image instead of installing browsers during each test run.
+
+### Changes Made
+
+#### `.tekton/learning-resources-pull-request.yaml`
+- **Added `e2e-playwright-image` parameter**: Set to `mcr.microsoft.com/playwright:v1.56.1-jammy` to match the Playwright version in package.json
+- **Removed browser installation step**: Deleted `playwright install --with-deps` from the e2e-tests-script
+
+### Context for Maintainers
+
+The pipeline was previously running `playwright install --with-deps` during every test execution, which:
+- Downloaded and installed Chromium, Firefox, and WebKit browsers
+- Installed system dependencies for each browser
+- Added ~1-2 minutes to every test run
+
+By using the official Playwright Docker image that matches the package.json version (v1.56.1), the browsers and their dependencies are already pre-installed in the container image.
+
+#### Keeping the Image Version in Sync
+
+When upgrading Playwright in `package.json`, update the `e2e-playwright-image` parameter to match:
+- package.json: `"@playwright/test": "^1.56.1"`
+- Pipeline: `mcr.microsoft.com/playwright:v1.56.1-jammy`
+
+The official Playwright images are published at `mcr.microsoft.com/playwright:v{VERSION}-{OS}` where:
+- `{VERSION}` matches the Playwright version (e.g., v1.56.1)
+- `{OS}` is typically `jammy` (Ubuntu 22.04) or `focal` (Ubuntu 20.04)
+
+### Performance Impact
+
+- **Before**: ~1-2 minutes spent installing browsers on every test run
+- **After**: Browsers pre-installed, immediate test execution
+
+### Related Files
+- `.tekton/learning-resources-pull-request.yaml` - Pipeline configuration
+- `package.json` - Playwright version specification
+
+### Branch
+`btweed/rhcloud-42248`
