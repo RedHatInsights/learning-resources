@@ -139,10 +139,15 @@ This approach:
 
 ### Issues Discovered and Fixed
 
-#### Issue: Hardcoded expected counts cause test failures
+#### Issue 1: Hardcoded expected counts cause test failures
 The "filters by content type" test was failing because it expected exactly 18 quick starts, but the actual data had changed.
 
 **Fix applied**: Use `extractResourceCount()` to get the actual count and verify it meets a minimum threshold instead of an exact value. This matches the pattern already used in the "has the appropriate number of items" test.
+
+#### Issue 2: Race condition reading count before filter applies
+After the initial fix, tests were failing because `extractResourceCount()` was being called before the filter finished applying, returning the total count (~98) instead of the filtered count.
+
+**Fix applied**: Added `waitForFunction()` to explicitly wait for the count to drop below 80 before reading it, ensuring the filter has completed. Also fixed the card selector from incorrect `hasNot` syntax to proper `:visible` CSS pseudo-selector.
 
 ### Related Files
 - `playwright/all-learning-resources.spec.ts` - Filter tests for learning resources
