@@ -21,6 +21,8 @@ test.describe('all learning resources', async () => {
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
+    await page.waitForLoadState('load');
+
     const baseline = 98;
     const tolerancePercent = 10; // 10% tolerance
     const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
