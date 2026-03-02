@@ -223,13 +223,13 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 1)
     });
 
     cy.get('[aria-label="Add tab"]').click();
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 2)
     });
   })
@@ -266,15 +266,15 @@ describe('HelpPanel', () => {
 
     cy.get('[aria-label="Add tab"]').click();
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 2)
     });
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('[aria-label="Close tab"]').last().click();
     });
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 1)
     });
 
@@ -292,7 +292,7 @@ describe('HelpPanel', () => {
     cy.contains('Find help').should('be.visible');
     cy.contains(getMessageText('knowledgeBaseTitle')).click();
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').first().should('contain.text', getMessageText('knowledgeBaseTitle'));
     });
   });
@@ -308,21 +308,21 @@ describe('HelpPanel', () => {
     cy.get('[aria-label="Add tab"]').click();
     cy.get('[aria-label="Add tab"]').click();
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 3);
     });
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').last().click();
     });
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').eq(1).within(() => {
         cy.get('[aria-label="Close tab"]').click();
       });
     });
 
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').should('have.length', 2);
     });
   });
@@ -537,49 +537,9 @@ describe('HelpPanel', () => {
     cy.get('[data-ouia-component-id="help-panel-subtab-va"]').click();
 
     // Check that the main tab title updates to reflect VA
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').first().should('contain.text', 'Virtual Assistant');
     });
-  });
-
-  it('should display feedback tab and basic functionality', () => {
-    const toggleDrawerSpy = cy.spy();
-
-    // Create proper Chrome mock with auth functionality
-    const mockChrome = {
-      getBundleData: () => ({
-        bundleId: 'rhel',
-        bundleTitle: 'RHEL',
-      }),
-      auth: {
-        getUser: () => Promise.resolve({
-          identity: {
-            user: {
-              username: 'testuser',
-              email: 'test@redhat.com'
-            },
-            account_number: '123456'
-          }
-        }),
-        getToken: () => Promise.resolve('mock-token')
-      }
-    };
-
-    cy.stub(chrome, 'useChrome').returns(mockChrome as any);
-
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
-
-    // Check that feedback subtab exists and is visible
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').should('be.visible');
-
-    // Verify tab accessibility attributes
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]')
-      .should('have.attr', 'role', 'tab')
-      .should('have.attr', 'aria-label', 'Feedback');
   });
 
   it('should switch to feedback tab and display content', () => {
@@ -616,7 +576,7 @@ describe('HelpPanel', () => {
     cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').click();
 
     // Check that the main tab title updates to "Share feedback"
-    cy.get('.lr-c-help-panel-custom-tabs').within(() => {
+    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
       cy.get('.pf-v6-c-tabs__item').first().should('contain.text', 'Share feedback');
     });
 

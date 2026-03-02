@@ -212,8 +212,3 @@ test.describe('all learning resources', async () => {
     await expect(page.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
   });
 });
-
-
-
-
-

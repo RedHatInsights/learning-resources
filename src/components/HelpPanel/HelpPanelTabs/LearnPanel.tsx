@@ -28,6 +28,7 @@ import {
 } from '@patternfly/react-core';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { suspenseLoader as useSuspenseLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
+import { useOpenQuickStartInHelpPanel } from '../../../utils/openQuickStartInHelpPanel';
 import fetchAllData from '../../../utils/fetchAllData';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 import {
@@ -57,6 +58,7 @@ const LearningResourceItem: React.FC<{
   onBookmarkToggle: (resource: ExtendedQuickstart) => void;
 }> = ({ resource, onBookmarkToggle }) => {
   const chrome = useChrome();
+  const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
   const [isBookmarked, setIsBookmarked] = useState(resource.metadata.favorite);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
@@ -83,7 +85,11 @@ const LearningResourceItem: React.FC<{
 
   const handleResourceClick = () => {
     if (resource.spec.type?.text === 'Quick start') {
-      chrome.quickStarts.activateQuickstart(resource.metadata.name);
+      openQuickStartInHelpPanel(
+        resource.metadata.name,
+        resource.spec.displayName,
+        { openDrawer: false }
+      );
     } else if (resource.spec.link?.href) {
       window.open(resource.spec.link.href, '_blank', 'noopener,noreferrer');
     }
@@ -208,7 +214,9 @@ const LearnPanelContent: React.FC<{
   const displayBundleName =
     availableBundles.find((b) => b.id === bundleId)?.title || bundleId;
 
-  // Load data on mount to avoid side effects during render
+  // Load data on mount to avoid side effects during render.
+  // useSuspenseLoader's loader throws the pending Promise for Suspense; when used in useEffect
+  // that thrown Promise is caught here. Treat it as the in-flight request and subscribe to it.
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -216,7 +224,20 @@ const LearnPanelContent: React.FC<{
         setAllQuickStarts(quickStarts);
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to load learning resources data:', error);
+        if (error && typeof (error as Promise<unknown>).then === 'function') {
+          (error as Promise<[unknown, ExtendedQuickstart[]]>)
+            .then(([, quickStarts]) => {
+              setAllQuickStarts(quickStarts);
+              setIsLoading(false);
+            })
+            .catch((err) => {
+              console.error('Failed to load learning resources data:', err);
+              setIsLoading(false);
+            });
+        } else {
+          console.error('Failed to load learning resources data:', error);
+          setIsLoading(false);
+        }
       }
     };
 
@@ -374,7 +395,15 @@ const LearnPanelContent: React.FC<{
       const [, quickStarts] = await loader(chrome.auth.getUser, {});
       setAllQuickStarts(quickStarts);
     } catch (error) {
-      console.error('Failed to refresh learning resources data:', error);
+      if (error && typeof (error as Promise<unknown>).then === 'function') {
+        (error as Promise<[unknown, ExtendedQuickstart[]]>)
+          .then(([, quickStarts]) => setAllQuickStarts(quickStarts))
+          .catch((err) =>
+            console.error('Failed to refresh learning resources data:', err)
+          );
+      } else {
+        console.error('Failed to refresh learning resources data:', error);
+      }
     }
   };
 

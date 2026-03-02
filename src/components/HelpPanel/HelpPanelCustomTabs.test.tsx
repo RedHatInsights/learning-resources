@@ -7,12 +7,49 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
 
+jest.mock('../../store/openQuickstartInHelpPanelStore', () => {
+  const mockStore = {
+    getState: () => ({ pendingOpen: null }),
+    updateState: jest.fn(),
+    subscribe: jest.fn(() => () => {}),
+    subscribeAll: jest.fn(() => () => {}),
+  };
+  return {
+    getOpenQuickstartInHelpPanelStore: () => mockStore,
+  };
+});
+
+jest.mock('@scalprum/react-core', () => ({
+  useGetState: (store: { getState: () => { pendingOpen: unknown } }) =>
+    store.getState(),
+}));
+
 jest.mock('@unleash/proxy-client-react', () => ({
   useFlag: () => true,
   useFlags: () => [
     { name: 'platform.chrome.help-panel_search', enabled: true },
     { name: 'platform.chrome.help-panel_knowledge-base', enabled: true },
   ],
+}));
+
+jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
+  __esModule: true,
+  default: () => ({
+    auth: { getUser: () => Promise.resolve(null) },
+  }),
+}));
+
+jest.mock('../../utils/fetchQuickstarts', () => ({
+  __esModule: true,
+  default: () => Promise.resolve([]),
+}));
+
+jest.mock('@patternfly/quickstarts', () => ({
+  QuickStartContainer: ({ children }: { children?: React.ReactNode }) =>
+    children ?? null,
+  QuickStartDrawerContent: () => null,
+  QuickStartCloseModal: () => null,
+  QuickStartStatus: { IN_PROGRESS: 1, NOT_STARTED: 0, COMPLETE: 2 },
 }));
 
 // Avoid loading real panel modules (Learn, API, Search, etc.) which depend on chrome and other globals.
@@ -25,6 +62,7 @@ jest.mock('./HelpPanelTabs/helpPanelTabsMapper', () => ({
     api: 'api',
     support: 'support',
     va: 'va',
+    quickstart: 'quickstart',
   },
   default: {},
 }));

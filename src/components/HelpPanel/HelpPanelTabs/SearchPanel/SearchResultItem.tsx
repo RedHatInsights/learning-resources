@@ -18,7 +18,7 @@ import {
   VectorSquareIcon,
 } from '@patternfly/react-icons';
 import { useIntl } from 'react-intl';
-import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import { useOpenQuickStartInHelpPanel } from '../../../../utils/openQuickStartInHelpPanel';
 import { getBundleDisplayName } from '../../../../utils/bundleUtils';
 import messages from '../../../../Messages';
 
@@ -39,12 +39,14 @@ const SearchResultItem: React.FC<{
   result: SearchResult;
 }> = ({ result }) => {
   const intl = useIntl();
-  const chrome = useChrome();
+  const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
 
   const handleResultClick = () => {
     if (result.type === 'quickstart' && result.id.startsWith('lr-')) {
       const resourceName = result.id.replace('lr-', '');
-      chrome.quickStarts.activateQuickstart(resourceName);
+      openQuickStartInHelpPanel(resourceName, result.title, {
+        openDrawer: false,
+      });
     } else if (result.url) {
       window.open(result.url, '_blank', 'noopener,noreferrer');
     }

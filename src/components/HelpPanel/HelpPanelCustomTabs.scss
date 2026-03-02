@@ -5,9 +5,37 @@
   background-color: var(--pf-t--global--background--color--primary--default);
 }
 
-// Top of drawer: header (Help title, Ask Red Hat, close) and tab bar.
-.pf-v6-c-drawer__head {
+// Top of Help panel drawer only: header (Help title, Ask Red Hat, close). Do not scope
+// quickstart drawer head (inside tab content), which should keep PatternFly's blue header.
+.pf-v6-c-notification-drawer.learningResources > .pf-v6-c-drawer__head,
+.pf-v5-c-notification-drawer.learningResources > .pf-v6-c-drawer__head {
   background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+// Wrapper so tab list and tab content sections can share height; tab content gets remaining space.
+.lr-c-help-panel-tabs-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  & > .pf-v6-c-tabs {
+    flex-shrink: 0;
+  }
+
+  // Hidden tab panels must not participate in layout (avoid white space from inactive tabs).
+  // Our flex rules would override [hidden]'s display, so we force hidden panels out of layout.
+  & > .pf-v6-c-tab-content[hidden] {
+    display: none !important;
+  }
+
+  // Visible tab content section fills remaining height for quickstart full-height layout.
+  & > .pf-v6-c-tab-content:not([hidden]) {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .lr-c-help-panel-custom-tabs {
@@ -65,7 +93,39 @@
 }
 
 .pf-v6-c-tabs__list {
-    overflow-y: hidden;
+  overflow-y: hidden;
+}
+
+// Tab content area: flex column so the drawer child can fill height (flex: 1).
+.lr-c-help-panel-tab-content--quickstart {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+// PatternFly custom drawer: we override so the quickstart panel is full-width inside the tab (no main content area).
+.lr-c-help-panel-quickstart-drawer {
+  flex: 1;
+  min-height: 0;
+
+  // Empty drawer content: take no space so the panel uses the full tab.
+  .pf-v6-c-drawer__content {
+    flex: 0 0 0;
+    min-width: 0;
+    width: 0;
+    overflow: hidden;
+  }
+
+  // Panel: full width (override default 50%), no side borders. Height from parent; panel scrolls by default.
+  .pf-v6-c-drawer__panel {
+    flex: 1 1 100%;
+    min-width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    --pf-v6-c-drawer__panel--BorderInlineStartWidth: 0;
+    --pf-v6-c-drawer__panel--BorderInlineEndWidth: 0;
+  }
 }
 
 // Align Red Hat status page button with tabs
