@@ -62,24 +62,29 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
 
 // Extracts the count from "All learning resources (N)" text
 export async function extractResourceCount(page: Page): Promise<number> {
-  // Wait for the element to contain a number in parentheses (not just the loading state)
-  // Use .first() to handle cases where multiple elements match (e.g., tab and overflow menu)
-  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
-  await expect(countElement).toContainText(/All learning resources \(\d+\)/, { timeout: 10000 });
+  // Wait for the count to be fully loaded (not empty parentheses)
+  await page.waitForFunction(() => {
+    const element = document.querySelector('.pf-v6-c-tabs__item-text');
+    const text = element?.textContent || '';
+    const match = text.match(/All learning resources \((\d+)\)/);
+    return match && match[1]; // Return true when we have a valid number
+  }, { timeout: 10000 });
 
+  // Now extract the count
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
   const countText = await countElement.textContent();
 
   // Extract the number from text like "All learning resources (99)"
-  const openParen = countText?.indexOf('(') ?? -1;
-  const closeParen = countText?.indexOf(')') ?? -1;
-  const countString = openParen >= 0 && closeParen > openParen
-    ? countText?.substring(openParen + 1, closeParen).trim()
-    : '0';
+  const match = countText?.match(/All learning resources \((\d+)\)/);
 
-  const actualCount = parseInt(countString, 10);
+  if (!match || !match[1]) {
+    throw new Error(`Failed to extract valid count from text: "${countText}"`);
+  }
+
+  const actualCount = parseInt(match[1], 10);
 
   if (isNaN(actualCount)) {
-    throw new Error(`Failed to extract valid count from text: "${countText}". Extracted string was: "${countString}"`);
+    throw new Error(`Failed to parse count as number from text: "${countText}". Extracted: "${match[1]}"`);
   }
 
   return actualCount;
