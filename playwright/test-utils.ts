@@ -62,30 +62,28 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
 
 // Extracts the count from "All learning resources (N)" text
 export async function extractResourceCount(page: Page): Promise<number> {
-  // Use expect.poll to retry the extraction until we get a valid number
-  // This handles race conditions where the element changes between wait and read
-  const actualCount = await expect.poll(async () => {
-    const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
-    const countText = await countElement.textContent();
+  // Wait for the element to stabilize with a valid count
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
 
-    // Extract the number from text like "All learning resources (99)"
-    const match = countText?.match(/All learning resources \((\d+)\)/);
+  // Wait until the element contains a number (not empty parentheses)
+  await countElement.waitFor({ state: 'attached', timeout: 20000 });
+  await expect(countElement).toHaveText(/All learning resources \(\d+\)/, { timeout: 20000 });
 
-    if (!match || !match[1]) {
-      throw new Error(`Waiting for valid count, got: "${countText}"`);
-    }
+  // Now extract - element should be stable
+  const countText = await countElement.textContent();
 
-    const count = parseInt(match[1], 10);
+  // Extract the number from text like "All learning resources (99)"
+  const match = countText?.match(/All learning resources \((\d+)\)/);
 
-    if (isNaN(count) || count <= 0) {
-      throw new Error(`Waiting for valid positive count, got: ${count}`);
-    }
+  if (!match || !match[1]) {
+    throw new Error(`Failed to extract valid count from text: "${countText}"`);
+  }
 
-    return count;
-  }, {
-    timeout: 20000,
-    message: 'Failed to extract valid resource count from "All learning resources" tab'
-  });
+  const actualCount = parseInt(match[1], 10);
+
+  if (isNaN(actualCount) || actualCount <= 0) {
+    throw new Error(`Failed to parse valid positive count from text: "${countText}". Extracted: "${match[1]}"`);
+  }
 
   return actualCount;
 }

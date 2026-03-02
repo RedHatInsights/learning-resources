@@ -211,6 +211,6 @@ test.describe('all learning resources', async () => {
     const visibleCards = await page.locator('.pf-v6-c-card').filter({visible: true}).all();
     expect(visibleCards.length).toBeGreaterThan(0);
     await expect(page.getByRole('heading', { name: 'Adding a machine pool to your' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Unbookmark learning resource' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Unbookmark learning resource' }).first()).toBeVisible();
   });
 });
