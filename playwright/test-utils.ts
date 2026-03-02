@@ -62,26 +62,30 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
 
 // Extracts the count from "All learning resources (N)" text
 export async function extractResourceCount(page: Page): Promise<number> {
-  // Wait for the "All learning resources" tab to have a count (not empty parentheses)
-  // Target the same filtered element we'll read from
-  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
-  await expect(countElement).toContainText(/All learning resources \(\d+\)/, { timeout: 15000 });
+  // Use expect.poll to retry the extraction until we get a valid number
+  // This handles race conditions where the element changes between wait and read
+  const actualCount = await expect.poll(async () => {
+    const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
+    const countText = await countElement.textContent();
 
-  // Now extract the count
-  const countText = await countElement.textContent();
+    // Extract the number from text like "All learning resources (99)"
+    const match = countText?.match(/All learning resources \((\d+)\)/);
 
-  // Extract the number from text like "All learning resources (99)"
-  const match = countText?.match(/All learning resources \((\d+)\)/);
+    if (!match || !match[1]) {
+      throw new Error(`Waiting for valid count, got: "${countText}"`);
+    }
 
-  if (!match || !match[1]) {
-    throw new Error(`Failed to extract valid count from text: "${countText}"`);
-  }
+    const count = parseInt(match[1], 10);
 
-  const actualCount = parseInt(match[1], 10);
+    if (isNaN(count)) {
+      throw new Error(`Waiting for valid count, extracted non-number: "${match[1]}"`);
+    }
 
-  if (isNaN(actualCount)) {
-    throw new Error(`Failed to parse count as number from text: "${countText}". Extracted: "${match[1]}"`);
-  }
+    return count;
+  }, {
+    timeout: 20000,
+    message: 'Failed to extract valid resource count from "All learning resources" tab'
+  }).toBeGreaterThan(0);
 
   return actualCount;
 }
