@@ -62,16 +62,12 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
 
 // Extracts the count from "All learning resources (N)" text
 export async function extractResourceCount(page: Page): Promise<number> {
-  // Wait for the count to be fully loaded (not empty parentheses)
-  await page.waitForFunction(() => {
-    const element = document.querySelector('.pf-v6-c-tabs__item-text');
-    const text = element?.textContent || '';
-    const match = text.match(/All learning resources \((\d+)\)/);
-    return match && match[1]; // Return true when we have a valid number
-  }, { timeout: 10000 });
+  // Wait for the "All learning resources" tab to have a count (not empty parentheses)
+  // Target the same filtered element we'll read from
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
+  await expect(countElement).toContainText(/All learning resources \(\d+\)/, { timeout: 15000 });
 
   // Now extract the count
-  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
   const countText = await countElement.textContent();
 
   // Extract the number from text like "All learning resources (99)"
