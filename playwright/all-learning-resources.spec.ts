@@ -58,12 +58,12 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
     // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
-    await page.waitForFunction(() => {
-      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
-      const match = countText.match(/\((\d+)\)/);
-      const count = match ? parseInt(match[1]) : 0;
-      return count >= 5 && count < 80;
-    }, { timeout: 15000 });
+    // Poll extractResourceCount until the condition is met
+    await expect(async () => {
+      const count = await extractResourceCount(page);
+      expect(count).toBeGreaterThanOrEqual(5);
+      expect(count).toBeLessThan(80);
+    }).toPass({ timeout: 15000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -85,12 +85,12 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Settings'}).click();
 
     // Wait for filter to apply - count should be between 10 and 80 (filtered but not zero)
-    await page.waitForFunction(() => {
-      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
-      const match = countText.match(/\((\d+)\)/);
-      const count = match ? parseInt(match[1]) : 0;
-      return count >= 10 && count < 80;
-    }, { timeout: 15000 });
+    // Poll extractResourceCount until the condition is met
+    await expect(async () => {
+      const count = await extractResourceCount(page);
+      expect(count).toBeGreaterThanOrEqual(10);
+      expect(count).toBeLessThan(80);
+    }).toPass({ timeout: 15000 });
 
     // Extract the actual count after filtering
     const actualCount = await extractResourceCount(page);
@@ -116,12 +116,12 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
 
     // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
-    await page.waitForFunction(() => {
-      const countText = document.querySelector('.pf-v6-c-tabs__item-text')?.textContent || '';
-      const match = countText.match(/\((\d+)\)/);
-      const count = match ? parseInt(match[1]) : 0;
-      return count >= 5 && count < 80;
-    }, { timeout: 15000 });
+    // Poll extractResourceCount until the condition is met
+    await expect(async () => {
+      const count = await extractResourceCount(page);
+      expect(count).toBeGreaterThanOrEqual(5);
+      expect(count).toBeLessThan(80);
+    }).toPass({ timeout: 15000 });
 
     // Wait for the filter to be applied and extract the actual count
     const actualCount = await extractResourceCount(page);
