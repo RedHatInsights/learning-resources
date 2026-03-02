@@ -170,7 +170,7 @@ test.describe('all learning resources', async () => {
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
 
-    const cards = await page.locator('.pf-v6-c-card', { hasNot: page.locator('[hidden]') }).all();
+    const cards = await page.locator('.pf-v6-c-card:visible').all();
     expect(cards.length).toEqual(actualCount);
 
     for (const card of cards) {

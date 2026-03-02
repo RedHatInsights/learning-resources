@@ -77,15 +77,15 @@ export async function extractResourceCount(page: Page): Promise<number> {
 
     const count = parseInt(match[1], 10);
 
-    if (isNaN(count)) {
-      throw new Error(`Waiting for valid count, extracted non-number: "${match[1]}"`);
+    if (isNaN(count) || count <= 0) {
+      throw new Error(`Waiting for valid positive count, got: ${count}`);
     }
 
     return count;
   }, {
     timeout: 20000,
     message: 'Failed to extract valid resource count from "All learning resources" tab'
-  }).toBeGreaterThan(0);
+  });
 
   return actualCount;
 }
