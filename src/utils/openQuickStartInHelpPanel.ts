@@ -1,8 +1,6 @@
 import React from 'react';
 import useChrome from '@redhat-cloud-services/frontend-components/useChrome';
-
-export const OPEN_QUICKSTART_IN_HELP_PANEL_EVENT =
-  'learning-resources/open-quickstart';
+import { getOpenQuickstartInHelpPanelStore } from '../store/openQuickstartInHelpPanelStore';
 
 export interface OpenQuickStartInHelpPanelDetail {
   quickstartId: string;
@@ -20,21 +18,17 @@ export interface OpenQuickStartInHelpPanelOptions {
 }
 
 /**
- * Dispatches the custom event so HelpPanelCustomTabs can add a new quickstart tab.
+ * Notifies the Help Panel (via Scalprum shared store) to add a new quickstart tab.
  * Can be used without chrome (e.g. in tests or when only adding a tab).
  */
 export function dispatchOpenQuickStartInHelpPanel(
   quickstartId: string,
   displayName: React.ReactNode
 ): void {
-  window.dispatchEvent(
-    new CustomEvent<OpenQuickStartInHelpPanelDetail>(
-      OPEN_QUICKSTART_IN_HELP_PANEL_EVENT,
-      {
-        detail: { quickstartId, displayName },
-      }
-    )
-  );
+  getOpenQuickstartInHelpPanelStore().updateState('OPEN_QUICKSTART', {
+    quickstartId,
+    displayName,
+  });
 }
 
 const HELP_PANEL_DRAWER = {

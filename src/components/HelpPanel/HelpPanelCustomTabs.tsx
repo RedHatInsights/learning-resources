@@ -20,10 +20,8 @@ import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import QuickStartsPanel from './HelpPanelTabs/QuickStartsPanel';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
-import {
-  OPEN_QUICKSTART_IN_HELP_PANEL_EVENT,
-  type OpenQuickStartInHelpPanelDetail,
-} from '../../utils/openQuickStartInHelpPanel';
+import { getOpenQuickstartInHelpPanelStore } from '../../store/openQuickstartInHelpPanelStore';
+import { useGetState } from '@scalprum/react-core';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { useIntl } from 'react-intl';
 import {
@@ -452,19 +450,19 @@ const HelpPanelCustomTabs = () => {
     }
   };
 
+  const openQuickstartStore = getOpenQuickstartInHelpPanelStore();
+  const openQuickstartState = useGetState(openQuickstartStore);
+
   useEffect(() => {
-    const handler = (e: Event) => {
-      const { quickstartId, displayName } = (
-        e as CustomEvent<OpenQuickStartInHelpPanelDetail>
-      ).detail;
-      const existing = tabs.find(
-        (t) =>
-          t.tabType === TabType.quickstart && t.quickstartId === quickstartId
-      );
-      if (existing) {
-        setActiveTab(existing);
-        return;
-      }
+    const { pendingOpen } = openQuickstartState;
+    if (!pendingOpen) return;
+    const { quickstartId, displayName } = pendingOpen;
+    const existing = tabs.find(
+      (t) => t.tabType === TabType.quickstart && t.quickstartId === quickstartId
+    );
+    if (existing) {
+      setActiveTab(existing);
+    } else {
       const newTab: TabDefinition = {
         id: crypto.randomUUID(),
         title: displayName,
@@ -474,12 +472,9 @@ const HelpPanelCustomTabs = () => {
       };
       addTab(newTab);
       setActiveTab(newTab);
-    };
-    window.addEventListener(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, handler);
-    return () => {
-      window.removeEventListener(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT, handler);
-    };
-  }, [addTab, tabs]);
+    }
+    openQuickstartStore.updateState('CONSUMED_OPEN');
+  }, [openQuickstartState.pendingOpen, openQuickstartStore, addTab, tabs]);
 
   useEffect(() => {
     // Ensure the Add tab button has a stable OUIA id

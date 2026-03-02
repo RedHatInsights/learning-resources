@@ -7,6 +7,23 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import HelpPanelCustomTabs from './HelpPanelCustomTabs';
 
+jest.mock('../../store/openQuickstartInHelpPanelStore', () => {
+  const mockStore = {
+    getState: () => ({ pendingOpen: null }),
+    updateState: jest.fn(),
+    subscribe: jest.fn(() => () => {}),
+    subscribeAll: jest.fn(() => () => {}),
+  };
+  return {
+    getOpenQuickstartInHelpPanelStore: () => mockStore,
+  };
+});
+
+jest.mock('@scalprum/react-core', () => ({
+  useGetState: (store: { getState: () => { pendingOpen: unknown } }) =>
+    store.getState(),
+}));
+
 jest.mock('@unleash/proxy-client-react', () => ({
   useFlag: () => true,
   useFlags: () => [

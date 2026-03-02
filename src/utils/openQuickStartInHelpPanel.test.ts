@@ -1,9 +1,16 @@
 import React from 'react';
 import {
-  OPEN_QUICKSTART_IN_HELP_PANEL_EVENT,
   dispatchOpenQuickStartInHelpPanel,
   openQuickStartInHelpPanel,
 } from './openQuickStartInHelpPanel';
+
+const mockUpdateState = jest.fn();
+jest.mock('../store/openQuickstartInHelpPanelStore', () => ({
+  getOpenQuickstartInHelpPanelStore: () => ({
+    updateState: mockUpdateState,
+    getState: () => ({ pendingOpen: null }),
+  }),
+}));
 
 jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
   __esModule: true,
@@ -13,6 +20,7 @@ jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
 describe('openQuickStartInHelpPanel', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    mockUpdateState.mockClear();
   });
 
   afterEach(() => {
@@ -20,50 +28,40 @@ describe('openQuickStartInHelpPanel', () => {
   });
 
   describe('dispatchOpenQuickStartInHelpPanel', () => {
-    it('dispatches a CustomEvent with quickstartId and displayName', () => {
-      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
-
+    it('updates the shared store with quickstartId and displayName', () => {
       dispatchOpenQuickStartInHelpPanel('my-quickstart', 'My Quickstart');
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      const event = dispatchSpy.mock.calls[0][0] as CustomEvent;
-      expect(event.type).toBe(OPEN_QUICKSTART_IN_HELP_PANEL_EVENT);
-      expect(event.detail).toEqual({
+      expect(mockUpdateState).toHaveBeenCalledTimes(1);
+      expect(mockUpdateState).toHaveBeenCalledWith('OPEN_QUICKSTART', {
         quickstartId: 'my-quickstart',
         displayName: 'My Quickstart',
       });
-      dispatchSpy.mockRestore();
     });
 
     it('accepts ReactNode as displayName', () => {
-      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
       const node = React.createElement('span', null, 'Custom title');
 
       dispatchOpenQuickStartInHelpPanel('id', node);
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(
-        (dispatchSpy.mock.calls[0][0] as CustomEvent).detail.displayName
-      ).toEqual(node);
-      dispatchSpy.mockRestore();
+      expect(mockUpdateState).toHaveBeenCalledWith('OPEN_QUICKSTART', {
+        quickstartId: 'id',
+        displayName: node,
+      });
     });
   });
 
   describe('openQuickStartInHelpPanel', () => {
-    it('dispatches immediately when openDrawer is false', () => {
-      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
-
+    it('updates store immediately when openDrawer is false', () => {
       openQuickStartInHelpPanel('qs-1', 'Quickstart 1', { openDrawer: false });
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect(
-        (dispatchSpy.mock.calls[0][0] as CustomEvent).detail.quickstartId
-      ).toBe('qs-1');
-      dispatchSpy.mockRestore();
+      expect(mockUpdateState).toHaveBeenCalledTimes(1);
+      expect(mockUpdateState).toHaveBeenCalledWith('OPEN_QUICKSTART', {
+        quickstartId: 'qs-1',
+        displayName: 'Quickstart 1',
+      });
     });
 
-    it('dispatches after delay when openDrawer is true and drawerActions provided', () => {
-      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+    it('updates store after delay when openDrawer is true and drawerActions provided', () => {
       const toggleDrawerContent = jest.fn();
 
       openQuickStartInHelpPanel('qs-2', 'Quickstart 2', {
@@ -72,25 +70,25 @@ describe('openQuickStartInHelpPanel', () => {
       });
 
       expect(toggleDrawerContent).toHaveBeenCalledTimes(1);
-      expect(dispatchSpy).not.toHaveBeenCalled();
+      expect(mockUpdateState).not.toHaveBeenCalled();
 
       jest.advanceTimersByTime(150);
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      expect((dispatchSpy.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      expect(mockUpdateState).toHaveBeenCalledTimes(1);
+      expect(mockUpdateState).toHaveBeenCalledWith('OPEN_QUICKSTART', {
         quickstartId: 'qs-2',
         displayName: 'Quickstart 2',
       });
-      dispatchSpy.mockRestore();
     });
 
-    it('dispatches immediately when openDrawer is true but no drawerActions', () => {
-      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
-
+    it('updates store immediately when openDrawer is true but no drawerActions', () => {
       openQuickStartInHelpPanel('qs-3', 'Quickstart 3', { openDrawer: true });
 
-      expect(dispatchSpy).toHaveBeenCalledTimes(1);
-      dispatchSpy.mockRestore();
+      expect(mockUpdateState).toHaveBeenCalledTimes(1);
+      expect(mockUpdateState).toHaveBeenCalledWith('OPEN_QUICKSTART', {
+        quickstartId: 'qs-3',
+        displayName: 'Quickstart 3',
+      });
     });
   });
 });
