@@ -51,11 +51,8 @@ test.describe('help panel', async () => {
     await expect(page.getByText('No API documentation found matching your criteria.')).toBeVisible();
   });
 
-  // Note: This test is skipped because the Ask Red Hat button requires:
-  // 1. Feature flag 'platform.chrome.help-panel_direct-ask-redhat' to be enabled
-  // 2. virtualAssistant remote module to load successfully
   // These may not be available in all test environments (e.g., stage)
-  test.skip('displays Ask Red Hat button', async ({page}) => {
+  test('displays chat button', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
     // Wait for help panel to be open
@@ -69,16 +66,11 @@ test.describe('help panel', async () => {
       await expect(loadingText).not.toBeVisible({ timeout: 10000 });
     }
 
-    const askRedHatButton = page.locator('[data-ouia-component-id="help-panel-ask-red-hat-button"]');
+    const askRedHatButton = page.getByText('Chat with an assistant');
     await expect(askRedHatButton).toBeVisible({ timeout: 10000 });
   });
 
-  // Note: This test is skipped because the status page link requires specific
-  // feature flag combinations to be enabled:
-  // - In header: both 'platform.chrome.help-panel_search' AND 'platform.chrome.help-panel_knowledge-base'
-  // - In subtabs: neither of the above flags enabled
-  // These conditions may not be met in all test environments (e.g., stage)
-  test.skip('displays Red Hat status page link', async ({page}) => {
+  test('displays status page link', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
     // Wait for help panel to be open
@@ -92,7 +84,7 @@ test.describe('help panel', async () => {
     }
 
     // The status page link appears in either the header or subtabs depending on feature flags
-    const statusPageLink = page.locator('[data-ouia-component-id="help-panel-status-page-header-button"], [data-ouia-component-id="help-panel-status-page-subtabs-button"]');
+    const statusPageLink = page.getByRole('link', {'name': 'Status page'});
     await expect(statusPageLink.first()).toBeVisible({ timeout: 10000 });
   });
 
