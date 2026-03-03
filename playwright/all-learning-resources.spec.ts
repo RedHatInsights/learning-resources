@@ -83,8 +83,9 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
+    await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
 
-    // Wait for filter to apply - count should be between 10 and 80 (filtered but not zero)
+    // Wait for filter to apply
     // Poll extractResourceCount until the condition is met
     await expect(async () => {
       const count = await extractResourceCount(page);
