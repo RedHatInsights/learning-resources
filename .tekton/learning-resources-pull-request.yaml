@@ -67,7 +67,7 @@ spec:
       echo "Dev server ready!"
 
       echo "Running Playwright tests ..."
-      ./node_modules/.bin/playwright test
+      npx playwright test
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
