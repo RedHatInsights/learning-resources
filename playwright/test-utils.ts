@@ -48,8 +48,6 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
-    // long wait for the page to load; stage can be delicate
-    await page.waitForTimeout(5000);
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
 
     // conditionally accept cookie prompt
