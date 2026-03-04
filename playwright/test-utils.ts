@@ -65,6 +65,11 @@ export async function extractResourceCount(page: Page): Promise<number> {
 
   // Wait until the element contains a number (not empty parentheses)
   await countElement.waitFor({ state: 'attached', timeout: 20000 });
+
+  // Add a wait to ensure React has finished rendering the count
+  // This prevents race conditions where the element exists but hasn't been populated yet
+  await page.waitForTimeout(15000);
+
   await expect(countElement).toHaveText(/All learning resources \(\d+\)/, { timeout: 20000 });
 
   // Now extract - element should be stable
