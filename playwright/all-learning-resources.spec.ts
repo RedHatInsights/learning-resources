@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount } from './test-utils';
+import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.use({ ignoreHTTPSErrors: true });
 
@@ -57,16 +57,8 @@ test.describe('all learning resources', async () => {
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
-    // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
-    // Poll extractResourceCount until the condition is met
-    await expect(async () => {
-      const count = await extractResourceCount(page);
-      expect(count).toBeGreaterThanOrEqual(5);
-      expect(count).toBeLessThan(80);
-    }).toPass({ timeout: 15000 });
-
-    // Extract the actual count after filtering
-    const actualCount = await extractResourceCount(page);
+    // Wait for filter to apply - count should drop from ~98 to filtered range (5-79)
+    const actualCount = await waitForCountInRange(page, 5, 79, 20000);
 
     // Verify we have some Ansible resources (at least 5, allowing for data changes)
     expect(actualCount, `Expected at least 5 Ansible resources, but found ${actualCount}`).toBeGreaterThanOrEqual(5);
@@ -85,16 +77,8 @@ test.describe('all learning resources', async () => {
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
 
-    // Wait for filter to apply
-    // Poll extractResourceCount until the condition is met
-    await expect(async () => {
-      const count = await extractResourceCount(page);
-      expect(count).toBeGreaterThanOrEqual(10);
-      expect(count).toBeLessThan(80);
-    }).toPass({ timeout: 15000 });
-
-    // Extract the actual count after filtering
-    const actualCount = await extractResourceCount(page);
+    // Wait for filter to apply - count should drop from ~98 to filtered range (10-79)
+    const actualCount = await waitForCountInRange(page, 10, 79, 20000);
 
     // Verify we have some Settings resources (at least 10, allowing for data changes)
     expect(actualCount, `Expected at least 10 Settings resources, but found ${actualCount}`).toBeGreaterThanOrEqual(10);
@@ -116,16 +100,8 @@ test.describe('all learning resources', async () => {
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
 
-    // Wait for filter to apply - count should be between 5 and 80 (filtered but not zero)
-    // Poll extractResourceCount until the condition is met
-    await expect(async () => {
-      const count = await extractResourceCount(page);
-      expect(count).toBeGreaterThanOrEqual(5);
-      expect(count).toBeLessThan(80);
-    }).toPass({ timeout: 15000 });
-
-    // Wait for the filter to be applied and extract the actual count
-    const actualCount = await extractResourceCount(page);
+    // Wait for filter to apply - count should drop from ~98 to filtered range (10-79)
+    const actualCount = await waitForCountInRange(page, 10, 79, 20000);
 
     // Verify we have a reasonable number of quick starts (at least 10, allowing for data changes)
     expect(actualCount, `Expected at least 10 quick starts, but found ${actualCount}`).toBeGreaterThanOrEqual(10);

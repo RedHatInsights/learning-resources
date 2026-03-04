@@ -58,24 +58,49 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   }
 }
 
-// Extracts the count from "All learning resources (N)" text
-export async function extractResourceCount(page: Page): Promise<number> {
-  // Wait for the element to stabilize with a valid count
+// Waits for the count to be within the specified range, then returns it
+// This handles React rendering timing and filter application delays
+export async function waitForCountInRange(page: Page, minCount: number, maxCount: number, timeout: number = 20000): Promise<number> {
   const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
 
-  // Wait until the element contains a number (not empty parentheses)
-  await countElement.waitFor({ state: 'attached', timeout: 20000 });
+  // Wait for element to exist
+  await countElement.waitFor({ state: 'attached', timeout });
 
-  // Add a wait to ensure React has finished rendering the count
-  // This prevents race conditions where the element exists but hasn't been populated yet
-  await page.waitForTimeout(15000);
+  // Poll until count is within range
+  await expect(async () => {
+    const text = await countElement.textContent();
+    const match = text?.match(/All learning resources \((\d+)\)/);
 
+    if (!match || !match[1]) {
+      throw new Error(`Count not yet rendered: "${text}"`);
+    }
+
+    const count = parseInt(match[1], 10);
+
+    if (isNaN(count)) {
+      throw new Error(`Invalid count: "${match[1]}"`);
+    }
+
+    // Verify count is within expected range
+    expect(count).toBeGreaterThanOrEqual(minCount);
+    expect(count).toBeLessThanOrEqual(maxCount);
+  }).toPass({ timeout });
+
+  // Extract final count
+  const text = await countElement.textContent();
+  const match = text?.match(/All learning resources \((\d+)\)/);
+  return parseInt(match![1], 10);
+}
+
+// Extracts the count from "All learning resources (N)" text
+// Use waitForCountInRange if you need to wait for a specific range after filtering
+export async function extractResourceCount(page: Page): Promise<number> {
+  const countElement = page.locator('.pf-v6-c-tabs__item-text', { hasText: 'All learning resources' }).first();
+
+  // Wait for element with valid count text
   await expect(countElement).toHaveText(/All learning resources \(\d+\)/, { timeout: 20000 });
 
-  // Now extract - element should be stable
   const countText = await countElement.textContent();
-
-  // Extract the number from text like "All learning resources (99)"
   const match = countText?.match(/All learning resources \((\d+)\)/);
 
   if (!match || !match[1]) {
