@@ -11,6 +11,7 @@ import {
 import {
   AngleRightIcon,
   BookOpenIcon,
+  BookmarkIcon,
   CloudIcon,
   ExternalLinkAltIcon,
   HeadsetIcon,
@@ -65,7 +66,7 @@ const SearchResultItem: React.FC<{
           return {
             tabType: null,
             sectionTitle: intl.formatMessage(messages.contentTypeQuickstarts),
-            icon: null,
+            icon: <BookmarkIcon />,
           };
         case 'api':
           return {

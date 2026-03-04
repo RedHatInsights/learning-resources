@@ -23,10 +23,15 @@ import {
   fetchBundleInfo,
   fetchBundles,
 } from '../../../../utils/fetchBundleInfoAPI';
-import { getBundleDisplayName } from '../../../../utils/bundleUtils';
 import SearchResultItem, { SearchResult } from './SearchResultItem';
 import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
+import {
+  RECOMMENDED_CONTENT_LIMIT,
+  RecommendedItem,
+  bundleRecommendedContent,
+  defaultRecommendedContent,
+} from './recommendedContentConfig';
 
 // Debounce hook
 const useDebounce = (value: string, delay: number) => {
@@ -66,6 +71,32 @@ const SearchPanel = ({
   const intl = useIntl();
   const chrome = useChrome();
 
+  // Get bundle context synchronously during render (same pattern as LearnPanel)
+  const {
+    bundleId = '',
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+  } = chrome.getBundleData?.() || {};
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const availableBundles = chrome.getAvailableBundles?.() || [];
+
+  const displayBundleName =
+    availableBundles.find(
+      (b: { id: string; title: string }) => b.id === bundleId
+    )?.title || bundleId;
+  const isKnownBundle =
+    bundleId &&
+    (availableBundles.some(
+      (b: { id: string; title: string }) => b.id === bundleId
+    ) ||
+      bundleRecommendedContent[bundleId]);
+  const isHomePage =
+    !displayBundleName ||
+    displayBundleName.toLowerCase() === 'home' ||
+    displayBundleName.toLowerCase() === 'landing' ||
+    !isKnownBundle;
+
   // Search state
   const [searchText, setSearchText] = useState('');
   const [rawSearchResults, setRawSearchResults] = useState<SearchResult[]>([]);
@@ -83,37 +114,12 @@ const SearchPanel = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Recommended content state
-  const [activeToggle, setActiveToggle] = useState<string>('bundle'); // Default to bundle context
-  const [recommendedContent, setRecommendedContent] = useState<SearchResult[]>(
-    []
+  const [activeToggle, setActiveToggle] = useState<string>(
+    isHomePage ? 'all' : 'bundle'
   );
-  const [bundleTitle, setBundleTitle] = useState<string>('');
-  const [bundleId, setBundleId] = useState<string>('');
-
-  // Get current bundle context on component mount
-  useEffect(() => {
-    const loadBundleData = async () => {
-      try {
-        // FIXME: Add missing type to the types lib
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        const { bundleTitle: currentBundleTitle, bundleId: currentBundleId } =
-          chrome.getBundleData();
-        setBundleTitle(currentBundleTitle);
-        setBundleId(currentBundleId);
-      } catch (error) {
-        console.error('Failed to load bundle data:', error);
-      }
-    };
-
-    loadBundleData();
-  }, [chrome]);
-
-  const isHomePage =
-    !bundleTitle ||
-    bundleTitle.toLowerCase() === 'home' ||
-    bundleTitle.toLowerCase() === 'landing';
-  const displayBundleName = bundleId ? getBundleDisplayName(bundleId) : '';
+  const [allQuickStarts, setAllQuickStarts] = useState<
+    Awaited<ReturnType<typeof fetchAllData>>[1]
+  >([]);
 
   // Filter options
   const filterOptions = [
@@ -285,32 +291,40 @@ const SearchPanel = ({
     }
   };
 
-  // Get recommended content based on toggle and bundle context
-  const getRecommendedContent = async (): Promise<SearchResult[]> => {
-    try {
-      const [, quickStarts] = await fetchAllData(chrome.auth.getUser, {});
+  /**
+   * Resolve a list of curated {@link RecommendedItem} entries into concrete
+   * {@link SearchResult} objects. Dynamic items are matched against the
+   * supplied learning resources by `metadata.name`; static items are
+   * converted directly.
+   */
+  const resolveRecommendedItems = (
+    items: RecommendedItem[],
+    resources: Awaited<ReturnType<typeof fetchAllData>>[1]
+  ): SearchResult[] => {
+    const resourceMap = new Map(resources.map((r) => [r.metadata.name, r]));
 
-      let filteredResources = quickStarts;
+    const results: SearchResult[] = [];
 
-      // Filter by bundle if bundle toggle is active and not on home page
-      if (activeToggle === 'bundle' && !isHomePage && bundleId) {
-        filteredResources = filteredResources.filter((resource) =>
-          resource.metadata.tags?.some(
-            (tag) => tag.kind === 'bundle' && tag.value === bundleId
-          )
-        );
-      }
+    for (const item of items) {
+      if (results.length >= RECOMMENDED_CONTENT_LIMIT) break;
 
-      // Convert to SearchResult format and limit to 5 items
-      const recommendedResults: SearchResult[] = filteredResources
-        .slice(0, 5) // Limit to 5 curated pieces
-        .map((resource) => {
+      if (item.kind === 'static') {
+        results.push({
+          id: `rec-static-${item.title}`,
+          title: item.title,
+          description: item.description,
+          type: item.type,
+          url: item.url,
+          bundleTags: item.bundleTags,
+        });
+      } else {
+        const resource = resourceMap.get(item.resourceName);
+        if (resource) {
           const bundleTags =
             resource.metadata.tags
               ?.filter((tag) => tag.kind === 'bundle')
               .map((tag) => tag.value) || [];
-
-          return {
+          results.push({
             id: `lr-${resource.metadata.name}`,
             title: resource.spec.displayName,
             description: resource.spec.description || '',
@@ -319,16 +333,93 @@ const SearchPanel = ({
               : 'quickstart',
             url: resource.spec.link?.href,
             tags: resource.metadata.tags?.map((tag) => tag.value) || [],
-            bundleTags: bundleTags,
-          };
-        });
-
-      return recommendedResults;
-    } catch (error) {
-      console.error('Failed to get recommended content:', error);
-      return [];
+            bundleTags,
+          });
+        }
+      }
     }
+
+    return results;
   };
+
+  /**
+   * Build a fallback list from API resources when no curated config exists
+   * for the active bundle. Filters by bundle tag when appropriate and returns
+   * up to {@link RECOMMENDED_CONTENT_LIMIT} items.
+   */
+  const buildFallbackRecommendedContent = (
+    resources: Awaited<ReturnType<typeof fetchAllData>>[1],
+    filterByBundle: boolean
+  ): SearchResult[] => {
+    let filtered = resources;
+
+    if (filterByBundle && bundleId) {
+      filtered = resources.filter((resource) =>
+        resource.metadata.tags?.some(
+          (tag) => tag.kind === 'bundle' && tag.value === bundleId
+        )
+      );
+    }
+
+    return filtered.slice(0, RECOMMENDED_CONTENT_LIMIT).map((resource) => {
+      const bundleTags =
+        resource.metadata.tags
+          ?.filter((tag) => tag.kind === 'bundle')
+          .map((tag) => tag.value) || [];
+      return {
+        id: `lr-${resource.metadata.name}`,
+        title: resource.spec.displayName,
+        description: resource.spec.description || '',
+        type: resource.metadata.externalDocumentation
+          ? 'documentation'
+          : 'quickstart',
+        url: resource.spec.link?.href,
+        tags: resource.metadata.tags?.map((tag) => tag.value) || [],
+        bundleTags,
+      };
+    });
+  };
+
+  // Load quickstarts data once on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllData(chrome.auth.getUser, {})
+      .then(([, quickStarts]) => {
+        if (!cancelled) {
+          setAllQuickStarts(quickStarts);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load learning resources:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Compute recommended content from loaded data (no async needed)
+  const computedRecommendedContent = useMemo(() => {
+    if (allQuickStarts.length === 0) return [];
+
+    const showBundleContent =
+      activeToggle === 'bundle' && !isHomePage && bundleId;
+
+    if (showBundleContent) {
+      const curatedItems = bundleRecommendedContent[bundleId];
+      if (curatedItems?.length) {
+        const resolved = resolveRecommendedItems(curatedItems, allQuickStarts);
+        if (resolved.length > 0) return resolved;
+      }
+      return buildFallbackRecommendedContent(allQuickStarts, true);
+    }
+
+    const defaultResolved = resolveRecommendedItems(
+      defaultRecommendedContent,
+      allQuickStarts
+    );
+    if (defaultResolved.length > 0) return defaultResolved;
+    return buildFallbackRecommendedContent(allQuickStarts, false);
+  }, [allQuickStarts, activeToggle, isHomePage, bundleId]);
 
   // Perform search
   useEffect(() => {
@@ -358,16 +449,6 @@ const SearchPanel = ({
 
     executeSearch();
   }, [debouncedSearchText]);
-
-  // Load recommended content when toggle changes
-  useEffect(() => {
-    const loadRecommendedContent = async () => {
-      const content = await getRecommendedContent();
-      setRecommendedContent(content);
-    };
-
-    loadRecommendedContent();
-  }, [activeToggle, bundleId]);
 
   // Handlers
   const handleSearchChange = (value: string) => {
@@ -604,9 +685,9 @@ const SearchPanel = ({
               </Flex>
             </StackItem>
             <StackItem>
-              {recommendedContent.length > 0 ? (
+              {computedRecommendedContent.length > 0 ? (
                 <DataList aria-label="Recommended content" isCompact>
-                  {recommendedContent.map((content) => (
+                  {computedRecommendedContent.map((content) => (
                     <DataListItem key={content.id}>
                       <DataListItemRow>
                         <DataListItemCells
@@ -645,7 +726,7 @@ const SearchPanel = ({
             onSetPage={handleSetPage}
             onPerPageSelect={handlePerPageSelect}
             bundleId={bundleId}
-            bundleTitle={bundleTitle}
+            bundleTitle={displayBundleName}
             isHomePage={isHomePage}
           />
         </StackItem>
