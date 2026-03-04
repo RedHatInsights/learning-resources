@@ -44,15 +44,6 @@ spec:
       set -ex
 
       npm install
-  - name: run-app-script
-    value: |
-      #!/bin/sh
-      # Script that runs the test application with Caddy using ConfigMap-mounted Caddyfile
-
-      set -e
-
-      echo "Starting application with Caddy using ConfigMap Caddyfile..."
-      exec caddy run --config /etc/caddy/Caddyfile
   - name: e2e-playwright-image
     value: mcr.microsoft.com/playwright:v1.58.0-jammy
   - name: e2e-tests-script
@@ -95,17 +86,6 @@ spec:
           - ip: "127.0.0.1"
             hostnames:
               - "stage.foo.redhat.com"
-        # Add ConfigMap volume for test app Caddyfile
-        volumes:
-          - name: test-app-caddyfile
-            configMap:
-              name: learning-resources-test-app-caddyfile-v2
-      sidecarSpecs:
-        # Mount test app Caddyfile into run-application sidecar
-        - name: run-application
-          volumeMounts:
-            - name: test-app-caddyfile
-              mountPath: /etc/caddy
   workspaces:
   - name: workspace
     volumeClaimTemplate:
