@@ -399,8 +399,6 @@ const SearchPanel = ({
 
   // Compute recommended content from loaded data (no async needed)
   const computedRecommendedContent = useMemo(() => {
-    if (allQuickStarts.length === 0) return [];
-
     const showBundleContent =
       activeToggle === 'bundle' && !isHomePage && bundleId;
 

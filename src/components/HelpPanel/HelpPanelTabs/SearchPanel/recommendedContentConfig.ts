@@ -42,7 +42,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
     },
     {
       kind: 'static',
-      title: 'Related documenation for OpenShift Cluster Manager',
+      title: 'Related documentation for OpenShift Cluster Manager',
       description: '',
       type: 'documentation',
       url: 'https://docs.redhat.com/en/documentation/openshift_cluster_manager/1-latest',
@@ -279,7 +279,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
     },
     {
       kind: 'static',
-      title: 'Related documenation for subscriptions',
+      title: 'Related documentation for subscriptions',
       description: '',
       type: 'documentation',
       url: 'https://access.redhat.com/documentation/en-us/subscription_central',
@@ -328,7 +328,7 @@ export const defaultRecommendedContent: RecommendedItem[] = [
   },
   {
     kind: 'static',
-    title: 'Related documenation for OpenShift Cluster Manager',
+    title: 'Related documentation for OpenShift Cluster Manager',
     description: '',
     type: 'documentation',
     url: 'https://docs.redhat.com/en/documentation/openshift_cluster_manager/1-latest',
@@ -336,7 +336,7 @@ export const defaultRecommendedContent: RecommendedItem[] = [
   },
   {
     kind: 'static',
-    title: 'Related documenation for subscriptions',
+    title: 'Related documentation for subscriptions',
     description: '',
     type: 'documentation',
     url: 'https://access.redhat.com/documentation/en-us/subscription_central',
