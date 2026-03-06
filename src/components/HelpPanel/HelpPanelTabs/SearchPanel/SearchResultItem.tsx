@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Content,
@@ -15,6 +15,8 @@ import {
   CloudIcon,
   HeadsetIcon,
   LightbulbIcon,
+  OutlinedStarIcon,
+  StarIcon,
   VectorSquareIcon,
 } from '@patternfly/react-icons';
 import { useIntl } from 'react-intl';
@@ -40,23 +42,32 @@ export interface SearchResult {
   bundleTags?: string[];
   isBookmarked?: boolean;
   resourceName?: string;
+  isFavorited?: boolean;
 }
 
 // Search Result Item Component
 const SearchResultItem: React.FC<{
   result: SearchResult;
   onBookmarkToggle?: (resourceName: string, newBookmarkState: boolean) => void;
-}> = ({ result, onBookmarkToggle }) => {
+  onFavoriteToggle?: (pathname: string, newFavoriteState: boolean) => void;
+}> = ({ result, onBookmarkToggle, onFavoriteToggle }) => {
   const intl = useIntl();
   const chrome = useChrome();
   const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
   const [isBookmarked, setIsBookmarked] = useState(
     result.isBookmarked ?? false
   );
+  const [isFavorited, setIsFavorited] = useState(result.isFavorited ?? false);
+
+  useEffect(() => {
+    setIsFavorited(result.isFavorited ?? false);
+  }, [result.isFavorited]);
 
   const isBookmarkable =
     (result.type === 'documentation' || result.type === 'quickstart') &&
     !!result.resourceName;
+
+  const isFavoriteable = result.type === 'service' && !!result.url;
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -81,6 +92,16 @@ const SearchResultItem: React.FC<{
     } catch (error) {
       setIsBookmarked(result.isBookmarked ?? false);
     }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!result.url) return;
+
+    const newState = !isFavorited;
+    setIsFavorited(newState);
+    onFavoriteToggle?.(result.url, newState);
   };
 
   const handleResultClick = () => {
@@ -204,6 +225,27 @@ const SearchResultItem: React.FC<{
               isBookmarked
                 ? 'Unbookmark learning resource'
                 : 'Bookmark learning resource'
+            }
+          />
+        </FlexItem>
+      )}
+
+      {isFavoriteable && (
+        <FlexItem>
+          <Button
+            variant="plain"
+            onClick={handleFavoriteClick}
+            icon={
+              isFavorited ? (
+                <StarIcon style={{ color: 'var(--pf-t--color--gold--40)' }} />
+              ) : (
+                <OutlinedStarIcon />
+              )
+            }
+            aria-label={
+              isFavorited
+                ? `Unfavorite ${result.title}`
+                : `Favorite ${result.title}`
             }
           />
         </FlexItem>

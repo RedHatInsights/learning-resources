@@ -287,3 +287,107 @@ describe('SearchResultItem – bookmark functionality', () => {
     cy.contains('.pf-v6-c-label', 'OpenShift').should('be.visible');
   });
 });
+
+describe('SearchResultItem – service favorite functionality', () => {
+  const makeServiceResult = (
+    overrides: Partial<SearchResult> = {}
+  ): SearchResult => ({
+    id: 'service-my-service',
+    title: 'My Service',
+    description: 'A test service',
+    type: 'service',
+    url: '/some-bundle/my-service',
+    tags: ['SomeBundle'],
+    isFavorited: false,
+    ...overrides,
+  });
+
+  it('should show star icon for service type with a URL', () => {
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem result={makeServiceResult()} />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label="Favorite My Service"]').should('be.visible');
+  });
+
+  it('should not show star icon for non-service types', () => {
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem result={makeResult({ type: 'documentation' })} />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label*="Favorite"]').should('not.exist');
+    cy.get('[aria-label*="Unfavorite"]').should('not.exist');
+  });
+
+  it('should show filled star when already favorited', () => {
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem
+          result={makeServiceResult({ isFavorited: true })}
+        />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label="Unfavorite My Service"]').should('be.visible');
+    cy.get('[aria-label="Favorite My Service"]').should('not.exist');
+  });
+
+  it('should toggle favorite state and call onFavoriteToggle on click', () => {
+    const onFavoriteToggle = cy.stub().as('onFavoriteToggle');
+
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem
+          result={makeServiceResult({ isFavorited: false })}
+          onFavoriteToggle={onFavoriteToggle}
+        />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label="Favorite My Service"]').click();
+
+    cy.get('[aria-label="Unfavorite My Service"]').should('be.visible');
+    cy.get('@onFavoriteToggle').should(
+      'have.been.calledWith',
+      '/some-bundle/my-service',
+      true
+    );
+  });
+
+  it('should unfavorite a favorited service on click', () => {
+    const onFavoriteToggle = cy.stub().as('onFavoriteToggle');
+
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem
+          result={makeServiceResult({ isFavorited: true })}
+          onFavoriteToggle={onFavoriteToggle}
+        />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label="Unfavorite My Service"]').click();
+
+    cy.get('[aria-label="Favorite My Service"]').should('be.visible');
+    cy.get('@onFavoriteToggle').should(
+      'have.been.calledWith',
+      '/some-bundle/my-service',
+      false
+    );
+  });
+
+  it('should not show bookmark button for service type', () => {
+    cy.mount(
+      <Wrapper>
+        <SearchResultItem result={makeServiceResult()} />
+      </Wrapper>
+    );
+
+    cy.get('[aria-label="Bookmark learning resource"]').should('not.exist');
+    cy.get('[aria-label="Unbookmark learning resource"]').should('not.exist');
+  });
+});
