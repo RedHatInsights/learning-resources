@@ -244,6 +244,8 @@ const SearchPanel = ({
           url: resource.spec.link?.href,
           tags: resource.metadata.tags?.map((tag) => tag.value) || [],
           bundleTags: bundleTags,
+          isBookmarked: resource.metadata.favorite,
+          resourceName: resource.metadata.name,
         });
       });
 
@@ -334,6 +336,8 @@ const SearchPanel = ({
             url: resource.spec.link?.href,
             tags: resource.metadata.tags?.map((tag) => tag.value) || [],
             bundleTags,
+            isBookmarked: resource.metadata.favorite,
+            resourceName: resource.metadata.name,
           });
         }
       }
@@ -376,6 +380,8 @@ const SearchPanel = ({
         url: resource.spec.link?.href,
         tags: resource.metadata.tags?.map((tag) => tag.value) || [],
         bundleTags,
+        isBookmarked: resource.metadata.favorite,
+        resourceName: resource.metadata.name,
       };
     });
   };
@@ -518,6 +524,27 @@ const SearchPanel = ({
     if (isSelected) {
       setActiveToggle(value);
     }
+  };
+
+  const handleBookmarkToggle = (
+    resourceName: string,
+    newBookmarkState: boolean
+  ) => {
+    setRawSearchResults((prev) =>
+      prev.map((result) =>
+        result.resourceName === resourceName
+          ? { ...result, isBookmarked: newBookmarkState }
+          : result
+      )
+    );
+
+    fetchAllData(chrome.auth.getUser, {})
+      .then(([, quickStarts]) => {
+        setAllQuickStarts(quickStarts);
+      })
+      .catch((error) => {
+        console.error('Failed to refresh learning resources data:', error);
+      });
   };
 
   return (
@@ -691,7 +718,10 @@ const SearchPanel = ({
                         <DataListItemCells
                           dataListCells={[
                             <DataListCell key="content" isFilled>
-                              <SearchResultItem result={content} />
+                              <SearchResultItem
+                                result={content}
+                                onBookmarkToggle={handleBookmarkToggle}
+                              />
                             </DataListCell>,
                           ]}
                         />
@@ -723,6 +753,7 @@ const SearchPanel = ({
             perPage={perPage}
             onSetPage={handleSetPage}
             onPerPageSelect={handlePerPageSelect}
+            onBookmarkToggle={handleBookmarkToggle}
             bundleId={bundleId}
             bundleTitle={displayBundleName}
             isHomePage={isHomePage}
