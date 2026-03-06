@@ -422,6 +422,22 @@ const messages = defineMessages({
     id: 'helpPanel.feedback.breadcrumbShareFeedback',
     defaultMessage: 'Share feedback',
   },
+  unbookmarkLearningResource: {
+    id: 'helpPanel.search.unbookmarkLearningResource',
+    defaultMessage: 'Unbookmark learning resource',
+  },
+  bookmarkLearningResource: {
+    id: 'helpPanel.search.bookmarkLearningResource',
+    defaultMessage: 'Bookmark learning resource',
+  },
+  unfavoriteService: {
+    id: 'helpPanel.search.unfavoriteService',
+    defaultMessage: 'Unfavorite {title}',
+  },
+  favoriteService: {
+    id: 'helpPanel.search.favoriteService',
+    defaultMessage: 'Favorite {title}',
+  },
 });
 
 export default messages;
