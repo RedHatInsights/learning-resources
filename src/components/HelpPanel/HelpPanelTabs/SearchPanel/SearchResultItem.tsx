@@ -15,8 +15,6 @@ import {
   CloudIcon,
   HeadsetIcon,
   LightbulbIcon,
-  OutlinedStarIcon,
-  StarIcon,
   VectorSquareIcon,
 } from '@patternfly/react-icons';
 import { useIntl } from 'react-intl';
@@ -28,6 +26,7 @@ import {
   BookmarkedIcon,
   OutlinedBookmarkedIcon,
 } from '../../../common/BookmarkIcon';
+import { FavoriteIcon } from '../../../common/FavoriteIcon';
 import { API_BASE, FAVORITES } from '../../../../hooks/useQuickStarts';
 import messages from '../../../../Messages';
 
@@ -58,6 +57,10 @@ const SearchResultItem: React.FC<{
     result.isBookmarked ?? false
   );
   const [isFavorited, setIsFavorited] = useState(result.isFavorited ?? false);
+
+  useEffect(() => {
+    setIsBookmarked(result.isBookmarked ?? false);
+  }, [result.isBookmarked]);
 
   useEffect(() => {
     setIsFavorited(result.isFavorited ?? false);
@@ -213,6 +216,7 @@ const SearchResultItem: React.FC<{
         <FlexItem>
           <Button
             variant="plain"
+            className="pf-v6-u-p-0"
             onClick={handleBookmarkClick}
             icon={
               isBookmarked ? (
@@ -234,14 +238,9 @@ const SearchResultItem: React.FC<{
         <FlexItem>
           <Button
             variant="plain"
+            className="pf-v6-u-p-0"
             onClick={handleFavoriteClick}
-            icon={
-              isFavorited ? (
-                <StarIcon style={{ color: 'var(--pf-t--color--gold--40)' }} />
-              ) : (
-                <OutlinedStarIcon />
-              )
-            }
+            icon={<FavoriteIcon isFavorited={isFavorited} />}
             aria-label={
               isFavorited
                 ? `Unfavorite ${result.title}`
