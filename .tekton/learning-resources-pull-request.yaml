@@ -73,9 +73,9 @@ spec:
   - name: frontend-proxy-routes-configmap
     value: learning-resources-dev-proxy-caddyfile-v2
   - name: hcc_env
-    value: prod
+    value: stage 
   - name: hcc_env_url
-    value: https://prod.foo.redhat.com
+    value: https://console.stage.redhat.com
   pipelineRef:
     resolver: git
     params:
