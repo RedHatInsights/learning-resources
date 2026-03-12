@@ -72,13 +72,17 @@ spec:
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
     value: learning-resources-dev-proxy-caddyfile-v2
+  - name: hcc_env
+    value: prod
+  - name: hcc_env_url
+    value: https://prod.foo.redhat.com
   pipelineRef:
     resolver: git
     params:
     - name: url
-      value: https://github.com/RedHatInsights/konflux-pipelines
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: main
+      value: add-hcc-env-params
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
