@@ -51,41 +51,17 @@ test.describe('help panel', async () => {
     await expect(page.getByText('No API documentation found matching your criteria.')).toBeVisible();
   });
 
-  // These may not be available in all test environments (e.g., stage)
-  test('displays chat button', async ({page}) => {
+  test('displays status page link in header', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
     // Wait for help panel to be open
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // Wait for panel content to load (it may show "Loading..." initially)
-    // Check if stuck in loading state
-    const loadingText = page.getByText('Loading...');
-    if (await loadingText.isVisible()) {
-      await expect(loadingText).not.toBeVisible({ timeout: 10000 });
-    }
-
-    const askRedHatButton = page.getByText('Chat with an assistant');
-    await expect(askRedHatButton).toBeVisible({ timeout: 10000 });
-  });
-
-  test('displays status page link', async ({page}) => {
-    await page.getByLabel('Toggle help panel').click();
-
-    // Wait for help panel to be open
-    const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
-    await expect(helpPanelTitle).toBeVisible();
-
-    // Wait for panel content to load
-    const loadingText = page.getByText('Loading...');
-    if (await loadingText.isVisible()) {
-      await expect(loadingText).not.toBeVisible({ timeout: 10000 });
-    }
-
-    // The status page link appears in either the header or subtabs depending on feature flags
-    const statusPageLink = page.getByRole('link', {'name': 'Status page'});
-    await expect(statusPageLink.first()).toBeVisible({ timeout: 10000 });
+    // The status page link is always visible in the header next to the Help title
+    const statusPageLink = page.locator('.lr-c-status-page-link');
+    await expect(statusPageLink).toBeVisible();
+    await expect(statusPageLink).toHaveText('Red Hat status page');
   });
 
   test('can add a new tab', async ({page}) => {

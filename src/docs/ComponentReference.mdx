@@ -10,7 +10,7 @@ This document provides detailed reference information for Help Panel components.
 
 ### Core Components
 
-- **HelpPanelContent** - Main container and remote module loader
+- **HelpPanelContent** - Main container for the Help Panel
 - **HelpPanelCustomTabs** - Tab management and navigation
 - **HelpPanelTabContainer** - Routes tab types to panel components
 - **HelpPanelLink** - Component to open custom tabs from external components
@@ -32,15 +32,13 @@ This document provides detailed reference information for Help Panel components.
 
 **Location:** `src/components/HelpPanel/HelpPanelContent.tsx`
 
-Main component that wraps the Help Panel with remote module loading capabilities.
+Main component that provides the Help Panel header, status page link, and tab container.
 
 ### Props
 
 ```typescript
 interface HelpPanelContentProps {
   toggleDrawer: () => void;
-  Models?: ModelsType;
-  setVirtualAssistantState?: Dispatch<SetStateAction<VirtualAssistantState>>;
   newTab?: HelpPanelTabContent;
 }
 ```
@@ -48,28 +46,20 @@ interface HelpPanelContentProps {
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `toggleDrawer` | `() => void` | Yes | Function to close the Help Panel drawer |
-| `Models` | `ModelsType` | No | Virtual Assistant model types (loaded from remote) |
-| `setVirtualAssistantState` | `Dispatch<SetStateAction<VirtualAssistantState>>` | No | VA state setter (loaded from remote) |
 | `newTab` | `HelpPanelTabContent` | No | Content to open in a new tab |
 
 ### Usage
 
 ```typescript
-<HelpPanelContentWrapper toggleDrawer={handleCloseDrawer} />
+<HelpPanelContent toggleDrawer={handleCloseDrawer} />
 ```
 
-### Remote Dependencies
+### Features
 
-- **Module:** `virtualAssistant/state/globalState`
-- **Exports:**
-  - `useVirtualAssistant` - Hook for VA state management
-  - `Models` - Constants for VA model types
-
-### Feature Flags
-
-- `platform.chrome.help-panel_search` - Search tab availability
-- `platform.chrome.help-panel_knowledge-base` - KB tab availability
-- `platform.chrome.help-panel_direct-ask-redhat` - Ask Red Hat button behavior
+- Displays "Help" title with status page link
+- Status page link is always visible in the header
+- Provides drawer close button
+- Contains HelpPanelCustomTabs for tab navigation
 
 ---
 

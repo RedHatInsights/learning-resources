@@ -8,7 +8,7 @@ const messages = defineMessages({
   },
   statusPage: {
     id: 'helpPanel.header.statusPage',
-    defaultMessage: 'Status page',
+    defaultMessage: 'Red Hat status page',
   },
   statusPageTooltip: {
     id: 'helpPanel.header.statusPageTooltip',

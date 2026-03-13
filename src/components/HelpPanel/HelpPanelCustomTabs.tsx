@@ -1,11 +1,4 @@
-import {
-  Button,
-  Tab,
-  TabTitleText,
-  Tabs,
-  Tooltip,
-  debounce,
-} from '@patternfly/react-core';
+import { Tab, TabTitleText, Tabs, debounce } from '@patternfly/react-core';
 import React, {
   PropsWithChildren,
   ReactNode,
@@ -26,11 +19,7 @@ import { getOpenQuickstartInHelpPanelStore } from '../../store/openQuickstartInH
 import { useGetState } from '@scalprum/react-core';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { useIntl } from 'react-intl';
-import {
-  ExternalLinkAltIcon,
-  OutlinedCommentsIcon,
-  SearchIcon,
-} from '@patternfly/react-icons';
+import { OutlinedCommentsIcon, SearchIcon } from '@patternfly/react-icons';
 import {
   QuickStartCloseModal,
   QuickStartStatus,
@@ -218,7 +207,6 @@ const SubTabs = ({
   activeSubTabKey: TabType;
   setActiveSubTabKey: (key: TabType) => void;
 }>) => {
-  const intl = useIntl();
   const flags = useFlags();
   const filteredSubTabs = useMemo(() => {
     return subTabs.filter((tab) => {
@@ -229,10 +217,6 @@ const SubTabs = ({
     });
   }, [flags, subTabs]);
 
-  const searchFlag = useFlag('platform.chrome.help-panel_search');
-  const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
-
-  const showStatusPageButton = !searchFlag && !kbFlag;
   return (
     <>
       <Tabs
@@ -247,36 +231,17 @@ const SubTabs = ({
         }}
         data-ouia-component-id="help-panel-subtabs"
       >
-        <>
-          {filteredSubTabs.map((tab) => (
-            <Tab
-              eventKey={tab.tabType}
-              key={tab.tabType}
-              title={
-                <TabTitleText>{tab.icon ? tab.icon : tab.title}</TabTitleText>
-              }
-              aria-label={tab.title as string}
-              data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
-            />
-          ))}
-          {showStatusPageButton && (
-            <Tooltip content={intl.formatMessage(messages.statusPageTooltip)}>
-              <Button
-                variant="link"
-                component="a"
-                href="https://status.redhat.com/"
-                target="_blank"
-                isInline
-                className="lr-c-status-page-button"
-                icon={<ExternalLinkAltIcon />}
-                iconPosition="end"
-                data-ouia-component-id="help-panel-status-page-subtabs-button"
-              >
-                {intl.formatMessage(messages.statusPage)}
-              </Button>
-            </Tooltip>
-          )}
-        </>
+        {filteredSubTabs.map((tab) => (
+          <Tab
+            eventKey={tab.tabType}
+            key={tab.tabType}
+            title={
+              <TabTitleText>{tab.icon ? tab.icon : tab.title}</TabTitleText>
+            }
+            aria-label={tab.title as string}
+            data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
+          />
+        ))}
       </Tabs>
       {children}
     </>
