@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Content,
@@ -19,11 +19,18 @@ import {
   VectorSquareIcon,
 } from '@patternfly/react-icons';
 import { useIntl } from 'react-intl';
+import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import axios from 'axios';
 import { useOpenQuickStartInHelpPanel } from '../../../../utils/openQuickStartInHelpPanel';
 import { getBundleDisplayName } from '../../../../utils/bundleUtils';
+import {
+  BookmarkedIcon,
+  OutlinedBookmarkedIcon,
+} from '../../../common/BookmarkIcon';
+import { FavoriteIcon } from '../../../common/FavoriteIcon';
+import { API_BASE, FAVORITES } from '../../../../hooks/useQuickStarts';
 import messages from '../../../../Messages';
 
-// Search result types
 export interface SearchResult {
   id: string;
   title: string;
@@ -33,14 +40,73 @@ export interface SearchResult {
   tags?: string[];
   relevanceScore?: number;
   bundleTags?: string[];
+  isBookmarked?: boolean;
+  resourceName?: string;
+  isFavorited?: boolean;
 }
 
 // Search Result Item Component
 const SearchResultItem: React.FC<{
   result: SearchResult;
-}> = ({ result }) => {
+  onBookmarkToggle?: (resourceName: string, newBookmarkState: boolean) => void;
+  onFavoriteToggle?: (pathname: string, newFavoriteState: boolean) => void;
+}> = ({ result, onBookmarkToggle, onFavoriteToggle }) => {
   const intl = useIntl();
+  const chrome = useChrome();
   const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
+  const [isBookmarked, setIsBookmarked] = useState(
+    result.isBookmarked ?? false
+  );
+  const [isFavorited, setIsFavorited] = useState(result.isFavorited ?? false);
+
+  useEffect(() => {
+    setIsBookmarked(result.isBookmarked ?? false);
+  }, [result.isBookmarked]);
+
+  useEffect(() => {
+    setIsFavorited(result.isFavorited ?? false);
+  }, [result.isFavorited]);
+
+  const isBookmarkable =
+    (result.type === 'documentation' || result.type === 'quickstart') &&
+    !!result.resourceName;
+
+  const isFavoriteable = result.type === 'service' && !!result.url;
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!result.resourceName) return;
+
+    try {
+      const user = await chrome.auth.getUser();
+      if (!user) {
+        throw new Error('User not logged in');
+      }
+      const account = user.identity.internal?.account_id;
+
+      const newState = !isBookmarked;
+      setIsBookmarked(newState);
+      await axios.post(`${API_BASE}${FAVORITES}?account=${account}`, {
+        quickstartName: result.resourceName,
+        favorite: newState,
+      });
+      onBookmarkToggle?.(result.resourceName!, newState);
+    } catch (error) {
+      setIsBookmarked(result.isBookmarked ?? false);
+    }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!result.url) return;
+
+    const newState = !isFavorited;
+    setIsFavorited(newState);
+    onFavoriteToggle?.(result.url, newState);
+  };
 
   const handleResultClick = () => {
     if (result.type === 'quickstart' && result.id.startsWith('lr-')) {
@@ -49,7 +115,11 @@ const SearchResultItem: React.FC<{
         openDrawer: false,
       });
     } else if (result.url) {
-      window.open(result.url, '_blank', 'noopener,noreferrer');
+      if (result.type === 'service') {
+        window.location.assign(result.url);
+      } else {
+        window.open(result.url, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
@@ -139,50 +209,101 @@ const SearchResultItem: React.FC<{
   };
 
   return (
-    <Stack hasGutter>
-      <StackItem>
-        <Button
-          variant="link"
-          onClick={handleResultClick}
-          isInline
-          className="pf-v6-u-text-align-left pf-v6-u-p-0"
-        >
-          {result.title}
-          {result.url && result.type !== 'quickstart' && (
-            <ExternalLinkAltIcon className="pf-v6-u-ml-xs" />
-          )}
-        </Button>
-      </StackItem>
+    <Flex
+      alignItems={{ default: 'alignItemsFlexStart' }}
+      spaceItems={{ default: 'spaceItemsSm' }}
+    >
+      {isBookmarkable && (
+        <FlexItem>
+          <Button
+            variant="plain"
+            className="pf-v6-u-p-0"
+            onClick={handleBookmarkClick}
+            icon={
+              isBookmarked ? (
+                <BookmarkedIcon />
+              ) : (
+                <OutlinedBookmarkedIcon className="pf-v6-u-color-200" />
+              )
+            }
+            aria-label={intl.formatMessage(
+              isBookmarked
+                ? messages.unbookmarkLearningResource
+                : messages.bookmarkLearningResource
+            )}
+          />
+        </FlexItem>
+      )}
 
-      <StackItem>
-        <Flex
-          justifyContent={{ default: 'justifyContentSpaceBetween' }}
-          alignItems={{ default: 'alignItemsCenter' }}
-        >
-          <FlexItem>{renderBreadcrumb()}</FlexItem>
-          {result.bundleTags && result.bundleTags.length > 0 && (
-            <FlexItem>
-              <Flex spaceItems={{ default: 'spaceItemsXs' }}>
-                {result.bundleTags.map((tag, index: number) => {
-                  const displayName = getBundleDisplayName(tag, {
-                    allowFallback: false,
-                  });
-                  if (!displayName) return null; // Hide unknown bundle tags
+      {isFavoriteable && (
+        <FlexItem>
+          <Button
+            variant="plain"
+            className="pf-v6-u-p-0"
+            onClick={handleFavoriteClick}
+            icon={<FavoriteIcon isFavorited={isFavorited} />}
+            aria-label={intl.formatMessage(
+              isFavorited
+                ? messages.unfavoriteService
+                : messages.favoriteService,
+              { title: result.title }
+            )}
+          />
+        </FlexItem>
+      )}
 
-                  return (
-                    <FlexItem key={index}>
-                      <Label color="grey" variant="filled" isCompact>
-                        {displayName}
-                      </Label>
-                    </FlexItem>
-                  );
-                })}
-              </Flex>
-            </FlexItem>
-          )}
-        </Flex>
-      </StackItem>
-    </Stack>
+      <FlexItem flex={{ default: 'flex_1' }}>
+        <Stack hasGutter>
+          <StackItem>
+            <Button
+              variant="link"
+              onClick={handleResultClick}
+              isInline
+              className="pf-v6-u-text-align-left pf-v6-u-p-0"
+              icon={
+                result.url &&
+                result.type !== 'quickstart' &&
+                result.type !== 'service' ? (
+                  <ExternalLinkAltIcon />
+                ) : undefined
+              }
+              iconPosition="end"
+            >
+              {result.title}
+            </Button>
+          </StackItem>
+
+          <StackItem>
+            <Flex
+              justifyContent={{ default: 'justifyContentSpaceBetween' }}
+              alignItems={{ default: 'alignItemsCenter' }}
+            >
+              <FlexItem>{renderBreadcrumb()}</FlexItem>
+              {result.bundleTags && result.bundleTags.length > 0 && (
+                <FlexItem>
+                  <Flex spaceItems={{ default: 'spaceItemsXs' }}>
+                    {result.bundleTags.map((tag, index: number) => {
+                      const displayName = getBundleDisplayName(tag, {
+                        allowFallback: false,
+                      });
+                      if (!displayName) return null;
+
+                      return (
+                        <FlexItem key={index}>
+                          <Label color="grey" variant="filled" isCompact>
+                            {displayName}
+                          </Label>
+                        </FlexItem>
+                      );
+                    })}
+                  </Flex>
+                </FlexItem>
+              )}
+            </Flex>
+          </StackItem>
+        </Stack>
+      </FlexItem>
+    </Flex>
   );
 };
 

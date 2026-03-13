@@ -40,6 +40,8 @@ interface SearchResultsProps {
     newPerPage: number,
     newPage: number
   ) => void;
+  onBookmarkToggle?: (resourceName: string, newBookmarkState: boolean) => void;
+  onFavoriteToggle?: (pathname: string, newFavoriteState: boolean) => void;
   // Bundle context props
   bundleId?: string;
   bundleTitle?: string;
@@ -54,6 +56,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   perPage,
   onSetPage,
   onPerPageSelect,
+  onBookmarkToggle,
+  onFavoriteToggle,
   bundleId,
   isHomePage,
 }) => {
@@ -170,7 +174,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       <DataListItemCells
                         dataListCells={[
                           <DataListCell key="content" isFilled>
-                            <SearchResultItem result={result} />
+                            <SearchResultItem
+                              result={result}
+                              onBookmarkToggle={onBookmarkToggle}
+                              onFavoriteToggle={onFavoriteToggle}
+                            />
                           </DataListCell>,
                         ]}
                       />

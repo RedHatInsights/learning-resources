@@ -73,7 +73,7 @@ const LearningResourceItem: React.FC<{
       const account = user.identity.internal?.account_id;
 
       setIsBookmarked(!isBookmarked);
-      await axios.post(`${API_BASE}/${FAVORITES}?account=${account}`, {
+      await axios.post(`${API_BASE}${FAVORITES}?account=${account}`, {
         quickstartName: resource.metadata.name,
         favorite: !isBookmarked,
       });

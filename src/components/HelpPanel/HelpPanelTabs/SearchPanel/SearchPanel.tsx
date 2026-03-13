@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Content,
@@ -23,6 +23,11 @@ import {
   fetchBundleInfo,
   fetchBundles,
 } from '../../../../utils/fetchBundleInfoAPI';
+import {
+  FavoritePage,
+  fetchFavoritePages,
+  toggleFavoritePage,
+} from '../../../../utils/serviceFavorites';
 import SearchResultItem, { SearchResult } from './SearchResultItem';
 import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
@@ -120,6 +125,10 @@ const SearchPanel = ({
   const [allQuickStarts, setAllQuickStarts] = useState<
     Awaited<ReturnType<typeof fetchAllData>>[1]
   >([]);
+
+  // Service favorite pages state (same as All Services page)
+  const [favoritePages, setFavoritePages] = useState<FavoritePage[]>([]);
+  const favoriteToggleSeqRef = useRef<Map<string, number>>(new Map());
 
   // Filter options
   const filterOptions = [
@@ -244,12 +253,17 @@ const SearchPanel = ({
           url: resource.spec.link?.href,
           tags: resource.metadata.tags?.map((tag) => tag.value) || [],
           bundleTags: bundleTags,
+          isBookmarked: resource.metadata.favorite,
+          resourceName: resource.metadata.name,
         });
       });
 
       // HCC Services
       bundles.forEach((bundle) => {
         bundle.navItems.forEach((navItem) => {
+          const isFav = favoritePages.some(
+            (fp) => fp.pathname === navItem.href && fp.favorite
+          );
           results.push({
             id: `service-${navItem.appId}`,
             title: navItem.title,
@@ -257,7 +271,7 @@ const SearchPanel = ({
             type: 'service',
             url: navItem.href,
             tags: [bundle.title, bundle.id],
-            // Services don't show bundle tags - they're already categorized as services
+            isFavorited: isFav,
           });
         });
       });
@@ -334,6 +348,8 @@ const SearchPanel = ({
             url: resource.spec.link?.href,
             tags: resource.metadata.tags?.map((tag) => tag.value) || [],
             bundleTags,
+            isBookmarked: resource.metadata.favorite,
+            resourceName: resource.metadata.name,
           });
         }
       }
@@ -376,6 +392,8 @@ const SearchPanel = ({
         url: resource.spec.link?.href,
         tags: resource.metadata.tags?.map((tag) => tag.value) || [],
         bundleTags,
+        isBookmarked: resource.metadata.favorite,
+        resourceName: resource.metadata.name,
       };
     });
   };
@@ -391,6 +409,23 @@ const SearchPanel = ({
       })
       .catch((error) => {
         console.error('Failed to load learning resources:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load favorite pages on mount (same API as All Services star icons)
+  useEffect(() => {
+    let cancelled = false;
+    fetchFavoritePages()
+      .then((pages) => {
+        if (!cancelled) {
+          setFavoritePages(pages);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load favorite pages:', error);
       });
     return () => {
       cancelled = true;
@@ -418,6 +453,22 @@ const SearchPanel = ({
     if (defaultResolved.length > 0) return defaultResolved;
     return buildFallbackRecommendedContent(allQuickStarts, false);
   }, [allQuickStarts, activeToggle, isHomePage, bundleId]);
+
+  // Sync isFavorited on service results when favoritePages or results change
+  useEffect(() => {
+    if (rawSearchResults.length === 0) return;
+    setRawSearchResults((prev) =>
+      prev.map((result) => {
+        if (result.type !== 'service' || !result.url) return result;
+        const isFav = favoritePages.some(
+          (fp) => fp.pathname === result.url && fp.favorite
+        );
+        return isFav !== result.isFavorited
+          ? { ...result, isFavorited: isFav }
+          : result;
+      })
+    );
+  }, [favoritePages, rawSearchResults.length]);
 
   // Perform search
   useEffect(() => {
@@ -517,6 +568,59 @@ const SearchPanel = ({
   ) => {
     if (isSelected) {
       setActiveToggle(value);
+    }
+  };
+
+  const handleBookmarkToggle = (
+    resourceName: string,
+    newBookmarkState: boolean
+  ) => {
+    setRawSearchResults((prev) =>
+      prev.map((result) =>
+        result.resourceName === resourceName
+          ? { ...result, isBookmarked: newBookmarkState }
+          : result
+      )
+    );
+
+    fetchAllData(chrome.auth.getUser, {})
+      .then(([, quickStarts]) => {
+        setAllQuickStarts(quickStarts);
+      })
+      .catch((error) => {
+        console.error('Failed to refresh learning resources data:', error);
+      });
+  };
+
+  const handleFavoriteToggle = async (
+    pathname: string,
+    newFavoriteState: boolean
+  ) => {
+    const seq = (favoriteToggleSeqRef.current.get(pathname) ?? 0) + 1;
+    favoriteToggleSeqRef.current.set(pathname, seq);
+
+    setRawSearchResults((prev) =>
+      prev.map((result) =>
+        result.type === 'service' && result.url === pathname
+          ? { ...result, isFavorited: newFavoriteState }
+          : result
+      )
+    );
+
+    try {
+      const updatedPages = await toggleFavoritePage(pathname, newFavoriteState);
+      if (favoriteToggleSeqRef.current.get(pathname) !== seq) return;
+      setFavoritePages(updatedPages);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      if (favoriteToggleSeqRef.current.get(pathname) !== seq) return;
+      setRawSearchResults((prev) =>
+        prev.map((result) =>
+          result.type === 'service' && result.url === pathname
+            ? { ...result, isFavorited: !newFavoriteState }
+            : result
+        )
+      );
     }
   };
 
@@ -691,7 +795,11 @@ const SearchPanel = ({
                         <DataListItemCells
                           dataListCells={[
                             <DataListCell key="content" isFilled>
-                              <SearchResultItem result={content} />
+                              <SearchResultItem
+                                result={content}
+                                onBookmarkToggle={handleBookmarkToggle}
+                                onFavoriteToggle={handleFavoriteToggle}
+                              />
                             </DataListCell>,
                           ]}
                         />
@@ -723,6 +831,8 @@ const SearchPanel = ({
             perPage={perPage}
             onSetPage={handleSetPage}
             onPerPageSelect={handlePerPageSelect}
+            onBookmarkToggle={handleBookmarkToggle}
+            onFavoriteToggle={handleFavoriteToggle}
             bundleId={bundleId}
             bundleTitle={displayBundleName}
             isHomePage={isHomePage}
