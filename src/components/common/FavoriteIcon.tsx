@@ -1,6 +1,7 @@
 import React from 'react';
 import { StarIcon } from '@patternfly/react-icons';
 import { Icon } from '@patternfly/react-core';
+import './FavoriteIcon.scss';
 
 export const FavoriteIcon = ({
   isFavorited,
@@ -15,9 +16,7 @@ export const FavoriteIcon = ({
     status={isFavorited ? 'warning' : undefined}
   >
     <StarIcon
-      color={
-        !isFavorited ? 'var(--pf-t--global--icon--color--disabled)' : undefined
-      }
+      className={!isFavorited ? 'lr-c-favorite__icon--unfavorited' : undefined}
     />
   </Icon>
 );

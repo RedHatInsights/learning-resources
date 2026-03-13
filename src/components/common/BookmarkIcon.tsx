@@ -9,7 +9,7 @@ export const OutlinedBookmarkedIcon = ({
   className?: string;
 }) => (
   <Icon isInline className={className}>
-    <OutlinedBookmarkIcon color="var(--pf-t--global--icon--color--disabled)" />
+    <OutlinedBookmarkIcon className="lr-c-bookmark__icon--outlined" />
   </Icon>
 );
 
