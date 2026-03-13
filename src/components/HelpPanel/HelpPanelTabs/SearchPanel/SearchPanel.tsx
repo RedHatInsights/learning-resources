@@ -380,9 +380,14 @@ const SearchPanel = ({
     });
   };
 
-  // Load quickstarts data once on mount
+  // Load quickstarts data once on mount (skip when chrome auth is unavailable, e.g. in tests)
   useEffect(() => {
     let cancelled = false;
+    if (!chrome?.auth?.getUser) {
+      return () => {
+        cancelled = true;
+      };
+    }
     fetchAllData(chrome.auth.getUser, {})
       .then(([, quickStarts]) => {
         if (!cancelled) {

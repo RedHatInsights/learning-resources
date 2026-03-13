@@ -195,10 +195,12 @@ const useTabs = (apiStoreMock: ReturnType<typeof createTabsStore>) => {
 
   useEffect(() => {
     const unsubscribe = subscribe(dispatch);
+    // Sync state from current store (needed when store instance changed, e.g. flags)
+    dispatch();
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [apiStoreMock]);
 
   return {
     tabs,
@@ -288,17 +290,30 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
     const intl = useIntl();
     const chrome = useChrome();
     const vaFlag = useFlag('platform.chrome.help-panel_chatbot');
+    const searchFlag = useFlag('platform.chrome.help-panel_search');
 
     const baseTabs = useMemo(() => createBaseTabs(vaFlag), [vaFlag]);
-    const apiStoreMock = useMemo(() => createTabsStore(baseTabs), [baseTabs]);
-
-    // Find the Learn tab index (it might be 0 or 1 depending on VA flag)
-    const learnTabIndex = baseTabs.findIndex(
-      (tab) => tab.tabType === TabType.learn
+    // Initialize store with find-help tab already having the correct sub-tab (Search when flag on, else Learn)
+    // so content is correct on first paint and tests don't depend on a follow-up effect.
+    const initialTabs = useMemo(
+      () =>
+        baseTabs.map((tab) =>
+          tab.id === 'find-help' && searchFlag
+            ? { ...tab, tabType: TabType.search }
+            : tab
+        ),
+      [baseTabs, searchFlag]
     );
-    const [activeTab, setActiveTab] = useState<TabDefinition>(
-      baseTabs[learnTabIndex]
-    ); // Default to 'Find help' tab (Learn)
+    const apiStoreMock = useMemo(
+      () => createTabsStore(initialTabs),
+      [initialTabs]
+    );
+
+    // Default to 'Find help' tab; default sub-tab is Search when search flag is enabled, otherwise Learn
+    const defaultFindHelpTab =
+      initialTabs.find((t) => t.id === 'find-help') ?? initialTabs[0];
+    const [activeTab, setActiveTab] =
+      useState<TabDefinition>(defaultFindHelpTab);
 
     const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
       undefined
@@ -559,13 +574,20 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
         !activeTab.closeable &&
         !baseTabs.find((tab) => tab.id === activeTab.id)
       ) {
-        // Current active tab is no longer available, default to Learn tab
-        const learnTab = baseTabs.find((tab) => tab.tabType === TabType.learn);
-        if (learnTab) {
-          setActiveTab(learnTab);
+        // Current active tab is no longer available, default to Search tab when available, otherwise Learn tab
+        const findHelpTabFallback = baseTabs.find(
+          (tab) => tab.tabType === TabType.learn
+        );
+        if (findHelpTabFallback) {
+          const fallbackTab = {
+            ...findHelpTabFallback,
+            tabType: searchFlag ? TabType.search : TabType.learn,
+          };
+          updateTab(fallbackTab);
+          setActiveTab(fallbackTab);
         }
       }
-    }, [baseTabs, activeTab.id, activeTab.closeable]);
+    }, [baseTabs, activeTab.id, activeTab.closeable, searchFlag, updateTab]);
 
     useEffect(() => {
       // Ensure the Add tab button has a stable OUIA id
