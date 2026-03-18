@@ -239,17 +239,11 @@ const SearchPanelWrapper = ({ bundle = 'insights' }: { bundle?: string }) => {
     useQueryParams: false,
   });
 
-  React.useEffect(() => {
-    /* eslint-disable rulesdir/no-chrome-api-call-from-window */
-    if (typeof window !== 'undefined' && window.insights?.chrome) {
-      const originalGetBundleData = window.insights.chrome.getBundleData;
-      window.insights.chrome.getBundleData = () => ({ bundleId: bundle });
-      return () => {
-        window.insights.chrome.getBundleData = originalGetBundleData;
-      };
-    }
-    /* eslint-enable rulesdir/no-chrome-api-call-from-window */
-  }, [bundle]);
+  /* eslint-disable rulesdir/no-chrome-api-call-from-window */
+  if (typeof window !== 'undefined' && window.insights?.chrome) {
+    window.insights.chrome.getBundleData = () => ({ bundleId: bundle });
+  }
+  /* eslint-enable rulesdir/no-chrome-api-call-from-window */
 
   return (
     <IntlProvider locale="en" defaultLocale="en">
