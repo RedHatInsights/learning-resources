@@ -3,12 +3,17 @@
  * Based on insights-rbac-ui pattern
  */
 
-// Mock useFlag hook - always returns false
-export const useFlag = () => false;
+const enabledFlags = [
+  { name: 'platform.chrome.help-panel_search', enabled: true },
+];
 
-// Mock other exports
+export const useFlag = (flagName) => {
+  const match = enabledFlags.find((f) => f.name === flagName);
+  return match ? match.enabled : false;
+};
+
 export const FlagProvider = ({ children }) => children;
 export const UnleashClient = class {};
 export const useUnleashContext = () => ({});
 export const useVariant = () => ({ name: 'disabled', enabled: false });
-export const useFlags = () => [];
+export const useFlags = () => enabledFlags;

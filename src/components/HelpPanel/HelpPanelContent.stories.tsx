@@ -105,6 +105,14 @@ const mockHelpPanelHandlers = [
   http.get('/api/quickstarts/v1/favorites', () => {
     return HttpResponse.json({ data: [] });
   }),
+  // Mock chrome-service user endpoint (SearchPanel loads favorite pages on mount)
+  http.get('/api/chrome-service/v1/user', () =>
+    HttpResponse.json({
+      data: {
+        favoritePages: [],
+      },
+    })
+  ),
 ];
 
 const meta: Meta<typeof HelpPanelWrapper> = {

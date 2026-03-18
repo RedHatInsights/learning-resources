@@ -285,6 +285,85 @@ export const helpPanelMswHandlers = [
       data: [],
     });
   }),
+  // Mock chrome-service user endpoint (SearchPanel loads favorite pages on mount)
+  http.get('/api/chrome-service/v1/user', () =>
+    HttpResponse.json({
+      data: {
+        favoritePages: [{ pathname: '/insights/advisor', favorite: true }],
+      },
+    })
+  ),
+];
+
+/**
+ * Shared MSW handlers for Search Panel user journeys.
+ * Extends helpPanelMswHandlers with chrome-service and bookmark/favorite toggle endpoints.
+ */
+export const searchPanelJourneyMswHandlers = [
+  ...helpPanelMswHandlers,
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () =>
+    HttpResponse.json([
+      {
+        bundleLabels: ['insights'],
+        frontendName: 'Vulnerability',
+        url: 'https://developers.redhat.com/api-catalog/api/vulnerability',
+      },
+      {
+        bundleLabels: ['ansible'],
+        frontendName: 'Automation Hub',
+        url: 'https://developers.redhat.com/api-catalog/api/automation-hub',
+      },
+    ])
+  ),
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () =>
+    HttpResponse.json([
+      {
+        id: 'insights',
+        title: 'Red Hat Insights',
+        navItems: [
+          {
+            appId: 'advisor',
+            filterable: true,
+            href: '/insights/advisor',
+            id: 'advisor',
+            title: 'Advisor',
+          },
+          {
+            appId: 'vulnerability',
+            filterable: true,
+            href: '/insights/vulnerability',
+            id: 'vulnerability',
+            title: 'Vulnerability',
+          },
+        ],
+      },
+      {
+        id: 'ansible',
+        title: 'Ansible Automation Platform',
+        navItems: [
+          {
+            appId: 'automation-hub',
+            filterable: true,
+            href: '/ansible/automation-hub',
+            id: 'automation-hub',
+            title: 'Automation Hub',
+          },
+        ],
+      },
+    ])
+  ),
+  http.post('/api/chrome-service/v1/favorite-pages', async ({ request }) => {
+    const body = (await request.json()) as {
+      pathname: string;
+      favorite: boolean;
+    };
+    return HttpResponse.json([
+      { pathname: body.pathname, favorite: body.favorite },
+    ]);
+  }),
+  http.post('/api/quickstarts/v1/favorites', () =>
+    HttpResponse.json({ success: true })
+  ),
 ];
 
 const supportCasesFilterUrlProd =

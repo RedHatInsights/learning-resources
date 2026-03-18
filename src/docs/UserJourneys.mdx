@@ -63,9 +63,66 @@ Tests the user workflow for viewing support cases and opening a new case from th
 **Manual Testing:**
 Use the "Manual Testing" story to explore the Support tab interactively.
 
+### Help Panel / Feedback Panel
+
+Tests the user workflow for submitting feedback through the three feedback workflows in the Help Panel (Feedback tab).
+
+**Steps:**
+1. **Page Loads** - Console page loads with Help button in masthead
+2. **Navigate to Feedback Tab** - User opens the Help Panel and navigates to the Feedback tab, verifying all three workflow cards
+3. **Share Feedback Workflow** - User opens the Share Feedback form, types feedback text, and checks the research opportunities checkbox to reveal their email
+4. **Report Bug Workflow** - User opens the Report Bug form, fills in the bug description, checks the checkbox, and navigates back to the feedback home via the back button
+5. **Research Opportunities Workflow** - User opens the Inform Direction form (no textarea), verifies the submit button is disabled until the required checkbox is checked
+6. **Breadcrumb Navigation** - User navigates into a workflow and back to the feedback home using the breadcrumb link
+7. **Email Display Toggle** - User checks and unchecks the research checkbox, verifying email is shown/hidden accordingly
+
+**What it tests:**
+- Feedback tab navigation and card rendering
+- Three distinct feedback workflows (Share Feedback, Report Bug, Research Opportunities)
+- Form validation and required fields per workflow type
+- Email display toggle via research opportunities checkbox
+- Breadcrumb and back button navigation between forms and home
+
+**Manual Testing:**
+Use the "Manual Testing" story to explore the Feedback tab interactively. Note that form submission requires external API endpoints and only works in production/stage environments.
+
+### Help Panel / Search Panel
+
+Tests the complete user workflow for searching, filtering, and interacting with search results in the Help Panel (Search tab).
+
+**Steps:**
+1. **Page Loads** - Console page loads with Help button in masthead
+2. **Open Help Panel** - User clicks Help button to open the Help Panel drawer
+3. **Navigate to Search Tab** - User navigates to the Search tab
+4. **Search and View Results** - User types a query and views matching results
+5. **Search and Filter by Type** - User applies a content type filter to narrow results
+6. **Clear All Filters** - User clears applied filters to restore the full result set
+7. **Clear Search** - User clears the search input and returns to the default recommended content view
+8. **Click Recent Query** - User clicks a recent search query to re-run the search
+9. **Clear Search History** - User clears all recent queries
+10. **Recommended Content Toggle** - User toggles recommended content between "All" and current bundle scope
+11. **Toggle Favorite Service** - User toggles a service favorite (star icon) and verifies the API call
+12. **Toggle Bookmark Resource** - User toggles a resource bookmark and verifies the API call
+13. **Search Scope Toggle** - User switches search scope between "All" and the current bundle
+
+**What it tests:**
+- Search input with debounced queries
+- Search results rendering and content matching
+- Content type filter dropdown and chip clearing
+- Search input reset to default view
+- Recent search query persistence and re-execution (localStorage)
+- Search history clearing
+- Recommended content scope toggle (All vs bundle)
+- Service favorite toggling with API spy verification
+- Resource bookmark toggling with API spy verification
+- Search scope toggle between All and current bundle
+
+**Manual Testing:**
+Use the "Manual Testing" story to explore the Search tab interactively.
+
 ## 🏗️ Creating New Tab Journeys
 
-Use the shared helpers in `src/user-journeys/_shared/helpPanelJourneyHelpers.ts` to create journeys for other Help Panel tabs (APIs, Support, Feedback, etc.).
+Use the shared helpers in `src/user-journeys/_shared/helpPanelJourneyHelpers.ts` to create journeys for other Help Panel tabs (e.g., APIs).
 
 See `HELP_PANEL_JOURNEY_TEMPLATE.md` for detailed examples.
 
@@ -78,6 +135,8 @@ See `HELP_PANEL_JOURNEY_TEMPLATE.md` for detailed examples.
 **`navigateToTab(canvasElement, tabName)`** - Opens panel and navigates to a specific tab
 
 **`helpPanelMswHandlers`** - Mock API handlers for learning resources (filters, quickstarts, favorites)
+
+**`searchPanelJourneyMswHandlers`** - Extends `helpPanelMswHandlers` with additional endpoints for search panel testing (API specs, bundles, user data, favorite-pages POST, quickstart favorites POST)
 
 **`supportPanelMswHandlers`** - Mock support cases API (empty state). Use with **`supportPanelMswHandlersWithCases`** for table/pagination testing.
 

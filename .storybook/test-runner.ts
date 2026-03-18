@@ -36,6 +36,9 @@ const IGNORED_ERROR_PATTERNS: ErrorPattern[] = [
   // Storybook/Testing Library informational warnings (not scoped)
   { pattern: /You are using Testing Library's `screen` object/, label: 'Testing Library screen warning' },
 
+  // PF6 Content component renders <p> inside <p> in FeedbackForm (upstream issue)
+  { pattern: /validateDOMNesting.*<p>/, label: 'PF6 Content p-in-p nesting' },
+
   // MSW informational logs (scoped to MSW)
   { pattern: /MSW.*mock/i, label: 'MSW logs', source: 'msw' },
   { pattern: /^Request \{url:/, label: 'MSW request logs', source: 'msw' },

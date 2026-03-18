@@ -95,6 +95,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
                     value={option.value}
                     hasCheckbox
                     isSelected={selectedFilters.includes(option.value)}
+                    data-ouia-component-id={`help-panel-search-filter-option-${option.value}`}
                   >
                     {option.label}
                   </SelectOption>
