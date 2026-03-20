@@ -1,10 +1,16 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
+import { LEARNING_RESOURCES_URL, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
+  // Authentication is handled by global setup (see playwright/global-setup.ts)
+  // All tests automatically use the saved authentication state
 
-  test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
+  // Navigate to dashboard before each test (unless test navigates elsewhere)
+  test.beforeEach(async ({page}) => {
+    // Only navigate if page is still on about:blank
+    if (page.url() === 'about:blank') {
+      await page.goto('/');
+    }
   });
 
   test('appears in the help menu and the link works', async({page}) => {
