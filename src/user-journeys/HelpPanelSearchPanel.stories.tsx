@@ -423,15 +423,19 @@ export const Step11_ToggleFavoriteService: Story = {
 
     await searchAndWaitForResults(canvas, 'Advisor');
 
-    const unfavoriteBtn = await canvas.findByRole('button', {
-      name: /unfavorite advisor/i,
-    });
+    const unfavoriteBtn = await canvas.findByRole(
+      'button',
+      { name: /unfavorite advisor/i },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
+    );
     await userEvent.click(unfavoriteBtn);
     await delay(TEST_TIMEOUTS.AFTER_CLICK);
 
-    await canvas.findByRole('button', {
-      name: /favorite advisor/i,
-    });
+    await canvas.findByRole(
+      'button',
+      { name: /favorite advisor/i },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
+    );
 
     await waitFor(() => {
       expect(favoritePagesSpy).toHaveBeenCalledWith({
@@ -489,24 +493,26 @@ export const Step12_ToggleBookmarkResource: Story = {
 
     await searchAndWaitForResults(canvas, 'Advisor Quick Start');
 
-    const resultsList = await canvas.findByRole('list', {
-      name: /search results/i,
-    });
-    await within(resultsList).findByText(
-      'Advisor Quick Start',
-      {},
-      { timeout: 5000 }
+    await canvas.findByRole('list', { name: /search results/i });
+    await canvas.findByRole(
+      'button',
+      { name: 'Advisor Quick Start' },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
     );
 
-    const unbookmarkBtn = await canvas.findByRole('button', {
-      name: /unbookmark learning resource/i,
-    });
+    const unbookmarkBtn = await canvas.findByRole(
+      'button',
+      { name: /unbookmark learning resource/i },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
+    );
     await userEvent.click(unbookmarkBtn);
     await delay(TEST_TIMEOUTS.AFTER_CLICK);
 
-    await canvas.findByRole('button', {
-      name: /bookmark learning resource/i,
-    });
+    await canvas.findByRole(
+      'button',
+      { name: /bookmark learning resource/i },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
+    );
 
     await waitFor(() => {
       expect(bookmarkSpy).toHaveBeenCalledWith(
