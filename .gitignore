@@ -24,5 +24,8 @@ coverage
 
 test-results
 
+# playwright authentication
+.auth
+
 # storybook
 storybook-static

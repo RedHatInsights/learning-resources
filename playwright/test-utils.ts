@@ -1,8 +1,9 @@
 import { Page, expect } from '@playwright/test';
 
-// This can be changed to hit stage directly, but by default devs should be using stage.foo
-export const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
-export const LEARNING_RESOURCES_URL = `https://${APP_TEST_HOST_PORT}/learning-resources`;
+// Base URL is configured in playwright.config.ts
+// Default: https://stage.foo.redhat.com:1337 (for local dev proxy)
+// Can be overridden with PLAYWRIGHT_BASE_URL environment variable
+export const LEARNING_RESOURCES_URL = '/learning-resources';
 
 // Prevents inconsistent cookie prompting that is problematic for UI testing
 export async function disableCookiePrompt(page: Page) {
@@ -34,27 +35,37 @@ export async function login(page: Page, user: string, password: string): Promise
 }
 
 // Shared login logic for test beforeEach blocks
+// Navigates to dashboard and performs SSO login if needed
 export async function ensureLoggedIn(page: Page): Promise<void> {
-  await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
+  const user = process.env.E2E_USER!;
+  const password = process.env.E2E_PASSWORD!;
 
-  const loggedIn = await page.getByText('Hi,').isVisible();
+  await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
-  if (!loggedIn) {
-    const user = process.env.E2E_USER!;
-    const password = process.env.E2E_PASSWORD!;
-    // make sure the SSO prompt is loaded for login
-    await page.waitForLoadState("load");
-    await expect(page.locator("#username-verification")).toBeVisible();
-    await login(page, user, password);
-    await page.waitForLoadState("load");
-    await expect(page.getByText('Invalid login')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
+  // Check if we landed on the dashboard (already logged in) or need to login
+  const onDashboard = await page.getByRole('button', { name: 'Add widgets' })
+    .isVisible({ timeout: 5000 })
+    .catch(() => false);
 
-    // conditionally accept cookie prompt
-    const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
-    if (await acceptAllButton.isVisible()) {
-      await acceptAllButton.click();
-    }
+  if (onDashboard) {
+    // Already logged in
+    return;
+  }
+
+  // Need to complete SSO login
+  await disableCookiePrompt(page);
+  await page.getByLabel('Red Hat login').first().fill(user);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel('Password').first().fill(password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  // Wait for dashboard to appear
+  await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed after login').toBeVisible({ timeout: 30000 });
+
+  // Conditionally accept cookie prompt
+  const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
+  if (await acceptAllButton.isVisible()) {
+    await acceptAllButton.click();
   }
 }
 

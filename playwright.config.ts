@@ -1,4 +1,7 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+// Simulate slow CI environment with SLOW_CI=1 environment variable
+const simulateSlowCI = process.env.SLOW_CI === '1';
 
 export default defineConfig({
   testDir: './playwright',
@@ -7,4 +10,20 @@ export default defineConfig({
   workers: 1,
   // Disable parallel execution within test files
   fullyParallel: false,
+  // Timeout for each test (includes beforeEach/afterEach hooks)
+  // Set to 90s to accommodate 60s page navigation timeout + SSO login flow in CI
+  timeout: 90000,
+  // Base URL can be overridden with PLAYWRIGHT_BASE_URL environment variable
+  // For local development, use https://stage.foo.redhat.com:1337
+  // For CI/remote stage, use https://console.stage.redhat.com
+  use: {
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
+    ignoreHTTPSErrors: true,
+    // Slow down operations when simulating CI
+    ...(simulateSlowCI && {
+      launchOptions: {
+        slowMo: 50, // Slows down Playwright operations by 50ms each
+      },
+    }),
+  },
 });
