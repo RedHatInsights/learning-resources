@@ -105,6 +105,30 @@ const mockHelpPanelHandlers = [
   http.get('/api/quickstarts/v1/favorites', () => {
     return HttpResponse.json({ data: [] });
   }),
+  // Mock user identity (favorite pages) - needed when search flag is enabled
+  http.get('/api/chrome-service/v1/user', () => {
+    return HttpResponse.json({
+      data: { favoritePages: [] },
+    });
+  }),
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
+    return HttpResponse.json([]);
+  }),
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
+    return HttpResponse.json([]);
+  }),
+  http.post('/api/chrome-service/v1/favorite-pages', async ({ request }) => {
+    const body = (await request.json()) as {
+      pathname: string;
+      favorite: boolean;
+    };
+    return HttpResponse.json([
+      { pathname: body.pathname, favorite: body.favorite },
+    ]);
+  }),
+  http.post('/api/quickstarts/v1/favorites', async () => {
+    return HttpResponse.json({ success: true });
+  }),
 ];
 
 const meta: Meta<typeof HelpPanelWrapper> = {
