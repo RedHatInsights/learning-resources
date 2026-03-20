@@ -34,28 +34,25 @@ export async function login(page: Page, user: string, password: string): Promise
   await expect(page.getByText('Invalid login')).not.toBeVisible();
 }
 
-// Shared login logic called once in beforeAll
-// Performs SSO login and waits for dashboard to appear
+// Shared login logic for test beforeEach blocks
+// Navigates to dashboard and performs SSO login if needed
 export async function ensureLoggedIn(page: Page): Promise<void> {
-  // Simulate slow network in CI by throttling (enable with SLOW_CI=1)
-  if (process.env.SLOW_CI === '1') {
-    const client = await page.context().newCDPSession(page);
-    await client.send('Network.emulateNetworkConditions', {
-      offline: false,
-      downloadThroughput: 1.5 * 1024 * 1024 / 8, // 1.5 Mbps
-      uploadThroughput: 750 * 1024 / 8, // 750 Kbps
-      latency: 100, // 100ms latency
-    });
-    console.log('🐌 Network throttling enabled (simulating slow CI connection)');
-  }
-
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
-  console.log('Logging in...');
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
-  // Complete SSO login
+  // Check if we landed on the dashboard (already logged in) or need to login
+  const onDashboard = await page.getByRole('button', { name: 'Add widgets' })
+    .isVisible({ timeout: 5000 })
+    .catch(() => false);
+
+  if (onDashboard) {
+    // Already logged in
+    return;
+  }
+
+  // Need to complete SSO login
   await disableCookiePrompt(page);
   await page.getByLabel('Red Hat login').first().fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
@@ -70,8 +67,6 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   if (await acceptAllButton.isVisible()) {
     await acceptAllButton.click();
   }
-
-  console.log('✓ Login successful');
 }
 
 // Waits for the count to be within the specified range, then returns it

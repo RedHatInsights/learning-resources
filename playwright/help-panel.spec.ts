@@ -1,12 +1,10 @@
 import { test, expect } from "@chromatic-com/playwright";
+import { ensureLoggedIn } from './test-utils';
 
 test.describe('help panel', async () => {
-  // Authentication is handled by global setup (see playwright/global-setup.ts)
-  // All tests automatically use the saved authentication state
 
-  // Navigate to dashboard before each test
-  test.beforeEach(async ({page}) => {
-    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+  test.beforeEach(async ({page}): Promise<void> => {
+    await ensureLoggedIn(page);
   });
 
   test('opens and displays panel title', async ({page}) => {
