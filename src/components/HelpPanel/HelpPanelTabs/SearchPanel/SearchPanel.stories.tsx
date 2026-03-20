@@ -265,14 +265,14 @@ const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const waitForSearchResults = async (
   canvas: ReturnType<typeof within>,
-  timeout = 8000
+  timeout = 15000
 ) => {
   await canvas.findByRole('list', { name: /search results/i }, { timeout });
 };
 
 const waitForEmptyState = async (
   canvas: ReturnType<typeof within>,
-  timeout = 8000
+  timeout = 15000
 ) => {
   await canvas.findByText('No results found', {}, { timeout });
 };

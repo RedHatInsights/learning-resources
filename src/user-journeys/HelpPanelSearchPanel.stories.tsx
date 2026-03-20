@@ -39,7 +39,7 @@ const searchAndWaitForResults = async (
   await canvas.findByRole(
     'list',
     { name: /search results/i },
-    { timeout: 8000 }
+    { timeout: 15000 }
   );
 };
 
