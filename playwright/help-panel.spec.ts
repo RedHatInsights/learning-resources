@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@chromatic-com/playwright";
 import { ensureLoggedIn } from './test-utils';
 
 test.describe('help panel', async () => {

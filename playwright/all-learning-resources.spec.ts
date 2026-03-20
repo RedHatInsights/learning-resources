@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@chromatic-com/playwright";
 import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
