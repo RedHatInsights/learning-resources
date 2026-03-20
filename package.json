@@ -49,6 +49,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@chromatic-com/playwright": "^0.12.8",
     "@playwright/test": "1.58.0",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.12",
     "@redhat-cloud-services/frontend-components-config": "^6.7.4",
@@ -63,6 +64,7 @@
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "chromatic": "^15.3.0",
     "cypress": "^14.5.4",
     "eslint": "8.57.1",
     "http-server": "^14.1.1",
