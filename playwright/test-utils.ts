@@ -38,16 +38,30 @@ export async function login(page: Page, user: string, password: string): Promise
 export async function ensureLoggedIn(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
+  // Check if already logged in by looking for user greeting
   const loggedIn = await page.getByText('Hi,').isVisible();
 
   if (!loggedIn) {
     const user = process.env.E2E_USER!;
     const password = process.env.E2E_PASSWORD!;
-    // make sure the SSO prompt is loaded for login
+
+    // Wait for SSO redirect and form to appear (increased timeout for CI environments)
+    // The redirect from console -> SSO can take longer in CI
     await page.waitForLoadState("load");
-    await expect(page.locator("#username-verification")).toBeVisible();
+
+    try {
+      await expect(page.locator("#username-verification"), 'SSO login form did not appear').toBeVisible({ timeout: 30000 });
+    } catch (error) {
+      // Add diagnostic info if SSO form doesn't appear
+      console.error('Current URL:', page.url());
+      console.error('Page title:', await page.title());
+      throw error;
+    }
+
     await login(page, user, password);
     await page.waitForLoadState("load");
+
+    // Verify login succeeded
     await expect(page.getByText('Invalid login')).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
 
