@@ -6,7 +6,7 @@ test.describe('help panel', async () => {
 
   // Navigate to dashboard before each test
   test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   });
 
   test('opens and displays panel title', async ({page}) => {

@@ -5,12 +5,9 @@ test.describe('all learning resources', async () => {
   // Authentication is handled by global setup (see playwright/global-setup.ts)
   // All tests automatically use the saved authentication state
 
-  // Navigate to dashboard before each test (unless test navigates elsewhere)
+  // Navigate to dashboard before each test to ensure we start from a known state
   test.beforeEach(async ({page}) => {
-    // Only navigate if page is still on about:blank
-    if (page.url() === 'about:blank') {
-      await page.goto('/');
-    }
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   });
 
   test('appears in the help menu and the link works', async({page}) => {
