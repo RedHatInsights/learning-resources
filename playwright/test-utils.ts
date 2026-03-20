@@ -34,7 +34,8 @@ export async function login(page: Page, user: string, password: string): Promise
   await expect(page.getByText('Invalid login')).not.toBeVisible();
 }
 
-// Shared login logic for test beforeEach blocks
+// Shared login logic called once in beforeAll
+// Performs SSO login and waits for dashboard to appear
 export async function ensureLoggedIn(page: Page): Promise<void> {
   // Simulate slow network in CI by throttling (enable with SLOW_CI=1)
   if (process.env.SLOW_CI === '1') {
@@ -48,58 +49,29 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
     console.log('🐌 Network throttling enabled (simulating slow CI connection)');
   }
 
+  const user = process.env.E2E_USER!;
+  const password = process.env.E2E_PASSWORD!;
+
+  console.log('Logging in...');
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
-  // Check if already logged in by looking for user greeting
-  // Give dashboard time to render in slow CI environments (30s timeout)
-  // Use try/catch because isVisible() with timeout throws if element not found
-  let loggedIn = false;
-  try {
-    loggedIn = await page.getByText('Hi,').isVisible({ timeout: 30000 });
-    if (loggedIn) {
-      console.log('✓ Already logged in, skipping SSO');
-    }
-  } catch {
-    // Not logged in - this is expected, proceed to SSO login
-    loggedIn = false;
-    console.log('ℹ Not logged in, proceeding to SSO login flow');
+  // Complete SSO login
+  await disableCookiePrompt(page);
+  await page.getByLabel('Red Hat login').first().fill(user);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel('Password').first().fill(password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  // Wait for dashboard to appear
+  await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed after login').toBeVisible({ timeout: 30000 });
+
+  // Conditionally accept cookie prompt
+  const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
+  if (await acceptAllButton.isVisible()) {
+    await acceptAllButton.click();
   }
 
-  if (!loggedIn) {
-    const user = process.env.E2E_USER!;
-    const password = process.env.E2E_PASSWORD!;
-
-    // Wait for SSO redirect and form to appear (increased timeout for CI environments)
-    // The redirect from console -> SSO can take longer in CI
-    await page.waitForLoadState("load");
-
-    try {
-      await expect(page.locator("#username-verification"), 'SSO login form did not appear').toBeVisible({ timeout: 30000 });
-    } catch (error) {
-      // Add diagnostic info if SSO form doesn't appear
-      // Use try/catch to handle cases where page/context has been closed
-      try {
-        console.error('Current URL:', page.url());
-        console.error('Page title:', await page.title());
-      } catch (diagError) {
-        console.error('Unable to get diagnostic info (page may be closed)');
-      }
-      throw error;
-    }
-
-    await login(page, user, password);
-    await page.waitForLoadState("load");
-
-    // Verify login succeeded
-    await expect(page.getByText('Invalid login')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
-
-    // conditionally accept cookie prompt
-    const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
-    if (await acceptAllButton.isVisible()) {
-      await acceptAllButton.click();
-    }
-  }
+  console.log('✓ Login successful');
 }
 
 // Waits for the count to be within the specified range, then returns it
