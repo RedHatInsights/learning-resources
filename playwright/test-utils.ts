@@ -1,8 +1,9 @@
 import { Page, expect } from '@playwright/test';
 
-// This can be changed to hit stage directly, but by default devs should be using stage.foo
-export const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
-export const LEARNING_RESOURCES_URL = `https://${APP_TEST_HOST_PORT}/learning-resources`;
+// Base URL is configured in playwright.config.ts
+// Default: https://stage.foo.redhat.com:1337 (for local dev proxy)
+// Can be overridden with PLAYWRIGHT_BASE_URL environment variable
+export const LEARNING_RESOURCES_URL = '/learning-resources';
 
 // Prevents inconsistent cookie prompting that is problematic for UI testing
 export async function disableCookiePrompt(page: Page) {
@@ -35,7 +36,7 @@ export async function login(page: Page, user: string, password: string): Promise
 
 // Shared login logic for test beforeEach blocks
 export async function ensureLoggedIn(page: Page): Promise<void> {
-  await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
+  await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
   const loggedIn = await page.getByText('Hi,').isVisible();
 
