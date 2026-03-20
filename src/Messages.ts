@@ -155,7 +155,24 @@ const messages = defineMessages({
   // Knowledge Base Panel
   knowledgeBaseTitle: {
     id: 'helpPanel.kb.title',
-    defaultMessage: 'Knowledge base',
+    defaultMessage: 'Knowledgebase',
+  },
+  kbPanelDescription: {
+    id: 'helpPanel.kb.description',
+    defaultMessage:
+      'Find knowledgebase articles. See all knowledgebase and support content on the',
+  },
+  kbPanelSearchPlaceholder: {
+    id: 'helpPanel.kb.searchPlaceholder',
+    defaultMessage: 'Search knowledgebase articles',
+  },
+  kbArticlesCountLabel: {
+    id: 'helpPanel.kb.articlesCount',
+    defaultMessage: 'Knowledgebase articles',
+  },
+  noKbArticlesMessage: {
+    id: 'helpPanel.kb.noArticlesFound',
+    defaultMessage: 'No knowledgebase articles found matching your criteria.',
   },
 
   // Virtual Assistant Panel
