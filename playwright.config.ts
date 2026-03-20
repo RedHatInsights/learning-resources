@@ -13,16 +13,12 @@ export default defineConfig({
   // Timeout for each test (includes beforeEach/afterEach hooks)
   // Set to 90s to accommodate 60s page navigation timeout + SSO login flow in CI
   timeout: 90000,
-  // Global setup runs once before all tests to perform login
-  globalSetup: require.resolve('./playwright/global-setup'),
   // Base URL can be overridden with PLAYWRIGHT_BASE_URL environment variable
   // For local development, use https://stage.foo.redhat.com:1337
   // For CI/remote stage, use https://console.stage.redhat.com
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
     ignoreHTTPSErrors: true,
-    // Reuse authentication state from global setup
-    storageState: '.auth/user.json',
     // Slow down operations when simulating CI
     ...(simulateSlowCI && {
       launchOptions: {
