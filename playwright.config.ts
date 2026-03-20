@@ -1,4 +1,7 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
+// Simulate slow CI environment with SLOW_CI=1 environment variable
+const simulateSlowCI = process.env.SLOW_CI === '1';
 
 export default defineConfig({
   testDir: './playwright',
@@ -16,5 +19,11 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
     ignoreHTTPSErrors: true,
+    // Slow down operations when simulating CI
+    ...(simulateSlowCI && {
+      launchOptions: {
+        slowMo: 50, // Slows down Playwright operations by 50ms each
+      },
+    }),
   },
 });
