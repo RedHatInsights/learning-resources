@@ -285,6 +285,226 @@ export const helpPanelMswHandlers = [
       data: [],
     });
   }),
+  // Mock user identity (favorite pages) - needed when search flag is enabled
+  http.get('/api/chrome-service/v1/user', () => {
+    return HttpResponse.json({
+      data: {
+        favoritePages: [],
+      },
+    });
+  }),
+  // Mock bundle info - needed when search panel loads
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
+    return HttpResponse.json([]);
+  }),
+  // Mock bundles - needed when search panel loads
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
+    return HttpResponse.json([]);
+  }),
+  // Mock favorite pages toggle
+  http.post('/api/chrome-service/v1/favorite-pages', async ({ request }) => {
+    const body = (await request.json()) as {
+      pathname: string;
+      favorite: boolean;
+    };
+    return HttpResponse.json([
+      { pathname: body.pathname, favorite: body.favorite },
+    ]);
+  }),
+  // Mock bookmark toggle
+  http.post('/api/quickstarts/v1/favorites', async () => {
+    return HttpResponse.json({ success: true });
+  }),
+];
+
+/**
+ * Shared MSW handlers for Search Panel user journeys.
+ * Overrides come FIRST because MSW matches the first matching handler.
+ */
+export const searchPanelJourneyMswHandlers = [
+  // Quickstarts search API (fuzzy-aware; must precede the base handler)
+  http.get('/api/quickstarts/v1/quickstarts', ({ request }) => {
+    const url = new URL(request.url);
+    const displayName = url.searchParams.get('display-name') || '';
+    const allResources = [
+      {
+        content: {
+          metadata: {
+            name: 'getting-started-insights',
+            tags: [{ kind: 'bundle', value: 'insights' }],
+            favorite: false,
+          },
+          spec: {
+            displayName: 'Getting started with Red Hat Insights',
+            description: 'Learn the basics of Red Hat Insights',
+            type: { text: 'Quick start' },
+            link: {
+              href: 'https://console.redhat.com/insights/getting-started',
+            },
+          },
+        },
+      },
+      {
+        content: {
+          metadata: {
+            name: 'insights-docs',
+            tags: [{ kind: 'bundle', value: 'insights' }],
+            externalDocumentation: true,
+            favorite: false,
+          },
+          spec: {
+            displayName: 'Red Hat Insights Documentation',
+            description: 'Complete documentation for Red Hat Insights',
+            type: { text: 'Documentation' },
+            link: {
+              href: 'https://access.redhat.com/documentation/en-us/red_hat_insights',
+            },
+          },
+        },
+      },
+      {
+        content: {
+          metadata: {
+            name: 'advisor-quickstart',
+            tags: [{ kind: 'bundle', value: 'insights' }],
+            favorite: true,
+          },
+          spec: {
+            displayName: 'Advisor Quick Start',
+            description: 'Get started with Red Hat Advisor',
+            type: { text: 'Quick start' },
+            link: { href: 'https://console.redhat.com/insights/advisor' },
+          },
+        },
+      },
+      {
+        content: {
+          metadata: {
+            name: 'ansible-getting-started',
+            tags: [{ kind: 'bundle', value: 'ansible' }],
+            favorite: false,
+          },
+          spec: {
+            displayName: 'Getting Started with Ansible',
+            description: 'Introduction to Ansible Automation Platform',
+            type: { text: 'Quick start' },
+            link: {
+              href: 'https://console.redhat.com/ansible/getting-started',
+            },
+          },
+        },
+      },
+      {
+        content: {
+          metadata: {
+            name: 'openshift-getting-started',
+            tags: [{ kind: 'bundle', value: 'openshift' }],
+            favorite: false,
+          },
+          spec: {
+            displayName: 'Getting Started with OpenShift',
+            description: 'Introduction to OpenShift',
+            type: { text: 'Quick start' },
+            link: {
+              href: 'https://console.redhat.com/openshift/getting-started',
+            },
+          },
+        },
+      },
+    ];
+
+    if (displayName) {
+      const query = displayName.toLowerCase();
+      const filtered = allResources.filter((r) =>
+        r.content.spec.displayName.toLowerCase().includes(query)
+      );
+      return HttpResponse.json({ data: filtered });
+    }
+    return HttpResponse.json({ data: allResources });
+  }),
+  // Bundle info (API specs)
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
+    return HttpResponse.json([
+      {
+        bundleLabels: ['insights'],
+        frontendName: 'Advisor API',
+        url: 'https://developers.redhat.com/api-catalog/api/advisor',
+      },
+      {
+        bundleLabels: ['ansible'],
+        frontendName: 'Automation Hub API',
+        url: 'https://developers.redhat.com/api-catalog/api/automation-hub',
+      },
+    ]);
+  }),
+  // Bundles (navigation + services)
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
+    return HttpResponse.json([
+      {
+        id: 'insights',
+        title: 'Red Hat Insights',
+        navItems: [
+          {
+            appId: 'advisor',
+            filterable: true,
+            href: '/insights/advisor',
+            id: 'advisor',
+            title: 'Advisor',
+          },
+          {
+            appId: 'vulnerability',
+            filterable: true,
+            href: '/insights/vulnerability',
+            id: 'vulnerability',
+            title: 'Vulnerability',
+          },
+        ],
+      },
+      {
+        id: 'ansible',
+        title: 'Ansible Automation Platform',
+        navItems: [
+          {
+            appId: 'automation-hub',
+            filterable: true,
+            href: '/ansible/automation-hub',
+            id: 'automation-hub',
+            title: 'Automation Hub',
+          },
+        ],
+      },
+    ]);
+  }),
+  // User identity (favorite pages)
+  http.get('/api/chrome-service/v1/user', () => {
+    return HttpResponse.json({
+      data: {
+        favoritePages: [{ pathname: '/insights/advisor', favorite: true }],
+      },
+    });
+  }),
+  // Toggle favorite pages
+  http.post('/api/chrome-service/v1/favorite-pages', async ({ request }) => {
+    const body = (await request.json()) as {
+      pathname: string;
+      favorite: boolean;
+    };
+    return HttpResponse.json([
+      { pathname: body.pathname, favorite: body.favorite },
+    ]);
+  }),
+  // Favorites (bookmarks) API
+  http.get('/api/quickstarts/v1/favorites', () => {
+    return HttpResponse.json({
+      data: [{ quickstartName: 'advisor-quickstart', favorite: true }],
+    });
+  }),
+  // Toggle bookmark
+  http.post('/api/quickstarts/v1/favorites', async () => {
+    return HttpResponse.json({ success: true });
+  }),
+  // Base handlers last (overridden routes above take priority in MSW)
+  ...helpPanelMswHandlers,
 ];
 
 const supportCasesFilterUrlProd =
