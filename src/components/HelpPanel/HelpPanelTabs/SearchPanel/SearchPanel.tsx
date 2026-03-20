@@ -212,11 +212,14 @@ const SearchPanel = ({
       // Load learning resources
       const [, quickStarts] = await fetchAllData(chrome.auth.getUser, {});
 
-      // Load API documentation
-      const [bundleInfo, bundles] = await Promise.all([
+      const [bundleInfo, bundles, freshFavoritePages] = await Promise.all([
         fetchBundleInfo(),
         fetchBundles(),
+        fetchFavoritePages().catch(() => favoritePages),
       ]);
+
+      // Keep state in sync for the sync effect and future searches
+      setFavoritePages(freshFavoritePages);
 
       const apiDocs = bundleInfo.map((bundleInfo) => {
         const services = bundleInfo.bundleLabels.map((bundleLabel) => {
@@ -261,7 +264,7 @@ const SearchPanel = ({
       // HCC Services
       bundles.forEach((bundle) => {
         bundle.navItems.forEach((navItem) => {
-          const isFav = favoritePages.some(
+          const isFav = freshFavoritePages.some(
             (fp) => fp.pathname === navItem.href && fp.favorite
           );
           results.push({
@@ -295,7 +298,7 @@ const SearchPanel = ({
       // Convert Fuse.js results back to SearchResult format with scores
       const filteredResults = searchResults.map((fuseResult) => ({
         ...fuseResult.item,
-        relevanceScore: fuseResult.score ? (1 - fuseResult.score) * 100 : 0, // Convert Fuse score to 0-100 range
+        relevanceScore: fuseResult.score ? (1 - fuseResult.score) * 100 : 0,
       }));
 
       return filteredResults;
