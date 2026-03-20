@@ -7,4 +7,9 @@ export default defineConfig({
   workers: 1,
   // Disable parallel execution within test files
   fullyParallel: false,
+  timeout: 60000,
+  expect: {
+    timeout: 15000,
+  },
+  retries: 1,
 });

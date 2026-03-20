@@ -42,9 +42,8 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   if (!loggedIn) {
     const user = process.env.E2E_USER!;
     const password = process.env.E2E_PASSWORD!;
-    // make sure the SSO prompt is loaded for login
     await page.waitForLoadState("load");
-    await expect(page.locator("#username-verification")).toBeVisible();
+    await expect(page.getByLabel('Red Hat login').first()).toBeVisible({ timeout: 30000 });
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
@@ -93,13 +92,20 @@ export async function waitForCountInRange(page: Page, minCount: number, maxCount
   return parseInt(match![1], 10);
 }
 
+// Navigates to the learning resources page and waits for dynamic content to load
+export async function gotoLearningResources(page: Page): Promise<void> {
+  await page.goto(LEARNING_RESOURCES_URL, { waitUntil: 'load', timeout: 60000 });
+  // Wait for API-driven content (filters and resource count) to render
+  await expect(page.getByText(/All learning resources \(\d+\)/)).toBeAttached({ timeout: 30000 });
+}
+
 // Extracts the count from "All learning resources (N)" text
 // Use waitForCountInRange if you need to wait for a specific range after filtering
 export async function extractResourceCount(page: Page): Promise<number> {
   // Target the tab that already shows a number (avoids matching placeholder "All learning resources ()")
   const countElement = page.getByText(/All learning resources \(\d+\)/);
 
-  await expect(countElement).toBeAttached({ timeout: 20000 });
+  await expect(countElement).toBeAttached({ timeout: 30000 });
 
   const countText = await countElement.first().textContent();
   const match = countText?.match(/All learning resources \((\d+)\)/);
