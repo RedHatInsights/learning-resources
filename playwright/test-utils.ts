@@ -53,8 +53,13 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
       await expect(page.locator("#username-verification"), 'SSO login form did not appear').toBeVisible({ timeout: 30000 });
     } catch (error) {
       // Add diagnostic info if SSO form doesn't appear
-      console.error('Current URL:', page.url());
-      console.error('Page title:', await page.title());
+      // Use try/catch to handle cases where page/context has been closed
+      try {
+        console.error('Current URL:', page.url());
+        console.error('Page title:', await page.title());
+      } catch (diagError) {
+        console.error('Unable to get diagnostic info (page may be closed)');
+      }
       throw error;
     }
 
