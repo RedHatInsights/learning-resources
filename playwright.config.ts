@@ -7,6 +7,9 @@ export default defineConfig({
   workers: 1,
   // Disable parallel execution within test files
   fullyParallel: false,
+  // Timeout for each test (includes beforeEach/afterEach hooks)
+  // Set to 90s to accommodate 60s page navigation timeout + SSO login flow in CI
+  timeout: 90000,
   // Base URL can be overridden with PLAYWRIGHT_BASE_URL environment variable
   // For local development, use https://stage.foo.redhat.com:1337
   // For CI/remote stage, use https://console.stage.redhat.com
