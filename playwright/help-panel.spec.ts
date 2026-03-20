@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { ensureLoggedIn } from './test-utils';
 
-test.use({ ignoreHTTPSErrors: true });
-
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {

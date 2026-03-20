@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
 
-test.use({ ignoreHTTPSErrors: true });
-
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
