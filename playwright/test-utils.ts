@@ -36,10 +36,34 @@ export async function login(page: Page, user: string, password: string): Promise
 
 // Shared login logic for test beforeEach blocks
 export async function ensureLoggedIn(page: Page): Promise<void> {
+  // Simulate slow network in CI by throttling (enable with SLOW_CI=1)
+  if (process.env.SLOW_CI === '1') {
+    const client = await page.context().newCDPSession(page);
+    await client.send('Network.emulateNetworkConditions', {
+      offline: false,
+      downloadThroughput: 1.5 * 1024 * 1024 / 8, // 1.5 Mbps
+      uploadThroughput: 750 * 1024 / 8, // 750 Kbps
+      latency: 100, // 100ms latency
+    });
+    console.log('🐌 Network throttling enabled (simulating slow CI connection)');
+  }
+
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
   // Check if already logged in by looking for user greeting
-  const loggedIn = await page.getByText('Hi,').isVisible();
+  // Give dashboard time to render in slow CI environments (30s timeout)
+  // Use try/catch because isVisible() with timeout throws if element not found
+  let loggedIn = false;
+  try {
+    loggedIn = await page.getByText('Hi,').isVisible({ timeout: 30000 });
+    if (loggedIn) {
+      console.log('✓ Already logged in, skipping SSO');
+    }
+  } catch {
+    // Not logged in - this is expected, proceed to SSO login
+    loggedIn = false;
+    console.log('ℹ Not logged in, proceeding to SSO login flow');
+  }
 
   if (!loggedIn) {
     const user = process.env.E2E_USER!;
