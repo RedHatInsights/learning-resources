@@ -3,12 +3,14 @@
  * Based on insights-rbac-ui pattern
  */
 
-const enabledFlags = new Set([
-  'platform.chrome.help-panel_search',
-]);
+// List of enabled feature flags for Storybook
+const ENABLED_FLAGS = [
+  'platform.chrome.help-panel_knowledge-base', // Enable Knowledgebase tab
+  'platform.chrome.help-panel_search', // Enable Search Tab
+];
 
-// Mock useFlag hook - returns true for explicitly enabled flags
-export const useFlag = (flagName) => enabledFlags.has(flagName);
+// Mock useFlag hook - returns true for enabled flags
+export const useFlag = (flagName) => ENABLED_FLAGS.includes(flagName);
 
 // Mock other exports
 export const FlagProvider = ({ children }) => children;
@@ -16,4 +18,4 @@ export const UnleashClient = class {};
 export const useUnleashContext = () => ({});
 export const useVariant = () => ({ name: 'disabled', enabled: false });
 export const useFlags = () =>
-  [...enabledFlags].map((name) => ({ name, enabled: true }));
+  ENABLED_FLAGS.map((name) => ({ name, enabled: true }));

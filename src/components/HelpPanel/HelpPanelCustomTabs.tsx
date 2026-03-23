@@ -88,7 +88,7 @@ const subTabs: SubTab[] = [
     tabType: TabType.learn,
   },
   {
-    title: 'Knowledge base',
+    title: 'Knowledgebase',
     tabType: TabType.kb,
     featureFlag: 'platform.chrome.help-panel_knowledge-base',
   },
@@ -126,6 +126,9 @@ const getSubTabTitle = (
   }
   if (tabType === TabType.api && intl) {
     return intl.formatMessage(messages.apiDocumentation);
+  }
+  if (tabType === TabType.kb && intl) {
+    return intl.formatMessage(messages.knowledgeBaseTitle);
   }
   return subTab?.tabTitle || (subTab?.title as string) || 'Find help';
 };
@@ -209,6 +212,7 @@ const SubTabs = ({
   activeSubTabKey: TabType;
   setActiveSubTabKey: (key: TabType) => void;
 }>) => {
+  const intl = useIntl();
   const flags = useFlags();
   const filteredSubTabs = useMemo(() => {
     return subTabs.filter((tab) => {
@@ -233,17 +237,24 @@ const SubTabs = ({
         }}
         data-ouia-component-id="help-panel-subtabs"
       >
-        {filteredSubTabs.map((tab) => (
-          <Tab
-            eventKey={tab.tabType}
-            key={tab.tabType}
-            title={
-              <TabTitleText>{tab.icon ? tab.icon : tab.title}</TabTitleText>
-            }
-            aria-label={tab.title as string}
-            data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
-          />
-        ))}
+        {filteredSubTabs.map((tab) => {
+          // Use i18n for KB tab title
+          const tabTitle =
+            tab.tabType === TabType.kb
+              ? intl.formatMessage(messages.knowledgeBaseTitle)
+              : tab.title;
+          return (
+            <Tab
+              eventKey={tab.tabType}
+              key={tab.tabType}
+              title={
+                <TabTitleText>{tab.icon ? tab.icon : tabTitle}</TabTitleText>
+              }
+              aria-label={tabTitle as string}
+              data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
+            />
+          );
+        })}
       </Tabs>
       {children}
     </>

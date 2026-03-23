@@ -507,6 +507,108 @@ export const searchPanelJourneyMswHandlers = [
   ...helpPanelMswHandlers,
 ];
 
+/**
+ * Mock knowledgebase articles for KB Panel testing
+ */
+export const mockKBArticles = [
+  // Insights/RHEL articles
+  {
+    id: 'kb-insights-1',
+    title: 'System Information Collected by Red Hat Insights',
+    url: 'https://access.redhat.com/articles/1598863',
+    bundleTags: ['insights', 'rhel'],
+  },
+  {
+    id: 'kb-insights-2',
+    title: 'How to Troubleshoot Insights Client Connection Issues',
+    url: 'https://access.redhat.com/articles/1234567',
+    bundleTags: ['insights', 'rhel'],
+  },
+  {
+    id: 'kb-insights-3',
+    title: 'Understanding Insights Recommendations and Remediation',
+    url: 'https://access.redhat.com/articles/1234568',
+    bundleTags: ['insights', 'rhel'],
+  },
+  // Ansible articles
+  {
+    id: 'kb-ansible-1',
+    title: 'Automation Analytics Security and Data Handling',
+    url: 'https://access.redhat.com/articles/4501671',
+    bundleTags: ['ansible'],
+  },
+  {
+    id: 'kb-ansible-2',
+    title: 'Ansible Automation Platform: Playbook Best Practices',
+    url: 'https://access.redhat.com/articles/2234567',
+    bundleTags: ['ansible'],
+  },
+  {
+    id: 'kb-ansible-3',
+    title: 'Troubleshooting Ansible Connection Errors',
+    url: 'https://access.redhat.com/articles/2234568',
+    bundleTags: ['ansible'],
+  },
+  // OpenShift articles
+  {
+    id: 'kb-openshift-1',
+    title: 'What data is sent to Red Hat for cost management and telemetry?',
+    url: 'https://access.redhat.com/articles/6512501',
+    bundleTags: ['openshift'],
+  },
+  {
+    id: 'kb-openshift-2',
+    title: 'OpenShift Cluster Authentication and Authorization',
+    url: 'https://access.redhat.com/articles/3234567',
+    bundleTags: ['openshift'],
+  },
+  {
+    id: 'kb-openshift-3',
+    title: 'Debugging OpenShift Networking Issues',
+    url: 'https://access.redhat.com/articles/3234568',
+    bundleTags: ['openshift'],
+  },
+  // IAM articles
+  {
+    id: 'kb-iam-1',
+    title: 'How to switch from Basic Auth to Certificate Authentication',
+    url: 'https://access.redhat.com/articles/7040601',
+    bundleTags: ['iam', 'rhel'],
+  },
+  {
+    id: 'kb-iam-2',
+    title: 'Transition to token-based authentication via service accounts',
+    url: 'https://access.redhat.com/articles/7036194',
+    bundleTags: ['iam'],
+  },
+  // Subscriptions articles
+  {
+    id: 'kb-subscriptions-1',
+    title: 'Simple Content Access',
+    url: 'https://access.redhat.com/articles/simple-content-access',
+    bundleTags: ['subscriptions-services'],
+  },
+  {
+    id: 'kb-subscriptions-2',
+    title: 'Transition of subscription services to the Hybrid Cloud Console',
+    url: 'https://access.redhat.com/articles/transition_subscription_services',
+    bundleTags: ['subscriptions-services'],
+  },
+  // Settings articles
+  {
+    id: 'kb-settings-1',
+    title: 'Azure cloud integrations on Hybrid Cloud Console',
+    url: 'https://access.redhat.com/articles/6961606',
+    bundleTags: ['settings'],
+  },
+  {
+    id: 'kb-settings-2',
+    title: 'Configuring Notification Preferences',
+    url: 'https://access.redhat.com/articles/4234567',
+    bundleTags: ['settings'],
+  },
+];
+
 const supportCasesFilterUrlProd =
   'https://api.access.redhat.com/support/v1/cases/filter';
 const supportCasesFilterUrlStage =
