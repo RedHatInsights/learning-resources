@@ -19,8 +19,6 @@ export async function login(page: Page, user: string, password: string): Promise
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
 
-  await disableCookiePrompt(page)
-
   // Wait for and fill username field
   await page.getByLabel('Red Hat login').first().fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
@@ -35,6 +33,9 @@ export async function login(page: Page, user: string, password: string): Promise
 
 // Shared login logic for test beforeEach blocks
 export async function ensureLoggedIn(page: Page): Promise<void> {
+  // Block TrustArc for all navigations to prevent cookie prompt inconsistencies
+  await disableCookiePrompt(page);
+
   await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
 
   const loggedIn = await page.getByText('Hi,').isVisible();
