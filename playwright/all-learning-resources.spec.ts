@@ -56,6 +56,10 @@ test.describe('all learning resources', async () => {
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
+    // Wait for network and DOM to stabilize after the filter is applied
+    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+
     // Wait for filter to apply - count should drop from ~98 to filtered range (5-79)
     const actualCount = await waitForCountInRange(page, 5, 79, 20000);
 
@@ -75,6 +79,10 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
+
+    // Wait for network and DOM to stabilize after the filter is applied
+    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Wait for filter to apply - count should drop from ~98 to filtered range (10-79)
     const actualCount = await waitForCountInRange(page, 10, 79, 20000);
