@@ -35,7 +35,7 @@ export async function login(page: Page, user: string, password: string): Promise
 }
 
 // Shared login logic for test beforeEach blocks
-// Handles both fresh login and server-side SSO session persistence
+// Handles fresh login, server-side SSO session persistence, and "Access Denied" errors
 export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
@@ -43,10 +43,19 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   await disableCookiePrompt(page);
 
+  // Check if we hit "Access Denied" - if so, retry navigation
+  const accessDenied = await page.getByText('Access Denied').isVisible({ timeout: 2000 }).catch(() => false);
+  if (accessDenied) {
+    // Wait a bit and retry navigation to allow SSO to reset
+    await page.waitForTimeout(3000);
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+    await disableCookiePrompt(page);
+  }
+
   // Check if we're already on dashboard (server-side SSO session may persist)
   // or if we need to login
   const dashboardVisible = await page.getByRole('button', { name: 'Add widgets' })
-    .isVisible({ timeout: 5000 })
+    .isVisible({ timeout: 30000 })
     .catch(() => false);
 
   if (dashboardVisible) {
@@ -54,8 +63,11 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
     return;
   }
 
-  // Need to perform login
-  await page.getByLabel('Red Hat login').first().fill(user);
+  // Need to perform login - wait for login field to appear
+  const loginField = page.getByLabel('Red Hat login').first();
+  await loginField.waitFor({ state: 'visible', timeout: 30000 });
+
+  await loginField.fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Password').first().fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
