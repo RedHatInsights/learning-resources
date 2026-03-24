@@ -64,7 +64,7 @@
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "chromatic": "^15.3.0",
+    "chromatic": "^16.0.0",
     "cypress": "^14.5.4",
     "eslint": "8.57.1",
     "http-server": "^14.1.1",

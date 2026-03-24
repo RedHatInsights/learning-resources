@@ -60,13 +60,20 @@ spec:
       #!/bin/bash
       set -ex
 
+      # Fetch more git history for Chromatic baseline detection
+      echo "Fetching git history..."
+      git fetch --unshallow || git fetch --depth=100
+
       timeout 120s bash -c 'until curl -k https://stage.foo.redhat.com:1337 > /dev/null 2>&1; do
         echo "Waiting for dev server to be ready"
         sleep 5
       done'
       echo "Dev server ready!"
 
-      echo "Running Playwright tests ..."
+      echo "Running Playwright tests to generate Chromatic archives..."
+      npx playwright test
+
+      echo "Uploading test results to Chromatic..."
       npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
