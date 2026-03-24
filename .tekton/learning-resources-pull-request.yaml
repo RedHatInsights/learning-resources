@@ -67,7 +67,7 @@ spec:
       echo "Dev server ready!"
 
       echo "Running Playwright tests ..."
-      npx playwright test --max-failures=2
+      npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
@@ -76,9 +76,9 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/RedHatInsights/konflux-pipelines
+      value: https://github.com/catastrophe-brandon/konflux-pipelines
     - name: revision
-      value: main
+      value: btweed/chromatic-token
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests.yaml
   taskRunTemplate:
