@@ -35,7 +35,7 @@ export async function login(page: Page, user: string, password: string): Promise
 }
 
 // Shared login logic for test beforeEach blocks
-// Always performs fresh SSO login to avoid "Access Denied" errors from stale sessions
+// Always performs SSO login with fresh browser context (no session persistence)
 export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
@@ -43,7 +43,7 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   await disableCookiePrompt(page);
 
-  // Always perform full login to ensure fresh authentication
+  // Perform login (fresh context means no existing auth)
   await page.getByLabel('Red Hat login').first().fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Password').first().fill(password);

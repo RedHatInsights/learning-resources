@@ -19,6 +19,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
     ignoreHTTPSErrors: true,
+    // Ensure fresh browser context for each test (no session persistence)
+    storageState: undefined,
     // Slow down operations when simulating CI
     ...(simulateSlowCI && {
       launchOptions: {
