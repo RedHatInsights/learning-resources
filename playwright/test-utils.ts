@@ -35,25 +35,15 @@ export async function login(page: Page, user: string, password: string): Promise
 }
 
 // Shared login logic for test beforeEach blocks
-// Navigates to dashboard and performs SSO login if needed
+// Always performs fresh SSO login to avoid "Access Denied" errors from stale sessions
 export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
-
-  // Check if we landed on the dashboard (already logged in) or need to login
-  const onDashboard = await page.getByRole('button', { name: 'Add widgets' })
-    .isVisible({ timeout: 5000 })
-    .catch(() => false);
-
-  if (onDashboard) {
-    // Already logged in
-    return;
-  }
-
-  // Need to complete SSO login
   await disableCookiePrompt(page);
+
+  // Always perform full login to ensure fresh authentication
   await page.getByLabel('Red Hat login').first().fill(user);
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Password').first().fill(password);
