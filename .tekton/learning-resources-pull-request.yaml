@@ -71,7 +71,7 @@ spec:
       echo "Dev server ready!"
 
       echo "Running Playwright tests to generate Chromatic archives..."
-      npx playwright test
+      npx playwright test --max-failures=2
 
       echo "Uploading test results to Chromatic..."
       npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN
