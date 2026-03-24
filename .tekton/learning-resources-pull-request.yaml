@@ -71,10 +71,16 @@ spec:
       echo "Dev server ready!"
 
       echo "Running Playwright tests to generate Chromatic archives..."
+      set +e  # Temporarily disable exit on error to capture test results
       npx playwright test --max-failures=2
+      TEST_EXIT_CODE=$?
+      set -e  # Re-enable exit on error
 
       echo "Uploading test results to Chromatic..."
       npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN
+
+      # Exit with the test result code (fail the pipeline if tests failed)
+      exit $TEST_EXIT_CODE
   - name: e2e-credentials-secret
     value: learning-resources-credentials-secret
   - name: frontend-proxy-routes-configmap
