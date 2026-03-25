@@ -1,11 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
+import { LEARNING_RESOURCES_URL, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
+    // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);
-    await ensureLoggedIn(page);
   });
 
   test('appears in the help menu and the link works', async({page}) => {

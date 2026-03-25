@@ -11,16 +11,17 @@ export default defineConfig({
   // Disable parallel execution within test files
   fullyParallel: false,
   // Timeout for each test (includes beforeEach/afterEach hooks)
-  // Set to 90s to accommodate 60s page navigation timeout + SSO login flow in CI
   timeout: 90000,
+  // Authenticate once before all tests
+  globalSetup: require.resolve('./playwright/global-setup.ts'),
   // Base URL can be overridden with PLAYWRIGHT_BASE_URL environment variable
   // For local development, use https://stage.foo.redhat.com:1337
   // For CI/remote stage, use https://console.stage.redhat.com
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
     ignoreHTTPSErrors: true,
-    // Ensure fresh browser context for each test (no session persistence)
-    storageState: undefined,
+    // Use saved authentication state from global setup
+    storageState: 'playwright/.auth/user.json',
     // Slow down operations when simulating CI
     ...(simulateSlowCI && {
       launchOptions: {

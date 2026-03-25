@@ -1,11 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { ensureLoggedIn, disableCookiePrompt } from './test-utils';
+import { disableCookiePrompt } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
+    // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);
-    await ensureLoggedIn(page);
   });
 
   test('opens and displays panel title', async ({page}) => {
