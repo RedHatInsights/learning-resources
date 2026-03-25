@@ -56,12 +56,12 @@ export async function logout(page: Page): Promise<void> {
 
 // Shared login logic for test beforeEach blocks
 // Handles fresh login, server-side SSO session persistence, and "Access Denied" errors
+// NOTE: disableCookiePrompt must be called BEFORE this function in beforeEach hooks
 export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
   await page.goto('/', { waitUntil: 'load', timeout: 60000 });
-  await disableCookiePrompt(page);
 
   // Check if we hit "Access Denied" - if so, retry navigation
   const accessDenied = await page.getByText('Access Denied').isVisible({ timeout: 2000 }).catch(() => false);
@@ -69,7 +69,6 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
     // Wait a bit and retry navigation to allow SSO to reset
     await page.waitForTimeout(3000);
     await page.goto('/', { waitUntil: 'load', timeout: 60000 });
-    await disableCookiePrompt(page);
   }
 
   // Wait for either dashboard or login page to appear after navigation/redirects

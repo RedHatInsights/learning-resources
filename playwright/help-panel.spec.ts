@@ -1,9 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { ensureLoggedIn, logout } from './test-utils';
+import { ensureLoggedIn, logout, disableCookiePrompt } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
+    // Set up route interception before any navigation
+    await disableCookiePrompt(page);
     await ensureLoggedIn(page);
   });
 

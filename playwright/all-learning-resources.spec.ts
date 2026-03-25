@@ -1,9 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, logout, extractResourceCount, waitForCountInRange } from './test-utils';
+import { LEARNING_RESOURCES_URL, ensureLoggedIn, logout, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
+    // Set up route interception before any navigation
+    await disableCookiePrompt(page);
     await ensureLoggedIn(page);
   });
 
