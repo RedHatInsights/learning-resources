@@ -24,6 +24,30 @@ export async function disableCookiePrompt(page: Page) {
   });
 }
 
+// Set up console listeners to capture browser errors, warnings, and logs
+export function setupConsoleListeners(page: Page) {
+  page.on('console', async (msg) => {
+    const type = msg.type();
+
+    // Only log errors, warnings, and important info
+    if (type === 'error' || type === 'warning') {
+      const text = msg.text();
+      const args = await Promise.all(msg.args().map(arg => arg.jsonValue().catch(() => arg.toString())));
+
+      console.log(`[Browser ${type.toUpperCase()}]:`, text);
+      if (args.length > 0 && text !== args.join(' ')) {
+        console.log('  Args:', args);
+      }
+    }
+  });
+
+  // Also capture page errors that don't show in console
+  page.on('pageerror', (error) => {
+    console.log('[Browser PAGE ERROR]:', error.message);
+    console.log('  Stack:', error.stack);
+  });
+}
+
 export async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)

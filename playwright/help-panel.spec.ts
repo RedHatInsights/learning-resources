@@ -1,9 +1,12 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { disableCookiePrompt } from './test-utils';
+import { disableCookiePrompt, setupConsoleListeners } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
+    // Set up console listeners to capture browser errors
+    setupConsoleListeners(page);
+
     // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);
 

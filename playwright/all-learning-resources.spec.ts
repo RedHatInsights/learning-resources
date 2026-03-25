@@ -1,9 +1,12 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { disableCookiePrompt, extractResourceCount, waitForCountInRange, navigateToLearningResources } from './test-utils';
+import { disableCookiePrompt, extractResourceCount, waitForCountInRange, navigateToLearningResources, setupConsoleListeners } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page, context}): Promise<void> => {
+    // Set up console listeners to capture browser errors
+    setupConsoleListeners(page);
+
     // Debug: Check if auth file exists
     const fs = require('fs');
     const path = require('path');
