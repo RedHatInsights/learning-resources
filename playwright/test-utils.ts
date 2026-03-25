@@ -34,6 +34,26 @@ export async function login(page: Page, user: string, password: string): Promise
   await expect(page.getByText('Invalid login')).not.toBeVisible();
 }
 
+// Logs out the current user to ensure clean state between tests
+export async function logout(page: Page): Promise<void> {
+  // Click the user menu in the masthead
+  const userMenuButton = page.locator('[data-ouia-component-id="UserMenu"]');
+  const isVisible = await userMenuButton.isVisible().catch(() => false);
+
+  if (!isVisible) {
+    // Not logged in or dashboard not visible, nothing to do
+    return;
+  }
+
+  await userMenuButton.click();
+
+  // Click logout button in the dropdown
+  await page.getByRole('menuitem', { name: 'Log out' }).click();
+
+  // Wait for logout to complete (should redirect to login or landing page)
+  await page.waitForLoadState('networkidle', { timeout: 10000 });
+}
+
 // Shared login logic for test beforeEach blocks
 // Handles fresh login, server-side SSO session persistence, and "Access Denied" errors
 export async function ensureLoggedIn(page: Page): Promise<void> {

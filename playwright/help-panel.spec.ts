@@ -1,10 +1,14 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { ensureLoggedIn } from './test-utils';
+import { ensureLoggedIn, logout } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
     await ensureLoggedIn(page);
+  });
+
+  test.afterEach(async ({page}): Promise<void> => {
+    await logout(page);
   });
 
   test('opens and displays panel title', async ({page}) => {
