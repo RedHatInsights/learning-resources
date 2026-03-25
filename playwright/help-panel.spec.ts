@@ -1,11 +1,14 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { disableCookiePrompt, setupConsoleListeners } from './test-utils';
+import { disableCookiePrompt, setupConsoleListeners, blockProblematicEndpoints } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
     // Set up console listeners to capture browser errors
     setupConsoleListeners(page);
+
+    // Block problematic API endpoints that return 403 in CI
+    await blockProblematicEndpoints(page);
 
     // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);

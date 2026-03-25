@@ -48,6 +48,28 @@ export function setupConsoleListeners(page: Page) {
   });
 }
 
+// Block problematic API endpoints that return 403 in CI
+// These are non-critical chrome shell APIs for notifications, filters, etc.
+export async function blockProblematicEndpoints(page: Page) {
+  // Block notification API endpoints
+  await page.route('**/api/notifications/**', route => {
+    console.log('[BLOCKED API]:', route.request().url());
+    route.fulfill({ status: 200, body: JSON.stringify({ data: [] }) });
+  });
+
+  // Block filter/facet endpoints
+  await page.route('**/facets/**', route => {
+    console.log('[BLOCKED API]:', route.request().url());
+    route.fulfill({ status: 200, body: JSON.stringify([]) });
+  });
+
+  // Block Pendo/analytics scripts that fail to load
+  await page.route('**/connections/cdn/**', route => {
+    console.log('[BLOCKED CDN]:', route.request().url());
+    route.abort();
+  });
+}
+
 export async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
   await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
