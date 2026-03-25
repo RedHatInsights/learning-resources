@@ -35,7 +35,11 @@ async function globalSetup(config: FullConfig) {
   console.log('Authentication successful, saving storage state...');
 
   // Save signed-in state
-  await page.context().storageState({ path: 'playwright/.auth/user.json' });
+  const storageState = await page.context().storageState({ path: 'playwright/.auth/user.json' });
+
+  // Debug: log cookie domains
+  console.log('Saved cookies for domains:', storageState.cookies.map(c => c.domain).join(', '));
+  console.log('Current URL after auth:', page.url());
 
   await browser.close();
 
