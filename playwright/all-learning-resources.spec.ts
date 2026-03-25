@@ -1,16 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, logout, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
+import { LEARNING_RESOURCES_URL, ensureLoggedIn, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    // Set up route interception before any navigation
     await disableCookiePrompt(page);
     await ensureLoggedIn(page);
-  });
-
-  test.afterEach(async ({page}): Promise<void> => {
-    await logout(page);
   });
 
   test('appears in the help menu and the link works', async({page}) => {
