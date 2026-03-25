@@ -3,12 +3,17 @@ import { disableCookiePrompt, extractResourceCount, waitForCountInRange, navigat
 
 test.describe('all learning resources', async () => {
 
-  test.beforeEach(async ({page}): Promise<void> => {
+  test.beforeEach(async ({page, context}): Promise<void> => {
+    // Debug: Check if cookies are loaded
+    const cookies = await context.cookies();
+    console.log(`Test has ${cookies.length} cookies for domains:`, cookies.map(c => c.domain).join(', '));
+
     // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);
 
     // Navigate to dashboard (auth state from global setup is automatically applied)
     await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+    console.log('After navigation, URL is:', page.url());
 
     // Wait for dashboard to be ready
     await page.getByLabel('Toggle help panel').waitFor({ state: 'visible', timeout: 15000 });
