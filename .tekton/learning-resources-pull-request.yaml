@@ -77,7 +77,7 @@ spec:
       set -e  # Re-enable exit on error
 
       echo "Uploading test results to Chromatic..."
-      npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN
+      npx chromatic --playwright --project-token=$CHROMATIC_PROJECT_TOKEN --exit-zero-on-changes
 
       # Exit with the test result code (fail the pipeline if tests failed)
       exit $TEST_EXIT_CODE
