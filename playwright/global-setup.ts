@@ -43,6 +43,17 @@ async function globalSetup(config: FullConfig) {
 
   await browser.close();
 
+  // Verify file was written
+  const fs = require('fs');
+  const path = require('path');
+  const authFile = path.resolve('playwright/.auth/user.json');
+  if (fs.existsSync(authFile)) {
+    const stats = fs.statSync(authFile);
+    console.log(`Auth file written successfully: ${authFile} (${stats.size} bytes)`);
+  } else {
+    console.error(`WARNING: Auth file not found at ${authFile}`);
+  }
+
   console.log('Global setup complete');
 }
 

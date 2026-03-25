@@ -4,6 +4,17 @@ import { disableCookiePrompt, extractResourceCount, waitForCountInRange, navigat
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page, context}): Promise<void> => {
+    // Debug: Check if auth file exists
+    const fs = require('fs');
+    const path = require('path');
+    const authFile = path.resolve('playwright/.auth/user.json');
+    if (fs.existsSync(authFile)) {
+      const stats = fs.statSync(authFile);
+      console.log(`Auth file found: ${authFile} (${stats.size} bytes)`);
+    } else {
+      console.error(`WARNING: Auth file not found at ${authFile}`);
+    }
+
     // Debug: Check if cookies are loaded
     const cookies = await context.cookies();
     console.log(`Test has ${cookies.length} cookies for domains:`, cookies.map(c => c.domain).join(', '));
