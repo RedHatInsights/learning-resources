@@ -6,6 +6,12 @@ test.describe('help panel', async () => {
   test.beforeEach(async ({page}): Promise<void> => {
     // Block cookie consent dialogs (auth handled by global setup)
     await disableCookiePrompt(page);
+
+    // Navigate to dashboard (auth state from global setup is automatically applied)
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+
+    // Wait for dashboard to be ready
+    await page.getByLabel('Toggle help panel').waitFor({ state: 'visible', timeout: 15000 });
   });
 
   test('opens and displays panel title', async ({page}) => {
