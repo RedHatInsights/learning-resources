@@ -6,6 +6,15 @@ async function globalSetup(config: FullConfig) {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
+  // Log external IP address to help diagnose IP-based blocking
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    console.log('External IP address:', data.ip);
+  } catch (error) {
+    console.log('Could not determine external IP:', error);
+  }
+
   console.log('Performing global authentication setup...');
 
   const browser = await chromium.launch();
