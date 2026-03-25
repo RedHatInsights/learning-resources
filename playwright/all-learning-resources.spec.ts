@@ -25,9 +25,20 @@ test.describe('all learning resources', async () => {
     // Navigate to dashboard (auth state from global setup is automatically applied)
     await page.goto('/', { waitUntil: 'load', timeout: 60000 });
     console.log('After navigation, URL is:', page.url());
+    console.log('Page title:', await page.title());
 
     // Wait for dashboard to be ready
-    await page.getByLabel('Toggle help panel').waitFor({ state: 'visible', timeout: 15000 });
+    const helpPanelButton = page.getByLabel('Toggle help panel');
+    const isVisible = await helpPanelButton.isVisible().catch(() => false);
+    console.log('Help panel button visible:', isVisible);
+
+    if (!isVisible) {
+      // Debug what's on the page
+      const bodyText = await page.locator('body').textContent();
+      console.log('Page body text (first 500 chars):', bodyText?.substring(0, 500));
+    }
+
+    await helpPanelButton.waitFor({ state: 'visible', timeout: 15000 });
   });
 
   test('appears in the help menu and the link works', async({page}) => {
