@@ -60,7 +60,7 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
-  await page.goto('/', { waitUntil: 'networkidle', timeout: 60000 });
+  await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   await disableCookiePrompt(page);
 
   // Check if we hit "Access Denied" - if so, retry navigation
@@ -68,7 +68,7 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   if (accessDenied) {
     // Wait a bit and retry navigation to allow SSO to reset
     await page.waitForTimeout(3000);
-    await page.goto('/', { waitUntil: 'networkidle', timeout: 60000 });
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
     await disableCookiePrompt(page);
   }
 
@@ -77,9 +77,10 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   const loginField = page.getByLabel('Red Hat login').first();
 
   // Race to see which appears first (handles both authenticated and unauthenticated states)
+  // Give it 45s to account for slow SSO redirects in CI
   const winner = await Promise.race([
-    dashboardButton.waitFor({ state: 'visible', timeout: 30000 }).then(() => 'dashboard'),
-    loginField.waitFor({ state: 'visible', timeout: 30000 }).then(() => 'login')
+    dashboardButton.waitFor({ state: 'visible', timeout: 45000 }).then(() => 'dashboard'),
+    loginField.waitFor({ state: 'visible', timeout: 45000 }).then(() => 'login')
   ]).catch(() => null);
 
   if (winner === 'dashboard') {
