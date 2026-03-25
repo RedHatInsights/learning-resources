@@ -40,7 +40,7 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   const user = process.env.E2E_USER!;
   const password = process.env.E2E_PASSWORD!;
 
-  await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+  await page.goto('/', { waitUntil: 'networkidle', timeout: 60000 });
   await disableCookiePrompt(page);
 
   // Check if we hit "Access Denied" - if so, retry navigation
@@ -48,38 +48,45 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
   if (accessDenied) {
     // Wait a bit and retry navigation to allow SSO to reset
     await page.waitForTimeout(3000);
-    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+    await page.goto('/', { waitUntil: 'networkidle', timeout: 60000 });
     await disableCookiePrompt(page);
   }
 
-  // Check if we're already on dashboard (server-side SSO session may persist)
-  // or if we need to login
-  const dashboardVisible = await page.getByRole('button', { name: 'Add widgets' })
-    .isVisible({ timeout: 30000 })
-    .catch(() => false);
+  // Wait for either dashboard or login page to appear after navigation/redirects
+  const dashboardButton = page.getByRole('button', { name: 'Add widgets' });
+  const loginField = page.getByLabel('Red Hat login').first();
 
-  if (dashboardVisible) {
-    // Server-side SSO session persisted, already authenticated
+  // Race to see which appears first (handles both authenticated and unauthenticated states)
+  const winner = await Promise.race([
+    dashboardButton.waitFor({ state: 'visible', timeout: 30000 }).then(() => 'dashboard'),
+    loginField.waitFor({ state: 'visible', timeout: 30000 }).then(() => 'login')
+  ]).catch(() => null);
+
+  if (winner === 'dashboard') {
+    // Already authenticated
     return;
   }
 
-  // Need to perform login - wait for login field to appear
-  const loginField = page.getByLabel('Red Hat login').first();
-  await loginField.waitFor({ state: 'visible', timeout: 30000 });
+  if (winner === 'login') {
+    // Need to perform login
+    await loginField.fill(user);
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByLabel('Password').first().fill(password);
+    await page.getByRole('button', { name: 'Log in' }).click();
 
-  await loginField.fill(user);
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByLabel('Password').first().fill(password);
-  await page.getByRole('button', { name: 'Log in' }).click();
+    // Wait for dashboard to appear
+    await expect(dashboardButton, 'dashboard not displayed after login').toBeVisible({ timeout: 30000 });
 
-  // Wait for dashboard to appear
-  await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed after login').toBeVisible({ timeout: 30000 });
-
-  // Conditionally accept cookie prompt
-  const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
-  if (await acceptAllButton.isVisible()) {
-    await acceptAllButton.click();
+    // Conditionally accept cookie prompt
+    const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
+    if (await acceptAllButton.isVisible()) {
+      await acceptAllButton.click();
+    }
+    return;
   }
+
+  // Neither dashboard nor login appeared
+  throw new Error('Page did not load dashboard or login form - got blank page or unexpected state');
 }
 
 // Waits for the count to be within the specified range, then returns it
