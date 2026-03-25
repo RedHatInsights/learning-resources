@@ -59,6 +59,9 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
 
   // Wait for dashboard
   await expect(page.getByRole('button', { name: 'Add widgets' })).toBeVisible({ timeout: 30000 });
+
+  // Wait for dashboard chrome to fully load (help panel toggle is a good indicator)
+  await page.getByLabel('Toggle help panel').waitFor({ state: 'visible', timeout: 15000 });
 }
 
 // Waits for the count to be within the specified range, then returns it
