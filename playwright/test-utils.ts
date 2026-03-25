@@ -5,6 +5,14 @@ import { Page, expect } from '@playwright/test';
 // Can be overridden with PLAYWRIGHT_BASE_URL environment variable
 export const LEARNING_RESOURCES_URL = '/learning-resources';
 
+// Navigate to learning resources page via UI instead of page.goto()
+// This avoids redirect issues with SSO
+export async function navigateToLearningResources(page: Page): Promise<void> {
+  await page.getByLabel('Toggle help panel').click();
+  await page.getByRole('link', { name: 'All Learning Catalog' }).click();
+  await page.waitForLoadState('load');
+}
+
 // Prevents inconsistent cookie prompting that is problematic for UI testing
 export async function disableCookiePrompt(page: Page) {
   await page.route('**/*', async (route, request) => {

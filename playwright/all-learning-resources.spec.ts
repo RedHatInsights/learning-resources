@@ -1,5 +1,5 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { LEARNING_RESOURCES_URL, disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
+import { disableCookiePrompt, extractResourceCount, waitForCountInRange, navigateToLearningResources } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
@@ -25,8 +25,8 @@ test.describe('all learning resources', async () => {
   });
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState('load');
+    // Navigate via UI instead of page.goto to avoid redirect issues
+    await navigateToLearningResources(page);
 
     const baseline = 98;
     const tolerancePercent = 10; // 10% tolerance
@@ -58,8 +58,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by product family', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState("load");
+    await navigateToLearningResources(page);
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
@@ -82,8 +81,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by console-wide services', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState("load");
+    await navigateToLearningResources(page);
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
 
@@ -109,8 +107,7 @@ test.describe('all learning resources', async () => {
   // Quick start content, causing the filter to return 0 results. The test can be
   // re-enabled when Quick start content is added to the stage environment.
   test.skip('filters by content type', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState("load");
+    await navigateToLearningResources(page);
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
 
@@ -137,9 +134,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by use case', async({page}) => {
-
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState("load");
+    await navigateToLearningResources(page);
 
     const observabilityCheckbox = page.getByRole('checkbox', {name: 'Observability'});
     await observabilityCheckbox.click();
@@ -171,8 +166,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('displays bookmarked resources', async ({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
-    await page.waitForLoadState("load");
+    await navigateToLearningResources(page);
 
     // The holy item chosen for testing
     const testItemText = "Adding a machine pool";
