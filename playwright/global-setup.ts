@@ -21,6 +21,7 @@ async function globalSetup(config: FullConfig) {
   const page = await browser.newPage({
     baseURL,
     ignoreHTTPSErrors: true,
+    userAgent: 'ConsoleDot Framework Tests - Learning Resources',
   });
 
   // Set up cookie prompt blocking before navigation

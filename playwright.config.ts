@@ -22,6 +22,8 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     // Use saved authentication state from global setup
     storageState: 'playwright/.auth/user.json',
+    // Custom user agent to identify automated tests
+    userAgent: 'ConsoleDot Framework Tests - Learning Resources',
     // Slow down operations when simulating CI
     ...(simulateSlowCI && {
       launchOptions: {
