@@ -609,6 +609,135 @@ export const mockKBArticles = [
   },
 ];
 
+export const mockApiSpecs = [
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Advisor API',
+    url: 'https://developers.redhat.com/api-catalog/api/advisor',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Compliance API',
+    url: 'https://developers.redhat.com/api-catalog/api/compliance',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Drift API',
+    url: 'https://developers.redhat.com/api-catalog/api/drift',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Inventory API',
+    url: 'https://developers.redhat.com/api-catalog/api/inventory',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Malware Detection API',
+    url: 'https://developers.redhat.com/api-catalog/api/malware-detection',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Patch API',
+    url: 'https://developers.redhat.com/api-catalog/api/patch',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Policies API',
+    url: 'https://developers.redhat.com/api-catalog/api/policies',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Remediations API',
+    url: 'https://developers.redhat.com/api-catalog/api/remediations',
+  },
+  {
+    bundleLabels: ['insights'],
+    frontendName: 'Vulnerability API',
+    url: 'https://developers.redhat.com/api-catalog/api/vulnerability',
+  },
+  {
+    bundleLabels: ['ansible'],
+    frontendName: 'Automation Hub API',
+    url: 'https://developers.redhat.com/api-catalog/api/automation-hub',
+  },
+  {
+    bundleLabels: ['ansible'],
+    frontendName: 'Automation Analytics API',
+    url: 'https://developers.redhat.com/api-catalog/api/automation-analytics',
+  },
+  {
+    bundleLabels: ['openshift'],
+    frontendName: 'Cluster Manager API',
+    url: 'https://developers.redhat.com/api-catalog/api/clusters-mgmt',
+  },
+  {
+    bundleLabels: ['openshift'],
+    frontendName: 'Service Logs API',
+    url: 'https://developers.redhat.com/api-catalog/api/service-logs',
+  },
+  {
+    bundleLabels: ['openshift'],
+    frontendName: 'Accounts Management API',
+    url: 'https://developers.redhat.com/api-catalog/api/accounts-mgmt',
+  },
+];
+
+export const mockApiBundles = [
+  {
+    id: 'insights',
+    title: 'Red Hat Insights',
+    navItems: [
+      {
+        appId: 'advisor',
+        filterable: true,
+        href: '/insights/advisor',
+        id: 'advisor',
+        title: 'Advisor',
+      },
+    ],
+  },
+  {
+    id: 'ansible',
+    title: 'Ansible Automation Platform',
+    navItems: [
+      {
+        appId: 'automation-hub',
+        filterable: true,
+        href: '/ansible/automation-hub',
+        id: 'automation-hub',
+        title: 'Automation Hub',
+      },
+    ],
+  },
+  {
+    id: 'openshift',
+    title: 'OpenShift',
+    navItems: [
+      {
+        appId: 'clusters',
+        filterable: true,
+        href: '/openshift/clusters',
+        id: 'clusters',
+        title: 'Clusters',
+      },
+    ],
+  },
+];
+
+/**
+ * Shared MSW handlers for API Panel user journeys.
+ * Overrides come FIRST because MSW matches the first matching handler.
+ */
+export const apiPanelJourneyMswHandlers = [
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
+    return HttpResponse.json(mockApiSpecs);
+  }),
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
+    return HttpResponse.json(mockApiBundles);
+  }),
+  ...helpPanelMswHandlers,
+];
+
 const supportCasesFilterUrlProd =
   'https://api.access.redhat.com/support/v1/cases/filter';
 const supportCasesFilterUrlStage =
