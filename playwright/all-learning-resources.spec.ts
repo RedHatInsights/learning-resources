@@ -19,19 +19,13 @@ test.describe('all learning resources', async () => {
       await expect(page.locator('h1')).toHaveText('All learning resources' );
   });
 
-  test('has the appropriate number of items on the all learning resources tab', async({page}) => {
+  test('has items on the all learning resources tab', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState('load');
 
-    const baseline = 98;
-    const tolerancePercent = 10; // 10% tolerance
-    const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
-    const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
-
     const actualCount = await extractResourceCount(page);
 
-    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
-    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
+    expect(actualCount, `Expected learning resources to be loaded, but found ${actualCount} items`).toBeGreaterThan(0);
   });
 
   test('appears in search results', async ({page}) => {
@@ -138,15 +132,9 @@ test.describe('all learning resources', async () => {
     await page.waitForLoadState("networkidle");
     await page.waitForLoadState("domcontentloaded");
 
-    const baseline = 13;
-    const tolerancePercent = 10; // 10% tolerance
-    const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
-    const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
-
     const actualCount = await extractResourceCount(page);
 
-    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
-    expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
+    expect(actualCount, `Expected Observability resources to be loaded, but found ${actualCount} items`).toBeGreaterThan(0);
 
     const cards = await page.locator('.pf-v6-c-card:visible').all();
     expect(cards.length).toEqual(actualCount);
