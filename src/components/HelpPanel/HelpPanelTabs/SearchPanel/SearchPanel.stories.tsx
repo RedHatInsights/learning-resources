@@ -331,7 +331,6 @@ export const ClickQuickStartSearchResultNotifiesHelpPanelStore: Story = {
 export const ClickDocumentationSearchResultOpensNewWindow: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const openSpy = spyOn(window, 'open').mockImplementation(() => null);
 
     const searchInput = await canvas.findByPlaceholderText(
       'Search for topics, products, use cases, etc.'
@@ -349,15 +348,20 @@ export const ClickDocumentationSearchResultOpensNewWindow: Story = {
     const titleButton = await canvas.findByRole('button', {
       name: /Red Hat Insights Documentation/i,
     });
-    await userEvent.click(titleButton);
 
-    await waitFor(() => {
-      expect(openSpy).toHaveBeenCalled();
-    });
-    expect(openSpy.mock.calls[0][1]).toBe('_blank');
-    expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+    const openSpy = spyOn(window, 'open').mockImplementation(() => null);
 
-    openSpy.mockRestore();
+    try {
+      await userEvent.click(titleButton);
+
+      await waitFor(() => {
+        expect(openSpy).toHaveBeenCalled();
+      });
+      expect(openSpy.mock.calls[0][1]).toBe('_blank');
+      expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+    } finally {
+      openSpy.mockRestore();
+    }
   },
 };
 

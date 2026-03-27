@@ -495,16 +495,18 @@ export const ClickDocumentationOpensNewWindow: Story = {
 
     const openSpy = spyOn(window, 'open').mockImplementation(() => null);
 
-    await clickResourceLinkByName(canvas, 'Insights Documentation');
+    try {
+      await clickResourceLinkByName(canvas, 'Insights Documentation');
 
-    await waitFor(() => {
-      expect(openSpy).toHaveBeenCalled();
-    });
+      await waitFor(() => {
+        expect(openSpy).toHaveBeenCalled();
+      });
 
-    expect(openSpy.mock.calls[0][1]).toBe('_blank');
-    expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
-
-    openSpy.mockRestore();
+      expect(openSpy.mock.calls[0][1]).toBe('_blank');
+      expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+    } finally {
+      openSpy.mockRestore();
+    }
   },
 };
 

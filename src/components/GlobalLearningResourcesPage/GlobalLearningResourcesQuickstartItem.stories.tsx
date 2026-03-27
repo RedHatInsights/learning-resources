@@ -82,7 +82,7 @@ export const QuickStartTitleOpensHelpPanel: Story = {
     const canvas = within(canvasElement);
     getOpenQuickstartInHelpPanelStore().updateState('CONSUMED_OPEN');
 
-    const title = canvas.getByText('Catalog Quick start sample');
+    const title = await canvas.findByText('Catalog Quick start sample');
     await userEvent.click(title);
 
     await waitFor(() => {
@@ -101,16 +101,18 @@ export const DocumentationTitleOpensNewTab: Story = {
     const canvas = within(canvasElement);
     const openSpy = spyOn(window, 'open').mockImplementation(() => null);
 
-    const title = canvas.getByText('Catalog Documentation sample');
-    await userEvent.click(title);
+    try {
+      const title = await canvas.findByText('Catalog Documentation sample');
+      await userEvent.click(title);
 
-    await waitFor(() => {
-      expect(openSpy).toHaveBeenCalled();
-    });
+      await waitFor(() => {
+        expect(openSpy).toHaveBeenCalled();
+      });
 
-    expect(openSpy.mock.calls[0][1]).toBe('_blank');
-    expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
-
-    openSpy.mockRestore();
+      expect(openSpy.mock.calls[0][1]).toBe('_blank');
+      expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+    } finally {
+      openSpy.mockRestore();
+    }
   },
 };
