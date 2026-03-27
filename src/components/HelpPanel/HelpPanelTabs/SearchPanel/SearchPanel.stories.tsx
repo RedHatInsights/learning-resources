@@ -7,8 +7,9 @@ import {
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import { HttpResponse, http } from 'msw';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test';
 import SearchPanel from './SearchPanel';
+import { getOpenQuickstartInHelpPanelStore } from '../../../../store/openQuickstartInHelpPanelStore';
 
 const SEARCH_DEBOUNCE_MS = 600;
 
@@ -288,6 +289,75 @@ export const SearchWithResults: Story = {
       { timeout: 5000 }
     );
     await canvas.findByText('Search results');
+  },
+};
+
+/**
+ * Quick start search results use the shared store (Help Panel tab), not `window.open`.
+ */
+export const ClickQuickStartSearchResultNotifiesHelpPanelStore: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    getOpenQuickstartInHelpPanelStore().updateState('CONSUMED_OPEN');
+
+    const searchInput = await canvas.findByPlaceholderText(
+      'Search for topics, products, use cases, etc.'
+    );
+    await userEvent.type(searchInput, 'Getting started');
+    await testDelay(SEARCH_DEBOUNCE_MS);
+
+    await waitForSearchResults(canvas);
+    await canvas.findByText(
+      'Getting started with Red Hat Insights',
+      {},
+      { timeout: 5000 }
+    );
+
+    const titleButton = await canvas.findByRole('button', {
+      name: /Getting started with Red Hat Insights/i,
+    });
+    await userEvent.click(titleButton);
+
+    await waitFor(() => {
+      const { pendingOpen } = getOpenQuickstartInHelpPanelStore().getState();
+      expect(pendingOpen?.quickstartId).toBe('insights-getting-started');
+    });
+  },
+};
+
+/**
+ * Documentation search results open in a new tab via `window.open`.
+ */
+export const ClickDocumentationSearchResultOpensNewWindow: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const openSpy = spyOn(window, 'open').mockImplementation(() => null);
+
+    const searchInput = await canvas.findByPlaceholderText(
+      'Search for topics, products, use cases, etc.'
+    );
+    await userEvent.type(searchInput, 'Red Hat Insights Documentation');
+    await testDelay(SEARCH_DEBOUNCE_MS);
+
+    await waitForSearchResults(canvas);
+    await canvas.findByText(
+      'Red Hat Insights Documentation',
+      {},
+      { timeout: 5000 }
+    );
+
+    const titleButton = await canvas.findByRole('button', {
+      name: /Red Hat Insights Documentation/i,
+    });
+    await userEvent.click(titleButton);
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalled();
+    });
+    expect(openSpy.mock.calls[0][1]).toBe('_blank');
+    expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+
+    openSpy.mockRestore();
   },
 };
 

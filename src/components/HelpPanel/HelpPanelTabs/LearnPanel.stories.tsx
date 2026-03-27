@@ -7,8 +7,9 @@ import {
   useValuesForQuickStartContext,
 } from '@patternfly/quickstarts';
 import { HttpResponse, http } from 'msw';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test';
 import LearnPanel from './LearnPanel';
+import { getOpenQuickstartInHelpPanelStore } from '../../../store/openQuickstartInHelpPanelStore';
 
 /**
  * Helper function to wait for component loading to complete
@@ -70,6 +71,17 @@ const selectContentType = async (
 /**
  * Helper function to verify visible titles exist or don't exist
  */
+const clickResourceLinkByName = async (
+  canvas: ReturnType<typeof within>,
+  displayName: string
+) => {
+  const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const link = await canvas.findByRole('button', {
+    name: new RegExp(escaped),
+  });
+  await userEvent.click(link);
+};
+
 const expectVisibleTitles = async (
   canvas: ReturnType<typeof within>,
   expectedTitles: string[],
@@ -448,6 +460,51 @@ export const FilterByQuickStart: Story = {
       ['Getting Started with Insights', 'Advisor Quick Start'],
       ['Insights Documentation', 'Vulnerability Docs']
     );
+  },
+};
+
+/**
+ * With the Quick start filter applied, clicking a quick start notifies the shared store
+ * (opens in the Help Panel as a tab — not via `window.open`).
+ */
+export const ClickQuickStartNotifiesHelpPanelStore: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    getOpenQuickstartInHelpPanelStore().updateState('CONSUMED_OPEN');
+
+    await waitForLoadingComplete(canvas);
+    await selectContentType(canvas, 'quickstart');
+
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    await waitFor(() => {
+      const { pendingOpen } = getOpenQuickstartInHelpPanelStore().getState();
+      expect(pendingOpen?.quickstartId).toBe('insights-qs-1');
+    });
+  },
+};
+
+/**
+ * Documentation links open in a new browser tab (`window.open` with `_blank`).
+ */
+export const ClickDocumentationOpensNewWindow: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+    await selectContentType(canvas, 'documentation');
+
+    const openSpy = spyOn(window, 'open').mockImplementation(() => null);
+
+    await clickResourceLinkByName(canvas, 'Insights Documentation');
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalled();
+    });
+
+    expect(openSpy.mock.calls[0][1]).toBe('_blank');
+    expect(openSpy.mock.calls[0][2]).toBe('noopener,noreferrer');
+
+    openSpy.mockRestore();
   },
 };
 
