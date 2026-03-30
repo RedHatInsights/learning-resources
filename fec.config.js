@@ -22,6 +22,12 @@ module.exports = {
   hotReload: true,
   __unstableHotReload: true,
   /**
+   * Webpack dev server client configuration - disable error overlay
+   */
+  client: {
+    overlay: false,
+  },
+  /**
    * Add additional webpack plugins
    */
   frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),

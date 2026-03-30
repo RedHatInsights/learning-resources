@@ -1,27 +1,38 @@
-import { test, expect } from '@playwright/test';
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
+import { expect } from '@playwright/test';
+import { authTest as test, LEARNING_RESOURCES_URL, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.use({ ignoreHTTPSErrors: true });
 
 test.describe('all learning resources', async () => {
 
-  test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
-  });
-
   test('appears in the help menu and the link works', async({page}) => {
-      // click the help button
-      await page.getByLabel('Toggle help panel').click()
-      // click the "All Learning Catalog"
-      await page.getByRole('link', { name: 'All Learning Catalog' }).click();
+      // Click the help button to open help panel
+      await page.getByLabel('Toggle help panel').click();
+
+      // Wait for help panel to open and load
+      await expect(page.locator('[data-ouia-component-id="help-panel-title"]')).toBeVisible();
+
+      // Click on the "Learn" subtab
+      const learnTab = page.getByRole('tab', { name: 'Learn' });
+      await expect(learnTab).toBeVisible();
+      await learnTab.click();
+
+      // Wait for Learn panel content to load and click "All Learning Catalog" link
+      const allLearningLink = page.getByRole('link', { name: 'All Learning Catalog' });
+      await expect(allLearningLink).toBeVisible();
+      await allLearningLink.click();
+
       // Ensure page heading is "All learning resources" on the page that loads
       await page.waitForLoadState("load");
-      await expect(page.locator('h1')).toHaveText('All learning resources' );
+      await expect(page.locator('h1')).toHaveText('All learning resources');
   });
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState('load');
+
+    // Wait for skeleton loaders to disappear and actual count to appear
+    await expect(page.getByText(/All learning resources \(\d+\)/)).toBeVisible({ timeout: 45000 });
 
     const baseline = 98;
     const tolerancePercent = 10; // 10% tolerance
@@ -35,19 +46,38 @@ test.describe('all learning resources', async () => {
   });
 
   test('appears in search results', async ({page}) => {
-    await page.getByRole('button', { name: 'Expandable search input toggle' }).click();
-    await page.getByRole('textbox', { name: 'Search input' }).fill('all learning resources');
-    await page.getByRole('textbox', { name: 'Search input' }).press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'All Learning Resources'}).first()).toBeVisible({timeout: 10000});
+    const searchToggle = page.getByRole('button', { name: 'Expandable search input toggle' });
+    await expect(searchToggle).toBeVisible();
+    await searchToggle.click();
+
+    const searchInput = page.getByRole('textbox', { name: 'Search input' });
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('all learning resources');
+    await searchInput.press('Enter');
+
+    await expect(page.getByRole('menuitem', { name: 'All Learning Resources'}).first()).toBeVisible();
   });
 
   test('performs basic filtering by name', async({page}) => {
-    await page.getByRole('button', { name: 'Expandable search input toggle' }).click();
-    await page.getByRole('textbox', { name: 'Search input' }).fill('all learning resources');
-    await page.getByRole('textbox', { name: 'Search input' }).press('Enter');
-    await page.getByRole('menuitem', { name: 'All Learning Resources'}).first().click();
+    const searchToggle = page.getByRole('button', { name: 'Expandable search input toggle' });
+    await expect(searchToggle).toBeVisible();
+    await searchToggle.click();
+
+    const searchInput = page.getByRole('textbox', { name: 'Search input' });
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('all learning resources');
+    await searchInput.press('Enter');
+
+    const menuItem = page.getByRole('menuitem', { name: 'All Learning Resources'}).first();
+    await expect(menuItem).toBeVisible();
+    await menuItem.click();
+
     await page.waitForLoadState("load");
-    await page.getByRole('textbox', {name: 'Type to filter'}).fill('Adding an integration: Google');
+
+    const filterInput = page.getByRole('textbox', {name: 'Type to filter'});
+    await expect(filterInput).toBeVisible();
+    await filterInput.fill('Adding an integration: Google');
+
     // Backend (with or without fuzzy) may return 1 to many results; wait for count to stabilize in range
     await waitForCountInRange(page, 1, 100, 25000);
   });
@@ -56,10 +86,13 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
+    // Wait for initial count to load before applying filter
+    await expect(page.getByText(/All learning resources \(\d+\)/)).toBeVisible({ timeout: 45000 });
+
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
 
     // Wait for filter to apply - count should drop from ~98 to filtered range (5-79)
-    const actualCount = await waitForCountInRange(page, 5, 79, 20000);
+    const actualCount = await waitForCountInRange(page, 5, 79, 30000);
 
     // Verify we have some Ansible resources (at least 5, allowing for data changes)
     expect(actualCount, `Expected at least 5 Ansible resources, but found ${actualCount}`).toBeGreaterThanOrEqual(5);
@@ -75,11 +108,15 @@ test.describe('all learning resources', async () => {
   test('filters by console-wide services', async({page}) => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
+
+    // Wait for initial count to load before applying filter
+    await expect(page.getByText(/All learning resources \(\d+\)/)).toBeVisible({ timeout: 45000 });
+
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
 
     // Wait for filter to apply - count should drop from ~98 to filtered range (10-79)
-    const actualCount = await waitForCountInRange(page, 10, 79, 20000);
+    const actualCount = await waitForCountInRange(page, 10, 79, 30000);
 
     // Verify we have some Settings resources (at least 10, allowing for data changes)
     expect(actualCount, `Expected at least 10 Settings resources, but found ${actualCount}`).toBeGreaterThanOrEqual(10);
@@ -128,22 +165,22 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
+    // Wait for initial count to load before applying filter
+    await expect(page.getByText(/All learning resources \(\d+\)/)).toBeVisible({ timeout: 45000 });
+
     const observabilityCheckbox = page.getByRole('checkbox', {name: 'Observability'});
     await observabilityCheckbox.click();
 
     // Verify the checkbox is checked
     await expect(observabilityCheckbox).toBeChecked();
 
-    // Wait for network and DOM to stabilize after the filter is applied
-    await page.waitForLoadState("networkidle");
-    await page.waitForLoadState("domcontentloaded");
-
     const baseline = 13;
     const tolerancePercent = 10; // 10% tolerance
     const minExpected = Math.floor(baseline * (1 - tolerancePercent / 100));
     const maxExpected = Math.ceil(baseline * (1 + tolerancePercent / 100));
 
-    const actualCount = await extractResourceCount(page);
+    // Wait for filter to apply - count should drop from ~98 to filtered range
+    const actualCount = await waitForCountInRange(page, minExpected, maxExpected, 30000);
 
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeGreaterThanOrEqual(minExpected);
     expect(actualCount, `Expected ${minExpected}-${maxExpected} items (±${tolerancePercent}% of ${baseline}), but found ${actualCount}`).toBeLessThanOrEqual(maxExpected);
@@ -161,12 +198,15 @@ test.describe('all learning resources', async () => {
     await page.goto(LEARNING_RESOURCES_URL);
     await page.waitForLoadState("load");
 
+    // Wait for skeleton loaders to disappear and actual cards to load
+    await expect(page.getByText(/All learning resources \(\d+\)/)).toBeVisible({ timeout: 45000 });
+
     // The holy item chosen for testing
     const testItemText = "Adding a machine pool";
 
     // Find the card for "Adding a machine pool"
     const testCard = page.locator('.pf-v6-c-card').filter({ hasText: testItemText }).first();
-    await expect(testCard).toBeVisible();
+    await expect(testCard).toBeVisible({ timeout: 20000 });
 
     // Check if the card is already bookmarked by looking for the unbookmark button
     const unbookmarkButton = testCard.getByRole('button', { name: 'Unbookmark learning resource' });

@@ -26,3 +26,6 @@ test-results
 
 # storybook
 storybook-static
+
+playwright-report/
+playwright/.auth/

@@ -1,13 +1,9 @@
-import { test, expect } from '@playwright/test';
-import { ensureLoggedIn } from './test-utils';
+import { expect } from '@playwright/test';
+import { authTest as test } from './test-utils';
 
 test.use({ ignoreHTTPSErrors: true });
 
 test.describe('help panel', async () => {
-
-  test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
-  });
 
   test('opens and displays panel title', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();

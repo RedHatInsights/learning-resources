@@ -1,7 +1,7 @@
-import { Page, expect } from '@playwright/test';
+import { Page, expect, test } from '@playwright/test';
 
 // This can be changed to hit stage directly, but by default devs should be using stage.foo
-export const APP_TEST_HOST_PORT = 'stage.foo.redhat.com:1337';
+export const APP_TEST_HOST_PORT = process.env.APP_TEST_HOST_PORT || 'stage.foo.redhat.com:1337';
 export const LEARNING_RESOURCES_URL = `https://${APP_TEST_HOST_PORT}/learning-resources`;
 
 // Prevents inconsistent cookie prompting that is problematic for UI testing
@@ -17,9 +17,7 @@ export async function disableCookiePrompt(page: Page) {
 
 export async function login(page: Page, user: string, password: string): Promise<void> {
   // Fail in a friendly way if the proxy config is not set up correctly
-  await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0)
-
-  await disableCookiePrompt(page)
+  await expect(page.locator("text=Lockdown"), 'proxy config incorrect').toHaveCount(0);
 
   // Wait for and fill username field
   await page.getByLabel('Red Hat login').first().fill(user);
@@ -33,30 +31,83 @@ export async function login(page: Page, user: string, password: string): Promise
   await expect(page.getByText('Invalid login')).not.toBeVisible();
 }
 
-// Shared login logic for test beforeEach blocks
 export async function ensureLoggedIn(page: Page): Promise<void> {
+  // Block cookie prompts before navigating
+  await disableCookiePrompt(page);
+
+  // Navigate to the application - storage state from global-setup should auto-login
   await page.goto(`https://${APP_TEST_HOST_PORT}`, { waitUntil: 'load', timeout: 60000 });
 
-  const loggedIn = await page.getByText('Hi,').isVisible();
+  // Wait for chrome to load - if storage state is valid, we should already be logged in
+  const chromeRoot = page.locator('#chrome-app-render-root');
+  const settingsMenu = page.getByLabel('Settings menu');
+
+  // Check if we see an error page (Sentry error) indicating something went wrong
+  const errorHeading = page.getByRole('heading', { name: /Something went wrong/ });
+  const hasError = await errorHeading.isVisible({ timeout: 5000 }).catch(() => false);
+
+  if (hasError) {
+    console.warn('⚠️  Detected error page on initial load, reloading...');
+    await page.reload({ waitUntil: 'load', timeout: 60000 });
+    // Wait a bit for the page to stabilize after reload
+    await page.waitForTimeout(2000);
+  }
+
+  // Quick check if we're already logged in (storage state worked)
+  const loggedIn = await Promise.race([
+    chromeRoot.isVisible({ timeout: 15000 }).then(() => true),
+    settingsMenu.isVisible({ timeout: 15000 }).then(() => true),
+  ]).catch(() => false);
 
   if (!loggedIn) {
-    const user = process.env.E2E_USER!;
-    const password = process.env.E2E_PASSWORD!;
+    // Storage state invalid/expired - perform manual login
+    console.warn('⚠️  Storage state appears invalid, performing manual login...');
+
+    const user = process.env.E2E_USER;
+    const password = process.env.E2E_PASSWORD;
+
+    if (!user || !password) {
+      throw new Error(
+        'E2E_USER and E2E_PASSWORD environment variables are required for authentication.\n' +
+          'Please set them before running the tests:\n' +
+          'E2E_USER=your-username E2E_PASSWORD=your-password npm run playwright -- test',
+      );
+    }
+
     // make sure the SSO prompt is loaded for login
-    await page.waitForLoadState("load");
-    await expect(page.locator("#username-verification")).toBeVisible();
+    await page.waitForLoadState('load');
+    await expect(page.locator('#username-verification')).toBeVisible({ timeout: 10000 });
     await login(page, user, password);
-    await page.waitForLoadState("load");
+    await page.waitForLoadState('load');
     await expect(page.getByText('Invalid login')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
+
+    // Wait for successful login
+    await expect(settingsMenu, 'settings menu not displayed').toBeVisible({ timeout: 30000 });
 
     // conditionally accept cookie prompt
-    const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
+    const acceptAllButton = page.getByRole('button', { name: 'Accept all' });
     if (await acceptAllButton.isVisible()) {
       await acceptAllButton.click();
     }
   }
+
+  // Verify we're actually logged in
+  await expect(settingsMenu, 'not logged in after ensureLoggedIn').toBeVisible({ timeout: 30000 });
 }
+
+export const authTest = test.extend<{ authenticatedPage: Page }>({
+  authenticatedPage: [
+    async ({ page }: { page: Page }, use: (r: Page) => Promise<void>) => {
+      // This code runs before every test
+      await ensureLoggedIn(page);
+      await use(page);
+      // Code after use() would run after every test
+    },
+    { auto: true },
+  ],
+});
+
+export { expect };
 
 // Waits for the count to be within the specified range, then returns it
 // This handles React rendering timing and filter application delays
