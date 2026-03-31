@@ -34,8 +34,9 @@ async function globalSetup(config: FullConfig) {
     await login(page, user, password);
     await page.waitForLoadState('load');
 
-    // Verify successful login
-    await page.getByRole('button', { name: 'Add widgets' }).waitFor({ state: 'visible', timeout: 30000 });
+    // Verify successful login by checking for chrome header user greeting
+    // This is more reliable than checking for dashboard widgets which depend on remote modules
+    await page.getByText('Hi,').waitFor({ state: 'visible', timeout: 30000 });
 
     // Accept cookie prompt if visible
     const acceptAllButton = page.getByRole('button', { name: 'Accept all' });
