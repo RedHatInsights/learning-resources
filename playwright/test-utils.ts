@@ -48,7 +48,9 @@ export async function ensureLoggedIn(page: Page): Promise<void> {
     await login(page, user, password);
     await page.waitForLoadState("load");
     await expect(page.getByText('Invalid login')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add widgets' }), 'dashboard not displayed').toBeVisible({ timeout: 30000 });
+    // Verify login succeeded by checking for user greeting in chrome header
+    // This is more reliable than checking for dashboard widgets which depend on remote modules
+    await expect(page.getByText('Hi,'), 'user greeting not displayed after login').toBeVisible({ timeout: 30000 });
 
     // conditionally accept cookie prompt
     const acceptAllButton = page.getByRole('button', { name: 'Accept all'});
