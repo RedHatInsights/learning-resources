@@ -14,6 +14,9 @@ async function globalSetup(config: FullConfig) {
   const page = await context.newPage();
 
   try {
+    // Disable cookie prompts before navigation
+    await disableCookiePrompt(page);
+
     // Navigate to the application
     await page.goto(baseURL || '/', { waitUntil: 'load', timeout: 60000 });
 
@@ -28,7 +31,6 @@ async function globalSetup(config: FullConfig) {
     await page.waitForLoadState('load');
 
     // Perform login
-    await disableCookiePrompt(page);
     await login(page, user, password);
     await page.waitForLoadState('load');
 
