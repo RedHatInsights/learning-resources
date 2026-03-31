@@ -2,6 +2,122 @@
 
 This document tracks significant changes made with Claude Code assistance to help future maintainers understand the context and rationale.
 
+## Playwright Shared Login Authentication (March 2026)
+
+### Overview
+Implemented shared authentication state across Playwright e2e tests to improve performance and reduce flakiness. Tests now perform login once in a global setup phase and reuse the authentication state, eliminating redundant login operations in every test file.
+
+### Changes Made
+
+#### `playwright.config.ts`
+- **Added `globalSetup`**: Points to `./playwright/global-setup.ts` to perform authentication before tests run
+- **Added `use.baseURL`**: Default to `https://stage.foo.redhat.com:1337` (can be overridden with `PLAYWRIGHT_BASE_URL` env var)
+- **Added `use.storageState`**: Points to `./playwright/.auth/user.json` to share authentication across tests
+- **Added `use.ignoreHTTPSErrors`**: Global flag to ignore HTTPS errors (previously set per-test)
+
+#### `playwright/global-setup.ts` (new file)
+- **Single login execution**: Performs SSO login once before all tests run
+- **Authentication state persistence**: Saves cookies and storage to `./playwright/.auth/user.json`
+- **Login verification**: Waits for "Add widgets" button as reliable indicator of successful login
+- **Cookie prompt handling**: Accepts cookie consent prompt during setup
+- **Error handling**: Provides clear error messages if E2E_USER or E2E_PASSWORD env vars are missing
+
+#### `playwright/all-learning-resources.spec.ts`
+- **Removed `ensureLoggedIn()` call**: Tests no longer perform login in beforeEach
+- **Simplified beforeEach**: Only blocks cookie prompts and navigates to dashboard
+- **Removed `test.use({ ignoreHTTPSErrors: true })`**: Now configured globally in playwright.config.ts
+- **Changed URLs**: Use relative URLs (`/learning-resources`) instead of absolute URLs with host/port
+
+#### `playwright/help-panel.spec.ts`
+- **Removed `ensureLoggedIn()` call**: Tests no longer perform login in beforeEach
+- **Simplified beforeEach**: Only blocks cookie prompts and navigates to dashboard
+- **Removed `test.use({ ignoreHTTPSErrors: true })`**: Now configured globally in playwright.config.ts
+
+#### `playwright/test-utils.ts`
+- **Updated `ensureLoggedIn()`**: No longer used by test files, but kept for backwards compatibility
+- **Updated login verification**: Changed from checking for "widget-layout" element to "Add widgets" button (more reliable)
+- **Extracted `login()` function**: Now used by both `ensureLoggedIn()` and `global-setup.ts`
+
+#### `.gitignore`
+- **Added `playwright/.auth`**: Excludes authentication state files from git (contains sensitive session data)
+
+#### `playwright/.auth/dummy.txt` (new file)
+- **Git tracking**: Empty placeholder file to ensure `.auth` directory exists in git
+
+### Context for Maintainers
+
+#### Performance Benefits
+- **Before**: Each test file performed full SSO login in beforeEach (~5-10 seconds per test file)
+- **After**: Login happens once in global setup, all tests reuse the session (~1-2 seconds saved per test)
+
+#### Reliability Benefits
+- **Reduced flakiness**: Fewer login operations means fewer opportunities for SSO timeouts or race conditions
+- **Consistent state**: All tests start with the same authenticated state
+- **Better login indicator**: "Add widgets" button is more reliable than "widget-layout" element which depends on remote module loading
+
+#### How It Works
+1. **Global setup phase**: Before any tests run, `playwright/global-setup.ts` launches a browser, navigates to the app, performs SSO login, and saves the authentication state to `./playwright/.auth/user.json`
+2. **Test execution**: Each test starts with the saved authentication state already loaded, so the user is logged in immediately when navigating to the app
+3. **Cookie prompts**: Tests still block cookie consent prompts using `disableCookiePrompt()` to prevent UI interference
+
+#### Environment Variables
+Tests require these environment variables:
+- `E2E_USER`: Red Hat SSO username
+- `E2E_PASSWORD`: Red Hat SSO password
+- `PLAYWRIGHT_BASE_URL` (optional): Override default stage URL
+
+### Issues Discovered and Fixed
+
+#### Issue 1: Flaky login verification
+Initial implementation checked for "widget-layout" element which depends on remote module loading. This caused intermittent failures when modules loaded slowly.
+
+**Fix applied** (commit 4d42453): Changed to check for "Add widgets" button, which is part of the chrome shell and renders more reliably.
+
+#### Issue 2: Cookie prompt timing
+Cookie consent prompt was appearing during navigation, causing timing issues with login detection.
+
+**Fix applied** (commit 84a5b4d): Moved `disableCookiePrompt()` call before initial navigation in global setup.
+
+#### Issue 3: Help panel element timing in CI
+Help panel tests were failing intermittently in CI/stage environments because elements rendered with slight delays.
+
+**Fix applied** (commit 08e29f9): Added explicit 10-second timeouts to all visibility checks in help panel tests.
+
+### Running Tests Locally
+
+**With shared authentication (normal):**
+```bash
+# Set credentials (or use .env file)
+export E2E_USER="your-username"
+export E2E_PASSWORD="your-password"
+
+# Run tests - login happens automatically in global setup
+npx playwright test
+```
+
+**Override base URL:**
+```bash
+export PLAYWRIGHT_BASE_URL="https://different-stage.redhat.com"
+npx playwright test
+```
+
+**Debug mode:**
+```bash
+# Global setup runs automatically, then you can debug individual tests
+npx playwright test --debug
+```
+
+### Related Files
+- `playwright.config.ts` - Global configuration with storage state
+- `playwright/global-setup.ts` - Single login execution before tests
+- `playwright/all-learning-resources.spec.ts` - Simplified to use shared auth
+- `playwright/help-panel.spec.ts` - Simplified to use shared auth
+- `playwright/test-utils.ts` - Shared utilities including login function
+- `.gitignore` - Excludes `.auth` directory from version control
+
+### Branch
+`btweed/shared-login-auth`
+
 ## Storybook Test Runner Setup (March 2026)
 
 ### Overview
