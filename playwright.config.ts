@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { currentsReporter } from "@currents/playwright";
 
 // Simulate slow CI environment with SLOW_CI=1 environment variable
 const simulateSlowCI = process.env.SLOW_CI === '1';
