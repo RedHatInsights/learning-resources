@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { ensureLoggedIn } from './test-utils';
-
-test.use({ ignoreHTTPSErrors: true });
+import { disableCookiePrompt } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
+    // Block trustarc cookie prompts
+    await disableCookiePrompt(page);
+
+    // Navigate to dashboard - authentication state is already loaded from global setup
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   });
 
   test('opens and displays panel title', async ({page}) => {

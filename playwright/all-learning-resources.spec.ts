@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
-
-test.use({ ignoreHTTPSErrors: true });
+import { disableCookiePrompt, extractResourceCount, waitForCountInRange } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
+    // Block trustarc cookie prompts
+    await disableCookiePrompt(page);
+
+    // Navigate to dashboard - authentication state is already loaded from global setup
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   });
 
   test('appears in the help menu and the link works', async({page}) => {
@@ -20,7 +22,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState('load');
 
     const baseline = 98;
@@ -53,7 +55,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by product family', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
@@ -73,7 +75,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by console-wide services', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
@@ -96,7 +98,7 @@ test.describe('all learning resources', async () => {
   // Quick start content, causing the filter to return 0 results. The test can be
   // re-enabled when Quick start content is added to the stage environment.
   test.skip('filters by content type', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
@@ -125,7 +127,7 @@ test.describe('all learning resources', async () => {
 
   test('filters by use case', async({page}) => {
 
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState("load");
 
     const observabilityCheckbox = page.getByRole('checkbox', {name: 'Observability'});
@@ -158,7 +160,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('displays bookmarked resources', async ({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto('/learning-resources');
     await page.waitForLoadState("load");
 
     // The holy item chosen for testing
