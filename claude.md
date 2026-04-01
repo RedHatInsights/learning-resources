@@ -2,6 +2,101 @@
 
 This document tracks significant changes made with Claude Code assistance to help future maintainers understand the context and rationale.
 
+## Migration to @frontend-test-utils/test-auth Package (April 2026)
+
+### Overview
+Migrated from custom authentication logic to the shared `@frontend-test-utils/test-auth` package. This eliminates code duplication across repositories and provides a centrally maintained authentication solution for Playwright e2e tests.
+
+### Changes Made
+
+#### `package.json`
+- **Added dependency**: `@frontend-test-utils/test-auth@^0.0.1` - Shared Red Hat SSO authentication utilities for Playwright
+
+#### `playwright.config.ts`
+- **Updated `globalSetup`**: Changed from `'./playwright/global-setup.ts'` to `require.resolve('@frontend-test-utils/test-auth/global-setup')`
+- Uses the shared package's global setup instead of custom implementation
+
+#### `playwright/test-utils.ts`
+- **Simplified to re-exports**: Now imports and re-exports `disableCookiePrompt`, `login`, `ensureLoggedIn`, and `APP_TEST_HOST_PORT` from `@frontend-test-utils/test-auth`
+- **Removed duplicate code**: Deleted ~60 lines of authentication logic that's now maintained in the shared package
+- **Kept local utilities**: Retained `LEARNING_RESOURCES_URL` and resource counting utilities specific to this app
+- **Kept helper functions**: Retained `waitForCountInRange` and `extractResourceCount` which are specific to the learning resources UI
+
+#### `playwright/global-setup.ts` (deleted)
+- **Removed custom global setup**: No longer needed since the shared package provides identical functionality
+
+#### Test Files
+- **No changes required**: `all-learning-resources.spec.ts` and `help-panel.spec.ts` continue to import from `./test-utils` which now re-exports from the shared package
+
+### Context for Maintainers
+
+The custom authentication code in this repository was functionally identical to code in other Red Hat frontend repositories. By extracting it into a shared package, we get:
+
+**Benefits:**
+- **Single source of truth**: Authentication logic maintained in one place
+- **Bug fixes propagate**: Improvements to SSO login flow benefit all repositories
+- **Reduced duplication**: Less code to maintain in each repository
+- **Consistent behavior**: All e2e tests use the same authentication approach
+
+**Package Functionality:**
+The `@frontend-test-utils/test-auth` package provides:
+- `globalSetup` - Performs login once and saves authentication state before tests run
+- `disableCookiePrompt` - Blocks TrustArc cookie consent prompts
+- `login` - Performs Red Hat SSO login flow
+- `ensureLoggedIn` - Checks if logged in, performs login if needed
+- `APP_TEST_HOST_PORT` - Default test host (`'stage.foo.redhat.com:1337'`)
+
+**Migration Pattern:**
+Other repositories with custom Playwright authentication can follow this pattern:
+1. Add `@frontend-test-utils/test-auth` to `devDependencies`
+2. Update `playwright.config.ts` to use `require.resolve('@frontend-test-utils/test-auth/global-setup')`
+3. Replace custom auth functions with imports from the package
+4. Delete custom `global-setup.ts` and authentication utilities
+5. Tests continue to work without modification if they import from local test-utils
+
+### Development Workflow
+
+Since the package is currently linked via `npm link` during development:
+
+**Local development:**
+```bash
+# In the frontend-test-utils repo
+npm run build  # Rebuild the package after changes
+
+# In this repo
+# Tests automatically use the linked version
+npx playwright test
+```
+
+**CI/CD:**
+Once the package is published to the npm registry (or Red Hat's internal registry), the link can be removed and CI will install the package normally.
+
+### Issues Encountered During Migration
+
+#### Issue 1: Global setup importing from @playwright/test
+Global setup files must import from `playwright` (core library), not `@playwright/test`, to avoid "Requiring @playwright/test second time" errors.
+
+**Fix applied**: Updated `@frontend-test-utils/test-auth` package to import `chromium` from `playwright` in `global-setup.js`.
+
+#### Issue 2: Missing .js extensions in ES module imports
+The package uses `"type": "module"` in package.json, which requires explicit `.js` extensions in relative imports.
+
+**Fix applied**: Updated TypeScript build configuration in `@frontend-test-utils/test-auth` to emit `.js` extensions in compiled imports.
+
+#### Issue 3: login() function using expect() from playwright/test
+The `login()` function was using `expect()` for assertions, which caused issues when called from global setup since global setup can't use `@playwright/test` utilities.
+
+**Fix applied**: Refactored `login()` in `@frontend-test-utils/test-auth` to use plain JavaScript assertions (`.count()`, `.isVisible()`, error throwing) instead of `expect()`.
+
+### Related Files
+- `package.json` - Added `@frontend-test-utils/test-auth` dependency
+- `playwright.config.ts` - Uses shared global setup
+- `playwright/test-utils.ts` - Re-exports from shared package
+- `playwright/global-setup.ts` - DELETED (replaced by shared package)
+
+### Branch
+`btweed/migrate-to-test-auth-package`
+
 ## Playwright Shared Login Authentication (March 2026)
 
 ### Overview

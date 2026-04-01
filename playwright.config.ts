@@ -8,7 +8,7 @@ export default defineConfig({
   // Disable parallel execution within test files
   fullyParallel: false,
   // Global setup to perform login once before all tests
-  globalSetup: './playwright/global-setup.ts',
+  globalSetup: '@frontend-test-utils/test-auth/global-setup',
   use: {
     // Base URL for all tests - use environment variable or default to stage
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://stage.foo.redhat.com:1337',
