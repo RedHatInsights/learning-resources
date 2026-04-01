@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@frontend-test-utils/test-auth": "^0.0.1",
-    "@playwright/test": "1.58.0",
+    "@playwright/test": "1.59.0",
     "@redhat-cloud-services/eslint-config-redhat-cloud-services": "^2.0.12",
     "@redhat-cloud-services/frontend-components-config": "^6.8.3",
     "@redhat-cloud-services/tsc-transform-imports": "^1.0.26",

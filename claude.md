@@ -11,6 +11,7 @@ Migrated from custom authentication logic to the shared `@frontend-test-utils/te
 
 #### `package.json`
 - **Added dependency**: `@frontend-test-utils/test-auth@^0.0.1` - Shared Red Hat SSO authentication utilities for Playwright
+- **Updated dependency**: `@playwright/test` from `1.58.0` to `1.59.0` - Required for compatibility with `@frontend-test-utils/test-auth` package
 
 #### `playwright.config.ts`
 - **Updated `globalSetup`**: Changed from `'./playwright/global-setup.ts'` to `require.resolve('@frontend-test-utils/test-auth/global-setup')`
@@ -87,6 +88,11 @@ The package uses `"type": "module"` in package.json, which requires explicit `.j
 The `login()` function was using `expect()` for assertions, which caused issues when called from global setup since global setup can't use `@playwright/test` utilities.
 
 **Fix applied**: Refactored `login()` in `@frontend-test-utils/test-auth` to use plain JavaScript assertions (`.count()`, `.isVisible()`, error throwing) instead of `expect()`.
+
+#### Issue 4: Playwright version mismatch between repos
+When running tests, Playwright tried to launch browser version 1217 (required by 1.59.0) but only version 1208 (from 1.58.0) was installed. The linked `@frontend-test-utils/test-auth` package was built with Playwright 1.59.0, creating a version mismatch.
+
+**Fix applied**: Upgraded `@playwright/test` from `1.58.0` to `1.59.0` in this repository to match the version used by the shared package, then installed the correct browser binaries with `npx playwright install chromium`.
 
 ### Related Files
 - `package.json` - Added `@frontend-test-utils/test-auth` dependency
