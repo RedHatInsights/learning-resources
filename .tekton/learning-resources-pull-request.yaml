@@ -39,6 +39,12 @@ spec:
     value: learning-resources
   - name: test-app-port
     value: "8000"
+  - name: workspace-setup-script
+    value: |
+      #!/bin/bash
+      set -ex
+
+      npm ci
   - name: unit-tests-script
     value: |
       #!/bin/bash
@@ -55,7 +61,7 @@ spec:
       echo "Starting application with container's built-in Caddy configuration..."
       exec caddy run --config /etc/caddy/Caddyfile
   - name: e2e-playwright-image
-    value: mcr.microsoft.com/playwright:v1.58.0-jammy
+    value: mcr.microsoft.com/playwright:v1.59.0-jammy
   - name: e2e-tests-script
     value: |
       #!/bin/bash
