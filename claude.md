@@ -2,7 +2,46 @@
 
 This document tracks significant changes made with Claude Code assistance to help future maintainers understand the context and rationale.
 
-## Migration to @frontend-test-utils/test-auth Package (April 2026)
+## Migration to Published @redhat-cloud-services/playwright-test-auth Package (April 2026)
+
+### Overview
+Migrated from the locally-linked `@frontend-test-utils/test-auth` package to the published `@redhat-cloud-services/playwright-test-auth@0.0.2` package on npm. This completes the authentication standardization effort by using the officially published package.
+
+### Changes Made
+
+#### `package.json`
+- **Removed**: `@frontend-test-utils/test-auth@^0.0.1` - Local/linked package
+- **Added**: `@redhat-cloud-services/playwright-test-auth@^0.0.2` - Published npm package
+
+#### `playwright.config.ts`
+- **Updated `globalSetup`**: Changed from `@frontend-test-utils/test-auth/global-setup` to `@redhat-cloud-services/playwright-test-auth/global-setup`
+
+#### `playwright/test-utils.ts`
+- **Updated imports**: Changed from `@frontend-test-utils/test-auth` to `@redhat-cloud-services/playwright-test-auth`
+- **Removed unused re-exports**: Dropped `ensureLoggedIn` and `APP_TEST_HOST_PORT` which are not part of the published package's API and were not used by any tests
+
+### Context for Maintainers
+
+The published package exports a minimal API focused on the core authentication functionality:
+- `disableCookiePrompt(page)` - Blocks TrustArc cookie consent prompts
+- `login(page, user, password)` - Performs Red Hat SSO login flow
+- `globalSetup` - Performs login once and saves authentication state before tests run
+
+Note that `ensureLoggedIn` and `APP_TEST_HOST_PORT` were removed from the published package as they were not needed with the global setup approach.
+
+### Related Files
+- `package.json` - Updated to use published package
+- `playwright.config.ts` - Updated globalSetup import
+- `playwright/test-utils.ts` - Updated imports and removed unused re-exports
+
+### Branch
+`btweed/migrate-to-test-auth-package`
+
+---
+
+## Initial Migration to @frontend-test-utils/test-auth Package (April 2026)
+
+**Note**: This section documents the initial migration to the local/linked package. See the section above for the final migration to the published npm package.
 
 ### Overview
 Migrated from custom authentication logic to the shared `@frontend-test-utils/test-auth` package. This eliminates code duplication across repositories and provides a centrally maintained authentication solution for Playwright e2e tests.
@@ -40,24 +79,24 @@ The custom authentication code in this repository was functionally identical to 
 - **Consistent behavior**: All e2e tests use the same authentication approach
 
 **Package Functionality:**
-The `@frontend-test-utils/test-auth` package provides:
+The `@redhat-cloud-services/playwright-test-auth` package provides:
 - `globalSetup` - Performs login once and saves authentication state before tests run
 - `disableCookiePrompt` - Blocks TrustArc cookie consent prompts
 - `login` - Performs Red Hat SSO login flow
-- `ensureLoggedIn` - Checks if logged in, performs login if needed
-- `APP_TEST_HOST_PORT` - Default test host (`'stage.foo.redhat.com:1337'`)
 
 **Migration Pattern:**
 Other repositories with custom Playwright authentication can follow this pattern:
-1. Add `@frontend-test-utils/test-auth` to `devDependencies`
-2. Update `playwright.config.ts` to use `require.resolve('@frontend-test-utils/test-auth/global-setup')`
+1. Add `@redhat-cloud-services/playwright-test-auth` to `devDependencies`
+2. Update `playwright.config.ts` to use `@redhat-cloud-services/playwright-test-auth/global-setup`
 3. Replace custom auth functions with imports from the package
 4. Delete custom `global-setup.ts` and authentication utilities
 5. Tests continue to work without modification if they import from local test-utils
 
-### Development Workflow
+### Development Workflow (Historical - for local package development)
 
-Since the package is currently linked via `npm link` during development:
+**Note**: This section is historical. The package is now published to npm as `@redhat-cloud-services/playwright-test-auth`.
+
+During initial development, the package was linked via `npm link`:
 
 **Local development:**
 ```bash
@@ -70,9 +109,11 @@ npx playwright test
 ```
 
 **CI/CD:**
-Once the package is published to the npm registry (or Red Hat's internal registry), the link can be removed and CI will install the package normally.
+The package is now published to npm, so CI installs it normally via `npm install`.
 
-### Issues Encountered During Migration
+### Issues Encountered During Initial Migration
+
+**Note**: These issues were encountered during development of the local/linked package and have been resolved in the published `@redhat-cloud-services/playwright-test-auth` package.
 
 #### Issue 1: Global setup importing from @playwright/test
 Global setup files must import from `playwright` (core library), not `@playwright/test`, to avoid "Requiring @playwright/test second time" errors.
@@ -94,14 +135,16 @@ When running tests, Playwright tried to launch browser version 1217 (required by
 
 **Fix applied**: Upgraded `@playwright/test` from `1.58.0` to `1.59.0` in this repository to match the version used by the shared package, then installed the correct browser binaries with `npx playwright install chromium`.
 
-### Related Files
-- `package.json` - Added `@frontend-test-utils/test-auth` dependency
+### Related Files (Initial Migration)
+- `package.json` - Initially added `@frontend-test-utils/test-auth` dependency (later replaced with published package)
 - `playwright.config.ts` - Uses shared global setup
 - `playwright/test-utils.ts` - Re-exports from shared package
 - `playwright/global-setup.ts` - DELETED (replaced by shared package)
 
 ### Branch
 `btweed/migrate-to-test-auth-package`
+
+---
 
 ## Playwright Shared Login Authentication (March 2026)
 
