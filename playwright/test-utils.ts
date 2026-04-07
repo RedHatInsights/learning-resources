@@ -4,9 +4,7 @@ import { Page, expect } from '@playwright/test';
 export {
   disableCookiePrompt,
   login,
-  ensureLoggedIn,
-  APP_TEST_HOST_PORT,
-} from '@frontend-test-utils/test-auth';
+} from '@redhat-cloud-services/playwright-test-auth';
 
 // Local utility - URL for learning resources
 export const LEARNING_RESOURCES_URL = `https://stage.foo.redhat.com:1337/learning-resources`;
