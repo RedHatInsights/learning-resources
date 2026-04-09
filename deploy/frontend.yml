@@ -119,6 +119,22 @@ objects:
                 args:
                 - platform.chrome.quickstarts.creator
                 - true
+      widgetRegistry:
+        - scope: learningResources
+          module: ./BookmarkedLearningResourcesWidget
+          featureFlag: widget.learningResources.enable
+          defaults:
+            w: 2
+            h: 4
+            maxH: 10
+            minH: 1
+          config:
+            title: Bookmarked learning resources
+            icon: OutlinedBookmarkIcon
+            headerLink:
+              title: View all
+              href: /learning-resources?tab=all
+            featureFlag: platform.learning-resources.global-learning-resources
       searchEntries:
         - id: learning-resources
           title: All Learning Resources

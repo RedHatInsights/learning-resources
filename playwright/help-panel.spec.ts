@@ -1,23 +1,29 @@
 import { test, expect } from '@playwright/test';
-import { ensureLoggedIn } from './test-utils';
-
-test.use({ ignoreHTTPSErrors: true });
+import { disableCookiePrompt } from './test-utils';
 
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
+    // Block trustarc cookie prompts
+    await disableCookiePrompt(page);
+
+    // Navigate to dashboard - authentication state is already loaded from global setup
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+
+    // Tier 1: Wait for chrome header to be fully loaded before interacting with help panel
+    await expect(page.getByText('Hi,')).toBeVisible();
   });
 
   test('opens and displays panel title', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
-    // Check for the specific help panel title element
+    // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
   });
 
   test('closes when close button is clicked', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
+    // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
@@ -31,7 +37,7 @@ test.describe('help panel', async () => {
   test('displays subtabs', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
-    // Verify subtabs container is present
+    // Tier 2: Wait for help panel to finish loading
     const subtabs = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
     await expect(subtabs).toBeVisible();
   });
@@ -39,7 +45,7 @@ test.describe('help panel', async () => {
   test('allows switching between subtabs', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
-    // Wait for help panel to be open
+    // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
@@ -54,11 +60,11 @@ test.describe('help panel', async () => {
   test('displays status page link in header', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
-    // Wait for help panel to be open
+    // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // The status page link is always visible in the header next to the Help title
+    // The status page link is rendered inside the Title element, so wait for it explicitly
     const statusPageLink = page.locator('.lr-c-status-page-link');
     await expect(statusPageLink).toBeVisible();
     await expect(statusPageLink).toHaveText('Red Hat status page');
@@ -67,6 +73,7 @@ test.describe('help panel', async () => {
   test('can add a new tab', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
+    // Tier 2: Wait for help panel to finish loading
     const addTabButton = page.locator('[data-ouia-component-id="help-panel-add-tab-button"]');
     await expect(addTabButton).toBeVisible();
 

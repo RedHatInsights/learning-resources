@@ -1,17 +1,24 @@
 import { test, expect } from '@playwright/test';
-import { LEARNING_RESOURCES_URL, ensureLoggedIn, extractResourceCount, waitForCountInRange } from './test-utils';
-
-test.use({ ignoreHTTPSErrors: true });
+import { disableCookiePrompt, extractResourceCount, waitForCountInRange, LEARNING_RESOURCES_PATH } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
-    await ensureLoggedIn(page);
+    // Block trustarc cookie prompts
+    await disableCookiePrompt(page);
+
+    // Navigate to dashboard - authentication state is already loaded from global setup
+    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
   });
 
   test('appears in the help menu and the link works', async({page}) => {
       // click the help button
       await page.getByLabel('Toggle help panel').click()
+
+      // Tier 2: Wait for help panel to finish loading before clicking links
+      const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
+      await expect(helpPanelTitle).toBeVisible();
+
       // click the "All Learning Catalog"
       await page.getByRole('link', { name: 'All Learning Catalog' }).click();
       // Ensure page heading is "All learning resources" on the page that loads
@@ -20,7 +27,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('has the appropriate number of items on the all learning resources tab', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState('load');
 
     const baseline = 98;
@@ -38,7 +45,7 @@ test.describe('all learning resources', async () => {
     await page.getByRole('button', { name: 'Expandable search input toggle' }).click();
     await page.getByRole('textbox', { name: 'Search input' }).fill('all learning resources');
     await page.getByRole('textbox', { name: 'Search input' }).press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'All Learning Resources'}).first()).toBeVisible({timeout: 10000});
+    await expect(page.getByRole('menuitem', { name: 'All Learning Resources'}).first()).toBeVisible();
   });
 
   test('performs basic filtering by name', async({page}) => {
@@ -53,7 +60,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by product family', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Ansible'}).click();
@@ -73,7 +80,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('filters by console-wide services', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState("load");
     await page.getByRole('checkbox', {name: 'Settings'}).click();
     await expect (page.getByRole('checkbox', { name: 'Settings'})).toBeChecked();
@@ -96,7 +103,7 @@ test.describe('all learning resources', async () => {
   // Quick start content, causing the filter to return 0 results. The test can be
   // re-enabled when Quick start content is added to the stage environment.
   test.skip('filters by content type', async({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState("load");
 
     await page.getByRole('checkbox', {name: 'Quick start'}).click();
@@ -108,7 +115,7 @@ test.describe('all learning resources', async () => {
     expect(actualCount, `Expected at least 10 quick starts, but found ${actualCount}`).toBeGreaterThanOrEqual(10);
 
     // Wait for the DOM to stabilize by ensuring the card count matches the displayed count
-    await expect(page.locator('.pf-v6-c-card:visible')).toHaveCount(actualCount, {timeout: 10000});
+    await expect(page.locator('.pf-v6-c-card:visible')).toHaveCount(actualCount);
 
     const cards = await page.locator('.pf-v6-c-card:visible').all();
     expect(cards.length).toEqual(actualCount);
@@ -125,7 +132,7 @@ test.describe('all learning resources', async () => {
 
   test('filters by use case', async({page}) => {
 
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState("load");
 
     const observabilityCheckbox = page.getByRole('checkbox', {name: 'Observability'});
@@ -158,7 +165,7 @@ test.describe('all learning resources', async () => {
   });
 
   test('displays bookmarked resources', async ({page}) => {
-    await page.goto(LEARNING_RESOURCES_URL);
+    await page.goto(LEARNING_RESOURCES_PATH);
     await page.waitForLoadState("load");
 
     // The holy item chosen for testing
