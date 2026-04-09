@@ -11,21 +11,21 @@ test.describe('help panel', async () => {
     await page.goto('/', { waitUntil: 'load', timeout: 60000 });
 
     // Tier 1: Wait for chrome header to be fully loaded before interacting with help panel
-    await expect(page.getByText('Hi,')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Hi,')).toBeVisible();
   });
 
   test('opens and displays panel title', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
-    await expect(helpPanelTitle).toBeVisible({ timeout: 10000 });
+    await expect(helpPanelTitle).toBeVisible();
   });
 
   test('closes when close button is clicked', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
-    await expect(helpPanelTitle).toBeVisible({ timeout: 10000 });
+    await expect(helpPanelTitle).toBeVisible();
 
     const closeButton = page.locator('[data-ouia-component-id="help-panel-close-button"]');
     await closeButton.click();
@@ -39,7 +39,7 @@ test.describe('help panel', async () => {
 
     // Tier 2: Wait for help panel to finish loading
     const subtabs = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
-    await expect(subtabs).toBeVisible({ timeout: 10000 });
+    await expect(subtabs).toBeVisible();
   });
 
   test('allows switching between subtabs', async ({page}) => {
@@ -47,7 +47,7 @@ test.describe('help panel', async () => {
 
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
-    await expect(helpPanelTitle).toBeVisible({ timeout: 10000 });
+    await expect(helpPanelTitle).toBeVisible();
 
     // Click on APIs subtab
     const apiTab = page.locator('[data-ouia-component-id="help-panel-subtab-api"]');
@@ -62,12 +62,11 @@ test.describe('help panel', async () => {
 
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
-    await expect(helpPanelTitle).toBeVisible({ timeout: 10000 });
+    await expect(helpPanelTitle).toBeVisible();
 
     // The status page link is rendered inside the Title element, so wait for it explicitly
-    // with a timeout to handle slow rendering
     const statusPageLink = page.locator('.lr-c-status-page-link');
-    await expect(statusPageLink).toBeVisible({ timeout: 10000 });
+    await expect(statusPageLink).toBeVisible();
     await expect(statusPageLink).toHaveText('Red Hat status page');
   });
 
@@ -76,7 +75,7 @@ test.describe('help panel', async () => {
 
     // Tier 2: Wait for help panel to finish loading
     const addTabButton = page.locator('[data-ouia-component-id="help-panel-add-tab-button"]');
-    await expect(addTabButton).toBeVisible({ timeout: 10000 });
+    await expect(addTabButton).toBeVisible();
 
     await addTabButton.click();
 
