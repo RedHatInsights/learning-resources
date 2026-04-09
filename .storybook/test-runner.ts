@@ -78,7 +78,7 @@ const CRITICAL_ERROR_PATTERNS = [
  */
 function shouldIgnoreError(errorText: string, storyParameters?: any): boolean {
   // Check if error is from MSW/mock infrastructure
-  const isMswError = /msw|mock|handler|worker/i.test(errorText) ||
+  const isMswError = /msw|mock|handler|worker|AxiosError/i.test(errorText) ||
                      /Failed to load resource/.test(errorText);
 
   for (const { pattern, source } of IGNORED_ERROR_PATTERNS) {
