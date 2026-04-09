@@ -6,8 +6,8 @@ export {
   login,
 } from '@redhat-cloud-services/playwright-test-auth';
 
-// Local utility - URL for learning resources
-export const LEARNING_RESOURCES_URL = `https://stage.foo.redhat.com:1337/learning-resources`;
+// Local utility - Path for learning resources
+export const LEARNING_RESOURCES_PATH = '/learning-resources';
 
 // Waits for the count to be within the specified range, then returns it
 // This handles React rendering timing and filter application delays
