@@ -14,6 +14,11 @@ test.describe('all learning resources', async () => {
   test('appears in the help menu and the link works', async({page}) => {
       // click the help button
       await page.getByLabel('Toggle help panel').click()
+
+      // Tier 2: Wait for help panel to finish loading before clicking links
+      const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
+      await expect(helpPanelTitle).toBeVisible();
+
       // click the "All Learning Catalog"
       await page.getByRole('link', { name: 'All Learning Catalog' }).click();
       // Ensure page heading is "All learning resources" on the page that loads
