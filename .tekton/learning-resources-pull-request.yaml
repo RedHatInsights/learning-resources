@@ -49,7 +49,8 @@ spec:
       #!/bin/bash
       set -ex
 
-      npm install
+      # This duplicates the workspace setup script's purpose, don't do it.
+      # npm install
   - name: run-app-script
     value: |
       #!/bin/sh
