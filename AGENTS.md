@@ -8,7 +8,7 @@
 4. **Colocate tests with source** — unit tests go next to the file they test (e.g., `Foo.test.tsx` beside `Foo.tsx`).
 5. **Colocate stories with source** — Storybook stories use the `.stories.tsx` suffix next to the component.
 6. **SCSS scoping** — all styles must be scoped under `.learning-resources` or `.learningResources` (configured in `fec.config.js` `sassPrefix`).
-7. **Chrome API abstraction** — never import Chrome packages directly. Use the `useChrome` hook from `@redhat-cloud-services/frontend-components/useChrome`.
+7. **Chrome API abstraction** — always access Chrome functionality via the `useChrome` hook from `@redhat-cloud-services/frontend-components/useChrome`. Never import Chrome internals or other Chrome packages directly.
 8. **Feature flags via Unleash** — use `useFlag` / `useFlags` from `@unleash/proxy-client-react`. Never hardcode feature availability.
 9. **No direct API calls in components** — new API calls go in `src/utils/fetch*.ts` or `src/utils/toggleFavorite.ts`. Components consume data via hooks or props. **Known exceptions** (legacy — migrate when touching these files): `GlobalLearningResourcesQuickstartItem.tsx`, `LearnPanel.tsx`, `SearchResultItem.tsx` have inline `axios.post` for favorites (should use `toggleFavorite.ts`); `SupportPanel.tsx` and `FeedbackForm.tsx` have inline `fetch` calls for support-cases/feedback APIs.
 10. **Sort imports** — ESLint enforces `sort-imports` (declaration sort is ignored, but member sort is enforced).
