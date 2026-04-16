@@ -10,7 +10,7 @@
 6. **SCSS scoping** — all styles must be scoped under `.learning-resources` or `.learningResources` (configured in `fec.config.js` `sassPrefix`).
 7. **Chrome API abstraction** — never import Chrome packages directly. Use the `useChrome` hook from `@redhat-cloud-services/frontend-components/useChrome`.
 8. **Feature flags via Unleash** — use `useFlag` / `useFlags` from `@unleash/proxy-client-react`. Never hardcode feature availability.
-9. **No direct API calls in components** — API calls go in `src/utils/fetch*.ts`. Components consume data via hooks or props.
+9. **No direct API calls in components** — new API calls go in `src/utils/fetch*.ts` or `src/utils/toggleFavorite.ts`. Components consume data via hooks or props. **Known exceptions** (legacy — migrate when touching these files): `GlobalLearningResourcesQuickstartItem.tsx`, `LearnPanel.tsx`, `SearchResultItem.tsx` have inline `axios.post` for favorites (should use `toggleFavorite.ts`); `SupportPanel.tsx` and `FeedbackForm.tsx` have inline `fetch` calls for support-cases/feedback APIs.
 10. **Sort imports** — ESLint enforces `sort-imports` (declaration sort is ignored, but member sort is enforced).
 
 ## Project Structure
