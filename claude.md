@@ -13,6 +13,7 @@ npm run storybook        # Storybook dev server (port 6006)
 npm run build-storybook  # Build static Storybook
 npm run test-storybook   # Storybook test runner (requires running server)
 npm run cypress:component # Cypress component tests (headless)
+npm run verify           # Full CI check: build + lint + test
 ```
 
 ---

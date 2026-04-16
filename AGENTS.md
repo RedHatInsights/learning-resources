@@ -84,6 +84,18 @@ This app exposes 6 federated modules consumed by insights-chrome and other HCC a
 
 **App URLs:** `/learning-resources`, `/learning-resources/creator`, and bundle-prefixed variants (`/settings/learning-resources`, `/ansible/learning-resources`, etc.)
 
+## Application Parts
+
+This application serves three distinct user-facing surfaces on console.redhat.com:
+
+1. **All Learning Resources page** — The main catalog at `/learning-resources` showing all available learning resources (quickstarts, documentation, learning paths). Users can filter by product family, content type, and other categories. Component: `GlobalLearningResourcesPage`.
+
+2. **Bundle-specific Learning Resources** — Each bundle (Ansible, OpenShift, Settings, Insights, Edge, IAM) has its own learning resources page at `/<bundle>/learning-resources`, pre-filtered to show only resources relevant to that bundle. Same component (`GlobalLearningResourcesPage`) with bundle context from the URL. Bundle mapping is handled by `src/utils/bundleUtils.ts`.
+
+3. **Help Panel** — A side panel loaded by insights-chrome (not by this app directly) via the `./HelpPanel` federated module. It displays APIs, learning resources, support cases, and provides filtering/search capabilities. Controlled by feature flags (`help-panel_search`, `help-panel_knowledge-base`, `help-panel_direct-ask-redhat`). Component: `HelpPanel`.
+
+Additionally, the **Creator tool** at `/learning-resources/creator` lets content authors build and preview quickstarts via a wizard or YAML editor. Gated by the `platform.chrome.quickstarts.creator` feature flag.
+
 ## Tech Stack
 
 - **React** 18.3.1, **TypeScript** ^5.9.3 (strict mode)
