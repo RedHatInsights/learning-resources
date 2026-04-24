@@ -14,6 +14,14 @@ import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import './CreatorYAMLView.scss';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
 
+const PLACEHOLDER_YAML =
+  '# YAML Quickstart Definition\n# Start typing or paste your YAML here\n';
+
+const isUserContent = (content: string): boolean => {
+  const trimmed = content.trim();
+  return trimmed !== '' && content !== PLACEHOLDER_YAML;
+};
+
 export type CreatorYAMLViewProps = {
   onChangeQuickStartSpec?: (newValue: QuickStartSpec) => void;
   onChangeBundles?: (newValue: string[]) => void;
@@ -27,9 +35,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   onChangeTags,
   onChangeMetadataTags,
 }) => {
-  const [yamlContent, setYamlContent] = useState<string>(
-    '# YAML Quickstart Definition\n# Start typing or paste your YAML here\n'
-  );
+  const [yamlContent, setYamlContent] = useState<string>(PLACEHOLDER_YAML);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -150,35 +156,29 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     };
   }, []);
 
+  const confirmOverwriteIfDirty = (message: string): boolean => {
+    if (!isUserContent(yamlContent)) return true;
+    return window.confirm(message);
+  };
+
   const handleLoadSample = () => {
-    const currentContent = yamlContent.trim();
-
-    // If content exists and is not empty, confirm before overwriting
-    if (currentContent && currentContent !== '') {
-      const confirmed = window.confirm(
+    if (
+      !confirmOverwriteIfDirty(
         'This will overwrite your current work. Are you sure?'
-      );
-      if (!confirmed) {
-        return;
-      }
-    }
-
+      )
+    )
+      return;
     setYamlContent(DEFAULT_QUICKSTART_YAML);
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
   };
 
   const handleLoadFromFile = () => {
-    const currentContent = yamlContent.trim();
-
-    if (currentContent && currentContent !== '') {
-      const confirmed = window.confirm(
+    if (
+      !confirmOverwriteIfDirty(
         'Loading a file will overwrite your current work. Are you sure?'
-      );
-      if (!confirmed) {
-        return;
-      }
-    }
-
+      )
+    )
+      return;
     fileInputRef.current?.click();
   };
 
@@ -195,6 +195,11 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
         setYamlContent(content);
         parseAndUpdateQuickstart(content);
       }
+    };
+    reader.onerror = () => {
+      setParseError(
+        `Failed to read file: ${reader.error?.message ?? 'unknown error'}`
+      );
     };
     reader.readAsText(file);
 

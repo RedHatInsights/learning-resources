@@ -57,21 +57,28 @@ describe('CreatorYAMLView', () => {
   });
 
   describe('Load Sample Template', () => {
-    it('loads sample YAML into editor', () => {
+    it('loads sample YAML into editor without confirm when content is placeholder', () => {
+      const confirmSpy = jest.spyOn(window, 'confirm');
       render(<CreatorYAMLView />);
-      // Initial content is the placeholder comment — no confirm needed
-      window.confirm = jest.fn(() => true);
+
       fireEvent.click(
         screen.getByRole('button', { name: /load sample template/i })
       );
 
       const editor = screen.getByTestId('mock-monaco-editor');
       expect(editor).toHaveValue(DEFAULT_QUICKSTART_YAML);
+      expect(confirmSpy).not.toHaveBeenCalled();
     });
 
-    it('shows confirmation when editor has content', () => {
+    it('shows confirmation when editor has user content', () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
       render(<CreatorYAMLView />);
+
+      // Type real content to make the editor "dirty"
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: { value: 'metadata:\n  name: test\n' },
+      });
 
       fireEvent.click(
         screen.getByRole('button', { name: /load sample template/i })
@@ -84,20 +91,44 @@ describe('CreatorYAMLView', () => {
   });
 
   describe('Load from File', () => {
-    it('opens file picker after user confirms overwrite', () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+    it('opens file picker without confirm when content is placeholder', () => {
+      const confirmSpy = jest.spyOn(window, 'confirm');
       render(<CreatorYAMLView />);
       const fileInput = screen.getByTestId('yaml-file-input');
       const clickSpy = jest.spyOn(fileInput, 'click');
 
       fireEvent.click(screen.getByRole('button', { name: /load from file/i }));
 
+      expect(confirmSpy).not.toHaveBeenCalled();
       expect(clickSpy).toHaveBeenCalled();
     });
 
-    it('shows confirmation when editor has content before opening file picker', () => {
+    it('opens file picker after user confirms overwrite of real content', () => {
+      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      render(<CreatorYAMLView />);
+      const fileInput = screen.getByTestId('yaml-file-input');
+      const clickSpy = jest.spyOn(fileInput, 'click');
+
+      // Type real content first
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: { value: 'metadata:\n  name: test\n' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /load from file/i }));
+
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('shows confirmation when editor has user content before opening file picker', () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
       render(<CreatorYAMLView />);
+
+      // Type real content first
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: { value: 'metadata:\n  name: test\n' },
+      });
 
       fireEvent.click(screen.getByRole('button', { name: /load from file/i }));
 
@@ -111,6 +142,12 @@ describe('CreatorYAMLView', () => {
       render(<CreatorYAMLView />);
       const fileInput = screen.getByTestId('yaml-file-input');
       const clickSpy = jest.spyOn(fileInput, 'click');
+
+      // Type real content first
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: { value: 'metadata:\n  name: test\n' },
+      });
 
       fireEvent.click(screen.getByRole('button', { name: /load from file/i }));
 
@@ -193,9 +230,52 @@ spec:
       await waitFor(() => {
         expect(screen.getByText(/YAML Parse Error/i)).toBeInTheDocument();
       });
+      // Also verify the dynamic parser message is surfaced
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Showing previous valid state in preview/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('shows error when FileReader fails', async () => {
+      const mockFile = new File(['content'], 'test.yaml', {
+        type: 'application/x-yaml',
+      });
+
+      // Mock FileReader to simulate error
+      const originalFileReader = global.FileReader;
+      const mockReader = {
+        readAsText: jest.fn(),
+        onerror: null as (() => void) | null,
+        onload: null as ((e: unknown) => void) | null,
+        error: { message: 'Permission denied' },
+      };
+      global.FileReader = jest.fn(
+        () => mockReader
+      ) as unknown as typeof FileReader;
+
+      render(<CreatorYAMLView />);
+
+      const fileInput = screen.getByTestId('yaml-file-input');
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+
+      // Trigger the error callback
+      act(() => {
+        mockReader.onerror?.();
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Failed to read file: Permission denied/i)
+        ).toBeInTheDocument();
+      });
+
+      global.FileReader = originalFileReader;
     });
 
     it('does nothing when no file is selected', () => {
+      const confirmSpy = jest.spyOn(window, 'confirm');
       const onChangeSpec = jest.fn();
       render(<CreatorYAMLView onChangeQuickStartSpec={onChangeSpec} />);
 
@@ -203,6 +283,8 @@ spec:
       fireEvent.change(fileInput, { target: { files: [] } });
 
       expect(onChangeSpec).not.toHaveBeenCalled();
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(screen.queryByText(/YAML Parse Error/i)).not.toBeInTheDocument();
     });
   });
 
