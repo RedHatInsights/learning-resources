@@ -6,13 +6,21 @@ import {
   FlexItem,
   PageSection,
 } from '@patternfly/react-core';
-import { FileImportIcon } from '@patternfly/react-icons';
+import { FileImportIcon, UploadIcon } from '@patternfly/react-icons';
 import Editor from '@monaco-editor/react';
 import YAML from 'yaml';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import './CreatorYAMLView.scss';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
+
+const PLACEHOLDER_YAML =
+  '# YAML Quickstart Definition\n# Start typing or paste your YAML here\n';
+
+const isUserContent = (content: string): boolean => {
+  const trimmed = content.trim();
+  return trimmed !== '' && content !== PLACEHOLDER_YAML;
+};
 
 export type CreatorYAMLViewProps = {
   onChangeQuickStartSpec?: (newValue: QuickStartSpec) => void;
@@ -27,12 +35,11 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   onChangeTags,
   onChangeMetadataTags,
 }) => {
-  const [yamlContent, setYamlContent] = useState<string>(
-    '# YAML Quickstart Definition\n# Start typing or paste your YAML here\n'
-  );
+  const [yamlContent, setYamlContent] = useState<string>(PLACEHOLDER_YAML);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const configureMonacoEnvironment = () => {
     // Disable Monaco workers to prevent CDN fetching in CI environments
@@ -149,21 +156,55 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     };
   }, []);
 
+  const confirmOverwriteIfDirty = (message: string): boolean => {
+    if (!isUserContent(yamlContent)) return true;
+    return window.confirm(message);
+  };
+
   const handleLoadSample = () => {
-    const currentContent = yamlContent.trim();
-
-    // If content exists and is not empty, confirm before overwriting
-    if (currentContent && currentContent !== '') {
-      const confirmed = window.confirm(
+    if (
+      !confirmOverwriteIfDirty(
         'This will overwrite your current work. Are you sure?'
-      );
-      if (!confirmed) {
-        return;
-      }
-    }
-
+      )
+    )
+      return;
     setYamlContent(DEFAULT_QUICKSTART_YAML);
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
+  };
+
+  const handleLoadFromFile = () => {
+    if (
+      !confirmOverwriteIfDirty(
+        'Loading a file will overwrite your current work. Are you sure?'
+      )
+    )
+      return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        setYamlContent(content);
+        parseAndUpdateQuickstart(content);
+      }
+    };
+    reader.onerror = () => {
+      setParseError(
+        `Failed to read file: ${reader.error?.message ?? 'unknown error'}`
+      );
+    };
+    reader.readAsText(file);
+
+    // Reset file input so the same file can be re-selected
+    event.target.value = '';
   };
 
   return (
@@ -191,6 +232,24 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           >
             Load Sample Template
           </Button>
+        </FlexItem>
+        <FlexItem>
+          <Button
+            variant="secondary"
+            icon={<UploadIcon />}
+            onClick={handleLoadFromFile}
+            size="sm"
+          >
+            Load from File
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".yaml,.yml"
+            onChange={handleFileSelected}
+            style={{ display: 'none' }}
+            data-testid="yaml-file-input"
+          />
         </FlexItem>
       </Flex>
       <div className="lr-c-creator-yaml-view__editor">
