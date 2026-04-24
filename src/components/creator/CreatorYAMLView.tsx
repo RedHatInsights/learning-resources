@@ -6,7 +6,7 @@ import {
   FlexItem,
   PageSection,
 } from '@patternfly/react-core';
-import { FileImportIcon } from '@patternfly/react-icons';
+import { FileImportIcon, UploadIcon } from '@patternfly/react-icons';
 import Editor from '@monaco-editor/react';
 import YAML from 'yaml';
 import { QuickStartSpec } from '@patternfly/quickstarts';
@@ -33,6 +33,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   const [parseError, setParseError] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const configureMonacoEnvironment = () => {
     // Disable Monaco workers to prevent CDN fetching in CI environments
@@ -166,6 +167,41 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
   };
 
+  const handleLoadFromFile = () => {
+    const currentContent = yamlContent.trim();
+
+    if (currentContent && currentContent !== '') {
+      const confirmed = window.confirm(
+        'Loading a file will overwrite your current work. Are you sure?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        setYamlContent(content);
+        parseAndUpdateQuickstart(content);
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset file input so the same file can be re-selected
+    event.target.value = '';
+  };
+
   return (
     <PageSection className="lr-c-creator-yaml-view">
       {parseError && (
@@ -191,6 +227,24 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           >
             Load Sample Template
           </Button>
+        </FlexItem>
+        <FlexItem>
+          <Button
+            variant="secondary"
+            icon={<UploadIcon />}
+            onClick={handleLoadFromFile}
+            size="sm"
+          >
+            Load from File
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".yaml,.yml"
+            onChange={handleFileSelected}
+            style={{ display: 'none' }}
+            data-testid="yaml-file-input"
+          />
         </FlexItem>
       </Flex>
       <div className="lr-c-creator-yaml-view__editor">
