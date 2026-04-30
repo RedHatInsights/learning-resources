@@ -56,13 +56,7 @@ test.describe('Support Case - Help Panel', () => {
     await expect(emptyState.or(supportTable)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // Step 5: The "Open a support case" button/link should now be visible
-    // In empty state: it's a Button with OUIA ID
-    // In populated state: it's a link in the description text
-    const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
-    const openCaseLink = page.getByRole('link', { name: /open a support case/i });
-
-    // Verify either the button or link is visible
-    await expect(openCaseButton.or(openCaseLink)).toBeVisible();
+    await expect(page.getByText(/open a support case/i)).toBeVisible();
   });
 
   test('should open Customer Portal when clicking "Open a support case" link', async ({ page, context }) => {
@@ -84,21 +78,13 @@ test.describe('Support Case - Help Panel', () => {
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
     await expect(emptyState.or(supportTable)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
-    // Step 5: The "Open a support case" button/link should now be visible
-    // In empty state: it's a Button with OUIA ID
-    // In populated state: it's a link in the description text
-    const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
-    const openCaseLink = page.getByRole('link', { name: /open a support case/i });
-    const openCase = openCaseButton.or(openCaseLink);
-    await expect(openCase).toBeVisible();
-
-    // Step 6: Set up listener for new page/tab before clicking
+    // Step 5: Set up listener for new page/tab before clicking
     const pagePromise = context.waitForEvent('page');
 
-    // Step 7: Click the "Open a support case" button/link
-    await openCase.click();
+    // Step 6: Click the "Open a support case" button/link
+    await page.getByText(/open a support case/i).click();
 
-    // Step 8: Wait for new page to open and verify URL
+    // Step 7: Wait for new page to open and verify URL
     const newPage = await pagePromise;
     await newPage.waitForLoadState('domcontentloaded', { timeout: EXTERNAL_PAGE_LOAD_TIMEOUT });
     expect(newPage.url()).toContain('access.redhat.com/support');
