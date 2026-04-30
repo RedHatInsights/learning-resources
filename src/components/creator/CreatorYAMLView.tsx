@@ -32,8 +32,12 @@ const isUserContent = (content: string): boolean => {
   return trimmed !== '' && content !== PLACEHOLDER_YAML;
 };
 
+const normalizeKindLabel = (value: string) =>
+  value.toLowerCase().replace(/\s+/g, '');
+
 /**
  * Detect ItemKind from spec.type.text by matching against known display names.
+ * Normalizes whitespace so "Quick start" matches "Quickstart", etc.
  */
 function detectKind(
   spec: Record<string, unknown> | undefined
@@ -43,7 +47,7 @@ function detectKind(
   if (typeof typeText !== 'string') return null;
 
   for (const [kind, meta] of ALL_KIND_ENTRIES) {
-    if (meta.displayName.toLowerCase() === typeText.toLowerCase()) {
+    if (normalizeKindLabel(meta.displayName) === normalizeKindLabel(typeText)) {
       return kind;
     }
   }
@@ -244,10 +248,18 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   // On mount, serialize current state to YAML if we have data from the wizard.
   // This enables switching wizard → YAML without losing data.
   const getInitialYaml = (): string => {
-    if (
-      quickStart?.spec.displayName &&
-      quickStart.spec.displayName.length > 0
-    ) {
+    const hasWizardData =
+      !!currentBundles?.length ||
+      !!Object.keys(currentTags || {}).length ||
+      !!quickStart?.spec.displayName ||
+      !!quickStart?.spec.description ||
+      quickStart?.spec.durationMinutes !== undefined ||
+      !!quickStart?.spec.link?.href ||
+      !!quickStart?.spec.prerequisites?.length ||
+      !!quickStart?.spec.introduction ||
+      !!quickStart?.spec.tasks?.length;
+
+    if (quickStart && hasWizardData) {
       return serializeToYaml(
         quickStart,
         currentBundles || [],
