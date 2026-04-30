@@ -19,6 +19,11 @@ import { disableCookiePrompt } from './test-utils';
  * - PLATFORM_UI-SUPPORT_CASES
  */
 
+// Timeout constants
+const SUPPORT_API_LOAD_TIMEOUT = 15000; // Time to wait for support cases API to load
+const ELEMENT_VISIBLE_TIMEOUT = 10000; // Time to wait for elements to become visible
+const EXTERNAL_PAGE_LOAD_TIMEOUT = 30000; // Time to wait for external pages to load
+
 test.describe('Support Case - Help Panel', () => {
   test.beforeEach(async ({ page }) => {
     // Block trustarc cookie prompts
@@ -48,23 +53,23 @@ test.describe('Support Case - Help Panel', () => {
     // 2. Table of support cases (if user has cases)
     // We'll check for both possibilities
 
-    // Wait a moment for the support panel to load (it fetches data from API)
-    await page.waitForTimeout(2000);
-
-    // Check if empty state is displayed OR table is displayed
+    // The support panel will show either empty state or table after loading
+    // Use Playwright's auto-retry to wait for one of them to appear
     const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
 
-    const emptyStateVisible = await emptyState.isVisible().catch(() => false);
-    const tableVisible = await supportTable.isVisible().catch(() => false);
-
-    // At least one should be visible
-    expect(emptyStateVisible || tableVisible).toBe(true);
+    // Wait for either empty state or table to be visible
+    await expect(async () => {
+      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
+      const tableVisible = await supportTable.isVisible().catch(() => false);
+      expect(emptyStateVisible || tableVisible).toBe(true);
+    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // If empty state is shown, verify the "Open a support case" button is present
+    const emptyStateVisible = await emptyState.isVisible().catch(() => false);
     if (emptyStateVisible) {
       const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
-      await expect(openCaseButton).toBeVisible();
+      await expect(openCaseButton).toBeVisible({ timeout: ELEMENT_VISIBLE_TIMEOUT });
       await expect(openCaseButton).toHaveText(/open a support case/i);
     }
   });
@@ -81,8 +86,16 @@ test.describe('Support Case - Help Panel', () => {
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // Wait a moment for the support panel to load
-    await page.waitForTimeout(2000);
+    // The support panel will show either empty state or table after loading
+    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
+    const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
+
+    // Wait for either empty state or table to be visible
+    await expect(async () => {
+      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
+      const tableVisible = await supportTable.isVisible().catch(() => false);
+      expect(emptyStateVisible || tableVisible).toBe(true);
+    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // Check if empty state with button is displayed
     const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
@@ -103,7 +116,7 @@ test.describe('Support Case - Help Panel', () => {
 
     // Wait for new page to open
     const newPage = await pagePromise;
-    await newPage.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    await newPage.waitForLoadState('domcontentloaded', { timeout: EXTERNAL_PAGE_LOAD_TIMEOUT });
 
     // Verify the new page URL is the Red Hat Customer Portal support case page
     expect(newPage.url()).toContain('access.redhat.com/support');
@@ -124,11 +137,18 @@ test.describe('Support Case - Help Panel', () => {
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // Wait a moment for the support panel to load
-    await page.waitForTimeout(2000);
+    // The support panel will show either empty state or table after loading
+    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
+    const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
+
+    // Wait for either empty state or table to be visible
+    await expect(async () => {
+      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
+      const tableVisible = await supportTable.isVisible().catch(() => false);
+      expect(emptyStateVisible || tableVisible).toBe(true);
+    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // Check if table is displayed
-    const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
     const tableVisible = await supportTable.isVisible().catch(() => false);
 
     // This test only runs if user has support cases
