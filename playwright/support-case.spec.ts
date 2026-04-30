@@ -89,6 +89,9 @@ test.describe('Support Case - Help Panel', () => {
     // Step 7: Wait for new page to open and verify it navigates to Red Hat Customer Portal
     const newPage = await pagePromise;
 
+    // Wait for navigation to complete (page starts at about:blank)
+    await newPage.waitForURL('**/*');
+
     // Verify the destination hostname (we can't validate page content due to auth requirements)
     const url = new URL(newPage.url());
     expect(url.hostname).toBe('access.redhat.com');
@@ -113,18 +116,12 @@ test.describe('Support Case - Help Panel', () => {
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
     const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
 
-    // Wait for either the table or empty state to appear
-    try {
-      await expect(supportTable.or(emptyState)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
-    } catch {
-      // If neither appears within timeout, skip the test
-      test.skip();
-      return;
-    }
+    // Wait for either the table or empty state to appear (let it fail if timeout)
+    await expect(supportTable.or(emptyState)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
-    // Check if table is visible (user has cases)
-    const tableVisible = await supportTable.isVisible().catch(() => false);
-    if (!tableVisible) {
+    // Check if empty state is visible (user has no cases)
+    const emptyVisible = await emptyState.isVisible().catch(() => false);
+    if (emptyVisible) {
       // User has no cases, skip this test
       test.skip();
       return;
