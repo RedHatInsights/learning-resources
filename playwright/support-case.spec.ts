@@ -10,9 +10,13 @@ import { disableCookiePrompt } from './test-utils';
  * - "Open a support case" button appears in the help menu
  * - Clicking the button opens the Red Hat Customer Portal support case page
  *
- * Note: The original IQE test #3 (test_support_case_from_apps) which tests pre-filled
- * support case data from different apps was not migrated here as it requires complex
- * cross-domain interaction and is better suited for insights-chrome repository.
+ * TODO: Test #3 (test_support_case_from_apps) - Not yet migrated
+ * This test verifies that support case data is pre-filled correctly when opened from
+ * different apps. It requires:
+ * - Complex setup with actual support cases created via API
+ * - Cross-domain interaction with Customer Portal
+ * - Authentication on the external portal to validate pre-filled data
+ * - May be better suited for insights-chrome repository or separate E2E suite
  *
  * Requirements:
  * - PLATFORM_UI-INSIGHTS_CHROME
