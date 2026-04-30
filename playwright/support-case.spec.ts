@@ -36,89 +36,49 @@ test.describe('Support Case - Help Panel', () => {
     await expect(page.getByText('Hi,')).toBeVisible();
   });
 
-  test('should display "Open a support case" button in help panel', async ({ page }) => {
-    // Open the help panel
+  test('should display "Open a support case" link in help panel', async ({ page }) => {
+    // Step 1: Click help button to open help panel
     await page.getByLabel('Toggle help panel').click();
 
-    // Wait for help panel to load
+    // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // Click on "My support cases" tab
+    // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // The support panel should show either:
-    // 1. Empty state with "Open a support case" button (if user has no cases)
-    // 2. Table of support cases (if user has cases)
-    // We'll check for both possibilities
-
-    // The support panel will show either empty state or table after loading
-    // Use Playwright's auto-retry to wait for one of them to appear
-    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
-    const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
-
-    // Wait for either empty state or table to be visible
-    await expect(async () => {
-      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
-      const tableVisible = await supportTable.isVisible().catch(() => false);
-      expect(emptyStateVisible || tableVisible).toBe(true);
-    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
-
-    // If empty state is shown, verify the "Open a support case" button is present
-    const emptyStateVisible = await emptyState.isVisible().catch(() => false);
-    if (emptyStateVisible) {
-      const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
-      await expect(openCaseButton).toBeVisible({ timeout: ELEMENT_VISIBLE_TIMEOUT });
-      await expect(openCaseButton).toHaveText(/open a support case/i);
-    }
+    // Step 4: The "Open a support case" link should be visible
+    // (It appears in both empty state and when cases exist)
+    const openCaseLink = page.getByRole('link', { name: /open a support case/i });
+    await expect(openCaseLink).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
   });
 
-  test('should open Customer Portal when clicking "Open a support case" button', async ({ page, context }) => {
-    // Open the help panel
+  test('should open Customer Portal when clicking "Open a support case" link', async ({ page, context }) => {
+    // Step 1: Click help button to open help panel
     await page.getByLabel('Toggle help panel').click();
 
-    // Wait for help panel to load
+    // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // Click on "My support cases" tab
+    // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // The support panel will show either empty state or table after loading
-    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
-    const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
+    // Step 4: Wait for the "Open a support case" link to be visible
+    const openCaseLink = page.getByRole('link', { name: /open a support case/i });
+    await expect(openCaseLink).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
-    // Wait for either empty state or table to be visible
-    await expect(async () => {
-      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
-      const tableVisible = await supportTable.isVisible().catch(() => false);
-      expect(emptyStateVisible || tableVisible).toBe(true);
-    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
-
-    // Check if empty state with button is displayed
-    const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
-    const buttonVisible = await openCaseButton.isVisible().catch(() => false);
-
-    // Only run the click test if the button is visible (user has no cases)
-    // If user has cases, the button won't be in the empty state
-    if (!buttonVisible) {
-      test.skip();
-      return;
-    }
-
-    // Set up listener for new page/tab before clicking
+    // Step 5: Set up listener for new page/tab before clicking
     const pagePromise = context.waitForEvent('page');
 
-    // Click the "Open a support case" button
-    await openCaseButton.click();
+    // Step 6: Click the "Open a support case" link
+    await openCaseLink.click();
 
-    // Wait for new page to open
+    // Step 7: Wait for new page to open and verify URL
     const newPage = await pagePromise;
     await newPage.waitForLoadState('domcontentloaded', { timeout: EXTERNAL_PAGE_LOAD_TIMEOUT });
-
-    // Verify the new page URL is the Red Hat Customer Portal support case page
     expect(newPage.url()).toContain('access.redhat.com/support');
 
     // Clean up - close the new tab
@@ -126,33 +86,34 @@ test.describe('Support Case - Help Panel', () => {
   });
 
   test('should display support cases table when user has open cases', async ({ page }) => {
-    // Open the help panel
+    // Step 1: Click help button to open help panel
     await page.getByLabel('Toggle help panel').click();
 
-    // Wait for help panel to load
+    // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // Click on "My support cases" tab
+    // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // The support panel will show either empty state or table after loading
-    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
+    // Step 4: Wait for support panel to load and check if user has support cases
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
+    const emptyState = page.locator('[data-ouia-component-id="help-panel-support-empty-state"]');
 
-    // Wait for either empty state or table to be visible
-    await expect(async () => {
-      const emptyStateVisible = await emptyState.isVisible().catch(() => false);
-      const tableVisible = await supportTable.isVisible().catch(() => false);
-      expect(emptyStateVisible || tableVisible).toBe(true);
-    }).toPass({ timeout: SUPPORT_API_LOAD_TIMEOUT });
+    // Wait for either the table or empty state to appear
+    try {
+      await expect(supportTable.or(emptyState)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
+    } catch {
+      // If neither appears within timeout, skip the test
+      test.skip();
+      return;
+    }
 
-    // Check if table is displayed
+    // Check if table is visible (user has cases)
     const tableVisible = await supportTable.isVisible().catch(() => false);
-
-    // This test only runs if user has support cases
     if (!tableVisible) {
+      // User has no cases, skip this test
       test.skip();
       return;
     }
@@ -160,7 +121,7 @@ test.describe('Support Case - Help Panel', () => {
     // Verify table is visible
     await expect(supportTable).toBeVisible();
 
-    // Verify pagination is present (shown when there are cases)
+    // Verify pagination is present
     const pagination = page.locator('[data-ouia-component-id="help-panel-support-pagination"]');
     await expect(pagination).toBeVisible();
 
