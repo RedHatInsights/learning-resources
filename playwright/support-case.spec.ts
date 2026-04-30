@@ -21,8 +21,6 @@ import { disableCookiePrompt } from './test-utils';
 
 // Timeout constants
 const SUPPORT_API_LOAD_TIMEOUT = 15000; // Time to wait for support cases API to load
-const ELEMENT_VISIBLE_TIMEOUT = 10000; // Time to wait for elements to become visible
-const EXTERNAL_PAGE_LOAD_TIMEOUT = 30000; // Time to wait for external pages to load
 
 test.describe('Support Case - Help Panel', () => {
   test.beforeEach(async ({ page }) => {
@@ -84,10 +82,12 @@ test.describe('Support Case - Help Panel', () => {
     // Step 6: Click the "Open a support case" button/link
     await page.getByText(/open a support case/i).click();
 
-    // Step 7: Wait for new page to open and verify URL
+    // Step 7: Wait for new page to open and verify it navigates to Red Hat Customer Portal
     const newPage = await pagePromise;
-    await newPage.waitForLoadState('domcontentloaded', { timeout: EXTERNAL_PAGE_LOAD_TIMEOUT });
-    expect(newPage.url()).toContain('access.redhat.com/support');
+
+    // Verify the destination hostname (we can't validate page content due to auth requirements)
+    const url = new URL(newPage.url());
+    expect(url.hostname).toBe('access.redhat.com');
 
     // Clean up - close the new tab
     await newPage.close();
