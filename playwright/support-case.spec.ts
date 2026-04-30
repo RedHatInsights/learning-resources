@@ -48,10 +48,14 @@ test.describe('Support Case - Help Panel', () => {
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // Step 4: The "Open a support case" link should be visible
-    // (It appears in both empty state and when cases exist)
+    // Step 4: The "Open a support case" button/link should be visible
+    // In empty state: it's a Button with OUIA ID
+    // In populated state: it's a link in the description text
+    const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
     const openCaseLink = page.getByRole('link', { name: /open a support case/i });
-    await expect(openCaseLink).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
+
+    // Wait for either the button or link to be visible
+    await expect(openCaseButton.or(openCaseLink)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
   });
 
   test('should open Customer Portal when clicking "Open a support case" link', async ({ page, context }) => {
@@ -66,15 +70,21 @@ test.describe('Support Case - Help Panel', () => {
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
     await supportTab.click();
 
-    // Step 4: Wait for the "Open a support case" link to be visible
+    // Step 4: Wait for the "Open a support case" button/link to be visible
+    // In empty state: it's a Button with OUIA ID
+    // In populated state: it's a link in the description text
+    const openCaseButton = page.locator('[data-ouia-component-id="help-panel-open-support-case-button"]');
     const openCaseLink = page.getByRole('link', { name: /open a support case/i });
-    await expect(openCaseLink).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
+
+    // Wait for either the button or link to be visible
+    const openCase = openCaseButton.or(openCaseLink);
+    await expect(openCase).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // Step 5: Set up listener for new page/tab before clicking
     const pagePromise = context.waitForEvent('page');
 
-    // Step 6: Click the "Open a support case" link
-    await openCaseLink.click();
+    // Step 6: Click the "Open a support case" button/link
+    await openCase.click();
 
     // Step 7: Wait for new page to open and verify URL
     const newPage = await pagePromise;
