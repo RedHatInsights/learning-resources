@@ -89,8 +89,8 @@ test.describe('Support Case - Help Panel', () => {
     // Step 7: Wait for new page to open and verify it navigates to Red Hat Customer Portal
     const newPage = await pagePromise;
 
-    // Wait for navigation to complete (page starts at about:blank)
-    await newPage.waitForURL('**/*');
+    // Wait for navigation to Red Hat Customer Portal (page starts at about:blank)
+    await newPage.waitForURL(/access\.redhat\.com/);
 
     // Verify the destination hostname (we can't validate page content due to auth requirements)
     const url = new URL(newPage.url());
