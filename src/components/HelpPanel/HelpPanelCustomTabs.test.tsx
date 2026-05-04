@@ -148,7 +148,7 @@ describe('HelpPanelCustomTabs styling hooks', () => {
     expect(findHelpTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('hides Virtual Assistant tab when feature flag is disabled', () => {
+  it('hides Virtual Assistant tab when chatbot feature flag is disabled', () => {
     // Override the mock to return false for VA flag
     mockUseFlag.mockImplementation((flagName: string) => {
       if (flagName === 'platform.chrome.help-panel_chatbot') return false;
@@ -165,6 +165,26 @@ describe('HelpPanelCustomTabs styling hooks', () => {
     expect(screen.getByText('Find help')).toBeInTheDocument();
 
     // Restore original mock behavior
+    mockUseFlag.mockImplementation((flagName: string) => {
+      if (flagName === 'platform.chrome.help-panel_chatbot') return true;
+      return true;
+    });
+  });
+
+  it('hides Virtual Assistant tab when VA environment flag is disabled', () => {
+    mockUseFlag.mockImplementation((flagName: string) => {
+      if (flagName === 'platform.va.environment.enabled') return false;
+      if (flagName === 'platform.chrome.help-panel_chatbot') return true;
+      return true;
+    });
+
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    const vaTab = screen.queryByRole('tab', { name: /virtual assistant/i });
+    expect(vaTab).not.toBeInTheDocument();
+
+    expect(screen.getByText('Find help')).toBeInTheDocument();
+
     mockUseFlag.mockImplementation((flagName: string) => {
       if (flagName === 'platform.chrome.help-panel_chatbot') return true;
       return true;
