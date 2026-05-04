@@ -439,6 +439,11 @@ const messages = defineMessages({
     id: 'helpPanel.feedback.breadcrumbShareFeedback',
     defaultMessage: 'Share feedback',
   },
+  helpPanelNotAvailable: {
+    id: 'helpPanel.notAvailable',
+    defaultMessage:
+      'The help panel is not available in this environment. Visit {statusPageLink} for system status, or contact Red Hat Support for assistance.',
+  },
   unbookmarkLearningResource: {
     id: 'helpPanel.search.unbookmarkLearningResource',
     defaultMessage: 'Unbookmark learning resource',

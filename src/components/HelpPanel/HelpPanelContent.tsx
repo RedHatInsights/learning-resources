@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Button,
+  Content,
   DrawerActions,
   DrawerCloseButton,
   DrawerHead,
@@ -9,6 +10,7 @@ import {
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useIntl } from 'react-intl';
+import { useFlag } from '@unleash/proxy-client-react';
 import HelpPanelCustomTabs, {
   HelpPanelCustomTabsRef,
 } from './HelpPanelCustomTabs';
@@ -24,6 +26,9 @@ const HelpPanelContent = ({
   newTab?: HelpPanelTabContent;
 }) => {
   const intl = useIntl();
+  const isEnvironmentEnabled = useFlag(
+    'platform.learning-resources.environment.enabled'
+  );
   const tabsRef = useRef<HelpPanelCustomTabsRef>(null);
 
   // Open a new tab if newTab prop is provided
@@ -32,6 +37,50 @@ const HelpPanelContent = ({
       tabsRef.current.openTabWithContent(newTab);
     }
   }, [newTab]);
+
+  const statusPageLink = (
+    <Button
+      variant="link"
+      component="a"
+      href="https://status.redhat.com/"
+      target="_blank"
+      rel="noopener noreferrer"
+      isInline
+      icon={<ExternalLinkAltIcon />}
+      iconPosition="end"
+      data-ouia-component-id="help-panel-status-page-fallback-link"
+    >
+      {intl.formatMessage(messages.statusPage)}
+    </Button>
+  );
+
+  if (!isEnvironmentEnabled) {
+    return (
+      <>
+        <DrawerHead>
+          <Title headingLevel="h2" data-ouia-component-id="help-panel-title">
+            Help
+          </Title>
+          <DrawerActions>
+            <DrawerCloseButton
+              onClick={toggleDrawer}
+              data-ouia-component-id="help-panel-close-button"
+            />
+          </DrawerActions>
+        </DrawerHead>
+        <DrawerPanelBody>
+          <Content
+            component="p"
+            data-ouia-component-id="help-panel-not-available"
+          >
+            {intl.formatMessage(messages.helpPanelNotAvailable, {
+              statusPageLink,
+            })}
+          </Content>
+        </DrawerPanelBody>
+      </>
+    );
+  }
 
   return (
     <>
