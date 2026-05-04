@@ -22,6 +22,11 @@ const defaultFlags: IConfig['bootstrap'] = [{
       enabled: true,
       impressionData: false,
       variant: {name: 'disabled', enabled: false},
+    }, {
+      name: 'platform.va.environment.enabled',
+      enabled: true,
+      impressionData: false,
+      variant: {name: 'disabled', enabled: false},
     }]
 
 // Helper function to get message text for testing
