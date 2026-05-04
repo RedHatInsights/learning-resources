@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
-import APIPanel from './APIPanel';
+import APIPanel, {
+  convertToConsoleDocsUrl,
+  getConsoleBaseUrl,
+} from './APIPanel';
 import {
   fetchBundleInfo,
   fetchBundles,
@@ -243,5 +246,115 @@ describe('APIPanel', () => {
 
     // No version in URL
     expect(screen.getByText('Cost-Management')).toBeInTheDocument();
+  });
+});
+
+describe('getConsoleBaseUrl', () => {
+  it('returns production URL for prod environment', () => {
+    expect(getConsoleBaseUrl('prod')).toBe('https://console.redhat.com');
+  });
+
+  it('returns stage URL for stage environment', () => {
+    expect(getConsoleBaseUrl('stage')).toBe('https://console.stage.redhat.com');
+  });
+
+  it('returns stage URL for frhStage environment', () => {
+    expect(getConsoleBaseUrl('frhStage')).toBe(
+      'https://console.stage.redhat.com'
+    );
+  });
+
+  it('returns production URL for qa environment (default)', () => {
+    expect(getConsoleBaseUrl('qa')).toBe('https://console.redhat.com');
+  });
+
+  it('returns production URL for ci environment (default)', () => {
+    expect(getConsoleBaseUrl('ci')).toBe('https://console.redhat.com');
+  });
+});
+
+describe('convertToConsoleDocsUrl', () => {
+  it('converts API name and version to console docs URL (production)', () => {
+    const result = convertToConsoleDocsUrl(
+      'notifications',
+      'https://developers.redhat.com/api-catalog/api/notifications/v2.0',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/notifications/v2');
+  });
+
+  it('converts API name and version to console docs URL (stage)', () => {
+    const result = convertToConsoleDocsUrl(
+      'notifications',
+      'https://developers.redhat.com/api-catalog/api/notifications/v2.0',
+      'stage'
+    );
+
+    expect(result).toBe(
+      'https://console.stage.redhat.com/docs/api/notifications/v2'
+    );
+  });
+
+  it('strips API suffix from name', () => {
+    const result = convertToConsoleDocsUrl(
+      'notifications api',
+      'https://developers.redhat.com/api-catalog/api/notifications/v1',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/notifications/v1');
+  });
+
+  it('handles APIs without version numbers', () => {
+    const result = convertToConsoleDocsUrl(
+      'advisor api',
+      'https://developers.redhat.com/api-catalog/api/advisor',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/advisor');
+  });
+
+  it('extracts only major version from v1.0', () => {
+    const result = convertToConsoleDocsUrl(
+      'notifications',
+      'https://developers.redhat.com/api-catalog/api/notifications/v1.0',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/notifications/v1');
+  });
+
+  it('extracts major version from v3.1.0', () => {
+    const result = convertToConsoleDocsUrl(
+      'sources',
+      'https://developers.redhat.com/api-catalog/api/sources/v3.1.0',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/sources/v3');
+  });
+
+  it('lowercases API name', () => {
+    const result = convertToConsoleDocsUrl(
+      'RBAC',
+      'https://developers.redhat.com/api-catalog/api/rbac/v1',
+      'prod'
+    );
+
+    expect(result).toBe('https://console.redhat.com/docs/api/rbac/v1');
+  });
+
+  it('handles frhStage environment correctly', () => {
+    const result = convertToConsoleDocsUrl(
+      'notifications',
+      'https://developers.redhat.com/api-catalog/api/notifications/v2.0',
+      'frhStage'
+    );
+
+    expect(result).toBe(
+      'https://console.stage.redhat.com/docs/api/notifications/v2'
+    );
   });
 });

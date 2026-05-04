@@ -130,7 +130,11 @@ const FeedbackPanel: React.FC<SubTabProps> = ({ setNewActionTitle }) => {
           <Stack hasGutter>
             <StackItem>
               <Content>
-                <Content component={ContentVariants.h1}>
+                <Content
+                  component={ContentVariants.h1}
+                  ouiaId="feedback-home-title"
+                  ouiaSafe
+                >
                   {intl.formatMessage(messages.tellAboutExperience)}
                 </Content>
                 <Content component="p">

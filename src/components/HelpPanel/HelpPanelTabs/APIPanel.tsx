@@ -21,7 +21,6 @@ import {
   ToolbarContent,
   ToolbarItem,
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { useIntl } from 'react-intl';
 import messages from '../../../Messages';
@@ -134,6 +133,48 @@ const formatApiDisplayName = (name: string, url: string): string => {
   return version ? `${capitalizedName} ${version}` : capitalizedName;
 };
 
+/**
+ * Gets the base console URL based on the current environment
+ * Uses Chrome API's getEnvironment() to determine environment
+ * @param environment - Environment string from chrome.getEnvironment() ('prod', 'stage', 'qa', etc.)
+ * @returns Base console URL (e.g., "https://console.redhat.com" or "https://console.stage.redhat.com")
+ */
+export const getConsoleBaseUrl = (environment: string): string => {
+  // Stage environments (including frhStage for federal stage)
+  if (environment === 'stage' || environment === 'frhStage') {
+    return 'https://console.stage.redhat.com';
+  }
+
+  // Production (prod and all other environments default to production console)
+  return 'https://console.redhat.com';
+};
+
+/**
+ * Converts backend API URL to console docs URL (environment-aware)
+ * @param name - The raw API name (e.g., "notifications", "rbac")
+ * @param url - The backend URL to extract version from
+ * @param environment - Environment string from chrome.getEnvironment()
+ * @returns Console API docs URL (e.g., "https://console.redhat.com/docs/api/notifications/v2")
+ */
+export const convertToConsoleDocsUrl = (
+  name: string,
+  url: string,
+  environment: string
+): string => {
+  const nameWithoutApiSuffix = stripApiSuffix(name).toLowerCase();
+  const version = extractVersionFromUrl(url);
+  const baseUrl = getConsoleBaseUrl(environment);
+
+  if (version) {
+    // Remove decimal points from version (v1.0 → v1, v2.0 → v2)
+    const majorVersion = version.split('.')[0];
+    return `${baseUrl}/docs/api/${nameWithoutApiSuffix}/${majorVersion}`;
+  }
+
+  // Fallback if no version found
+  return `${baseUrl}/docs/api/${nameWithoutApiSuffix}`;
+};
+
 const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
   try {
     const [bundleInfoList, bundles] = await Promise.all([
@@ -191,8 +232,17 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
 };
 
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
+  const chrome = useChrome();
+
   const handleResourceClick = () => {
-    window.open(resource.url, '_blank', 'noopener,noreferrer');
+    const environment = chrome.getEnvironment();
+    const consoleDocsUrl = convertToConsoleDocsUrl(
+      resource.name,
+      resource.url,
+      environment
+    );
+    // Navigate within the same page (keeps help panel open)
+    window.location.href = consoleDocsUrl;
   };
 
   return (
@@ -213,8 +263,6 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
               onClick={handleResourceClick}
               isInline
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
-              icon={<ExternalLinkAltIcon />}
-              iconPosition="end"
             >
               {resource.displayName}
             </Button>

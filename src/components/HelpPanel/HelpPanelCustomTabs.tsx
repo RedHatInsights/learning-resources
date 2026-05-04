@@ -11,7 +11,6 @@ import React, {
 } from 'react';
 import classNames from 'classnames';
 
-import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import QuickStartsPanel from './HelpPanelTabs/QuickStartsPanel';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
@@ -19,7 +18,8 @@ import { getOpenQuickstartInHelpPanelStore } from '../../store/openQuickstartInH
 import { useGetState } from '@scalprum/react-core';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
 import { useIntl } from 'react-intl';
-import { OutlinedCommentsIcon, SearchIcon } from '@patternfly/react-icons';
+import { SearchIcon } from '@patternfly/react-icons';
+import { AiChatbotIcon } from '../common/AiChatbotIcon';
 import {
   QuickStartCloseModal,
   QuickStartStatus,
@@ -60,7 +60,7 @@ const createBaseTabs = (showVA: boolean): TabDefinition[] => {
   if (showVA) {
     tabs.push({
       id: 'virtual-assistant',
-      title: <OutlinedCommentsIcon />,
+      title: <AiChatbotIcon />,
       closeable: false,
       tabType: TabType.va,
     });
