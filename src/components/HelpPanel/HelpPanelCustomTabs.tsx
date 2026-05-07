@@ -266,9 +266,11 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
     const intl = useIntl();
     const chrome = useChrome();
     const vaFlag = useFlag('platform.chrome.help-panel_chatbot');
+    const vaEnvFlag = useFlag('platform.va.environment.enabled');
     const searchFlag = useFlag('platform.chrome.help-panel_search');
+    const showVA = vaFlag && vaEnvFlag;
 
-    const baseTabs = useMemo(() => createBaseTabs(vaFlag), [vaFlag]);
+    const baseTabs = useMemo(() => createBaseTabs(showVA), [showVA]);
     // Initialize store with find-help tab already having the correct sub-tab (Search when flag on, else Learn)
     // so content is correct on first paint and tests don't depend on a follow-up effect.
     const initialTabs = useMemo(
