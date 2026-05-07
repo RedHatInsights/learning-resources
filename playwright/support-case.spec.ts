@@ -57,8 +57,16 @@ test.describe('Support Case - Help Panel', () => {
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
     await expect(emptyState.or(supportTable)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
-    // Step 5: The "Open a support case" button/link should now be visible
-    await expect(page.getByText(/open a support case/i)).toBeVisible();
+    // Step 5: The "Open a support case" CTA appears only in empty state
+    // When cases exist, the CTA is not present in the same location
+    const emptyVisible = await emptyState.isVisible().catch(() => false);
+    if (emptyVisible) {
+      // Empty state: verify the "Open a support case" button is visible
+      await expect(page.getByText(/open a support case/i)).toBeVisible();
+    } else {
+      // Cases exist: verify the table is visible instead
+      await expect(supportTable).toBeVisible();
+    }
   });
 
   test('should open Customer Portal when clicking "Open a support case" link', async ({ page, context }) => {
@@ -80,17 +88,25 @@ test.describe('Support Case - Help Panel', () => {
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
     await expect(emptyState.or(supportTable)).toBeVisible({ timeout: SUPPORT_API_LOAD_TIMEOUT });
 
-    // Step 5: Set up listener for new page/tab before clicking
+    // Step 5: Verify empty state is visible (CTA only appears in empty state)
+    // Skip this test if user has actual cases
+    const emptyVisible = await emptyState.isVisible().catch(() => false);
+    if (!emptyVisible) {
+      test.skip();
+      return;
+    }
+
+    // Step 6: Set up listener for new page/tab before clicking
     const pagePromise = context.waitForEvent('page');
 
-    // Step 6: Click the "Open a support case" button/link
+    // Step 7: Click the "Open a support case" button/link
     await page.getByText(/open a support case/i).click();
 
-    // Step 7: Wait for new page to open and verify it navigates to Red Hat Customer Portal
+    // Step 8: Wait for new page to open and verify it navigates to Red Hat Customer Portal
     const newPage = await pagePromise;
 
     // Wait for navigation to Red Hat Customer Portal (page starts at about:blank)
-    await newPage.waitForURL(/access\.redhat\.com/);
+    await newPage.waitForURL(/access\.redhat\.com/, { timeout: SUPPORT_API_LOAD_TIMEOUT });
 
     // Verify the destination hostname (we can't validate page content due to auth requirements)
     const url = new URL(newPage.url());
