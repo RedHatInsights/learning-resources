@@ -777,6 +777,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
         <Flex
           className="lr-c-creator-yaml-view__metadata"
           direction={{ default: 'column', md: 'row' }}
+          gap={{ default: 'gapSm' }}
         >
           {bundleOptions && bundleOptions.length > 0 && (
             <FlexItem flex={{ default: 'flex_1' }}>
