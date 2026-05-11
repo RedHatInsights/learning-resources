@@ -1,12 +1,27 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Button,
+  Divider,
   Flex,
   FlexItem,
+  FormGroup,
   List,
   ListItem,
+  MenuToggle,
+  MenuToggleElement,
   PageSection,
+  Select,
+  SelectGroup,
+  SelectList,
+  SelectOption,
   Tooltip,
 } from '@patternfly/react-core';
 import {
@@ -21,6 +36,7 @@ import { downloadFile } from '@redhat-cloud-services/frontend-components-utiliti
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import { CreatorWizardContext } from './context';
 import { ALL_KIND_ENTRIES, ItemKind } from './meta';
+import { FilterData } from '../../utils/FiltersCategoryInterface';
 import './CreatorYAMLView.scss';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
 
@@ -222,6 +238,160 @@ function serializeToYaml(
   return YAML.stringify(doc, { lineWidth: 0 });
 }
 
+/** Bundle entry from chrome.getAvailableBundles() */
+export type BundleOption = { id: string; title: string };
+
+/* ------------------------------------------------------------------ */
+/*  Standalone bundle selector (not DDF-dependent)                    */
+/* ------------------------------------------------------------------ */
+const BundleSelector = ({
+  bundles,
+  selected,
+  onChange,
+}: {
+  bundles: BundleOption[];
+  selected: string[];
+  onChange: (value: string[]) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+    <MenuToggle
+      ref={toggleRef}
+      onClick={() => setIsOpen((o) => !o)}
+      isExpanded={isOpen}
+      style={{ width: '100%' } as React.CSSProperties}
+    >
+      {selected.length > 0 ? `Selected: ${selected.length}` : 'Select bundles'}
+    </MenuToggle>
+  );
+
+  const handleSelect = (
+    _event: unknown,
+    value: string | number | undefined
+  ) => {
+    if (typeof value !== 'string') return;
+    const next = selected.includes(value)
+      ? selected.filter((v) => v !== value)
+      : [...selected, value];
+    onChange(next);
+  };
+
+  return (
+    <FormGroup label="Associated bundle(s)">
+      <Select
+        isOpen={isOpen}
+        toggle={toggle}
+        onSelect={handleSelect}
+        onOpenChange={setIsOpen}
+        maxMenuHeight="300px"
+      >
+        <SelectList>
+          {bundles.map((b) => (
+            <SelectOption
+              key={b.id}
+              value={b.id}
+              hasCheckbox
+              isSelected={selected.includes(b.id)}
+            >
+              {b.title} ({b.id})
+            </SelectOption>
+          ))}
+        </SelectList>
+      </Select>
+    </FormGroup>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Standalone tag selector (not DDF-dependent)                       */
+/* ------------------------------------------------------------------ */
+const StandaloneTagsSelector = ({
+  filterData,
+  value,
+  onChange,
+}: {
+  filterData: FilterData;
+  value: { [kind: string]: string[] };
+  onChange: (value: { [kind: string]: string[] }) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const selectedCount = useMemo(
+    () =>
+      Object.values(value).reduce<number>((acc, arr) => acc + arr.length, 0),
+    [value]
+  );
+
+  const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+    <MenuToggle
+      ref={toggleRef}
+      onClick={() => setIsOpen((o) => !o)}
+      isExpanded={isOpen}
+      style={{ width: '100%' } as React.CSSProperties}
+    >
+      {selectedCount > 0 ? `Selected: ${selectedCount}` : 'Select tags'}
+    </MenuToggle>
+  );
+
+  const handleSelect = (
+    _event: unknown,
+    item: { kind: string; value: string }
+  ) => {
+    const next = { ...value };
+    if (!next[item.kind]) next[item.kind] = [];
+    if (next[item.kind].includes(item.value)) {
+      next[item.kind] = next[item.kind].filter((v) => v !== item.value);
+    } else {
+      next[item.kind] = [...next[item.kind], item.value];
+    }
+    onChange(next);
+  };
+
+  return (
+    <FormGroup label="Resource tag(s)">
+      <Select
+        isOpen={isOpen}
+        toggle={toggle}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onSelect={handleSelect as any}
+        onOpenChange={setIsOpen}
+        maxMenuHeight="400px"
+      >
+        {filterData.categories.map((category, index) =>
+          category.categoryData.map((group) => (
+            <React.Fragment key={`${category.categoryId}-${group.group}`}>
+              <SelectGroup
+                label={`${category.categoryName}${
+                  group.group ? ` (${group.group})` : ''
+                }`}
+              >
+                <SelectList>
+                  {group.data.map((item) => (
+                    <SelectOption
+                      hasCheckbox
+                      isSelected={
+                        value[category.categoryId]?.includes(item.id) ?? false
+                      }
+                      value={{ value: item.id, kind: category.categoryId }}
+                      key={item.id}
+                    >
+                      {item.filterLabel}
+                    </SelectOption>
+                  ))}
+                </SelectList>
+              </SelectGroup>
+              {index < filterData.categories.length - 1 && (
+                <Divider key={`divider-${index}`} />
+              )}
+            </React.Fragment>
+          ))
+        )}
+      </Select>
+    </FormGroup>
+  );
+};
+
 export type CreatorYAMLViewProps = {
   onChangeQuickStartSpec?: (newValue: QuickStartSpec) => void;
   onChangeBundles?: (newValue: string[]) => void;
@@ -231,6 +401,8 @@ export type CreatorYAMLViewProps = {
   quickStart?: ExtendedQuickstart;
   currentBundles?: string[];
   currentTags?: { [kind: string]: string[] };
+  filterData?: FilterData;
+  bundles?: BundleOption[];
 };
 
 const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
@@ -242,6 +414,8 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   quickStart,
   currentBundles,
   currentTags,
+  filterData,
+  bundles: bundleOptions,
 }) => {
   const { files } = useContext(CreatorWizardContext);
 
@@ -277,6 +451,11 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Keep a ref to latest yamlContent so the unmount cleanup can flush it
+  const yamlContentRef = useRef<string>(yamlContent);
+  useEffect(() => {
+    yamlContentRef.current = yamlContent;
+  }, [yamlContent]);
 
   const configureMonacoEnvironment = () => {
     // Disable Monaco workers to prevent CDN fetching in CI environments
@@ -392,11 +571,14 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     }, 200);
   };
 
-  // Cleanup timer on unmount
+  // On unmount, flush any pending debounced parse so the parent state is
+  // up-to-date before the wizard tab mounts.
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+        parseAndUpdateQuickstart(yamlContentRef.current);
       }
     };
   }, []);
@@ -462,6 +644,54 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       downloadFile(file.content, baseName, extension);
     });
   };
+
+  /**
+   * Update the metadata.tags section inside the current YAML editor content
+   * when bundles or tags are changed via the UI selectors.
+   */
+  const updateYamlTags = useCallback(
+    (newBundles: string[], newTags: { [kind: string]: string[] }) => {
+      try {
+        const parsed = YAML.parse(yamlContentRef.current);
+        if (!parsed || typeof parsed !== 'object') return;
+        if (!parsed.metadata) parsed.metadata = {};
+
+        const allTags: Array<{ kind: string; value: string }> = newBundles
+          .toSorted()
+          .map((b) => ({ kind: 'bundle', value: b }));
+        Object.entries(newTags).forEach(([kind, values]) => {
+          values.forEach((value) => allTags.push({ kind, value }));
+        });
+
+        parsed.metadata.tags = allTags.length > 0 ? allTags : undefined;
+
+        const newYaml = YAML.stringify(parsed, { lineWidth: 0 });
+        setYamlContent(newYaml);
+        // Also update parent state immediately (no debounce)
+        parseAndUpdateQuickstart(newYaml);
+      } catch {
+        // YAML is invalid — only update parent state via callbacks
+      }
+    },
+    []
+  );
+
+  const handleBundlesChange = useCallback(
+    (newBundles: string[]) => {
+      updateYamlTags(newBundles, currentTags || {});
+    },
+    [currentTags, updateYamlTags]
+  );
+
+  const handleTagsChange = useCallback(
+    (newTags: { [kind: string]: string[] }) => {
+      updateYamlTags(currentBundles || [], newTags);
+    },
+    [currentBundles, updateYamlTags]
+  );
+
+  const hasMetadataSelectors =
+    (bundleOptions && bundleOptions.length > 0) || filterData;
 
   const canDownload =
     isUserContent(yamlContent) && !parseError && files.length > 0;
@@ -543,6 +773,31 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           </Tooltip>
         </FlexItem>
       </Flex>
+      {hasMetadataSelectors && (
+        <Flex
+          className="lr-c-creator-yaml-view__metadata"
+          direction={{ default: 'column', md: 'row' }}
+        >
+          {bundleOptions && bundleOptions.length > 0 && (
+            <FlexItem flex={{ default: 'flex_1' }}>
+              <BundleSelector
+                bundles={bundleOptions}
+                selected={currentBundles || []}
+                onChange={handleBundlesChange}
+              />
+            </FlexItem>
+          )}
+          {filterData && (
+            <FlexItem flex={{ default: 'flex_1' }}>
+              <StandaloneTagsSelector
+                filterData={filterData}
+                value={currentTags || {}}
+                onChange={handleTagsChange}
+              />
+            </FlexItem>
+          )}
+        </Flex>
+      )}
       <div className="lr-c-creator-yaml-view__editor">
         <Editor
           height="100%"

@@ -327,6 +327,7 @@ const CreatorWizard = ({
   const chrome = useChrome();
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
   const schema = useMemo(() => makeSchema(chrome, filterData), []);
+  const availableBundles = useMemo(() => chrome.getAvailableBundles(), []);
 
   // Derive initialValues from shared state so wizard ↔ YAML stays in sync.
   // FormRenderer is conditionally rendered (unmounted in YAML mode), so it
@@ -452,6 +453,8 @@ const CreatorWizard = ({
           quickStart={quickStart}
           currentBundles={currentBundles}
           currentTags={currentTags}
+          filterData={filterData}
+          bundles={availableBundles}
         />
       )}
     </CreatorWizardContext.Provider>

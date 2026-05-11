@@ -3,6 +3,11 @@
     margin-bottom: var(--pf-v5-global--spacer--md);
   }
 
+  &__metadata {
+    margin-bottom: var(--pf-v5-global--spacer--md);
+    gap: var(--pf-v5-global--spacer--sm);
+  }
+
   &__editor {
     height: 600px;
     max-height: 70vh;
