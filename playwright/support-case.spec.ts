@@ -25,6 +25,7 @@ import { disableCookiePrompt } from './test-utils';
 
 // Timeout constants
 const SUPPORT_API_LOAD_TIMEOUT = 15000; // Time to wait for support cases API to load
+const TABS_LOAD_TIMEOUT = 10000; // Time to wait for help panel tabs to render
 
 test.describe('Support Case - Help Panel', () => {
   test.beforeEach(async ({ page }) => {
@@ -46,9 +47,12 @@ test.describe('Support Case - Help Panel', () => {
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
+    // Step 2.5: Wait for tabs container to be fully rendered
+    const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
+    await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
+
     // Step 3: Click on "Support" tab (main tab in single-tier structure)
     const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await expect(supportTab).toBeVisible();
     await supportTab.click();
 
     // Step 4: Wait for the support panel to finish loading
@@ -78,9 +82,12 @@ test.describe('Support Case - Help Panel', () => {
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
+    // Step 2.5: Wait for tabs container to be fully rendered
+    const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
+    await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
+
     // Step 3: Click on "Support" tab (main tab in single-tier structure)
     const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await expect(supportTab).toBeVisible();
     await supportTab.click();
 
     // Step 4: Wait for the support panel to finish loading
@@ -126,9 +133,12 @@ test.describe('Support Case - Help Panel', () => {
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
+    // Step 2.5: Wait for tabs container to be fully rendered
+    const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
+    await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
+
     // Step 3: Click on "Support" tab (main tab in single-tier structure)
     const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await expect(supportTab).toBeVisible();
     await supportTab.click();
 
     // Step 4: Wait for support panel to load and check if user has support cases

@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { disableCookiePrompt } from './test-utils';
 
+// Timeout constants
+const TABS_LOAD_TIMEOUT = 10000; // Time to wait for help panel tabs to render
+
 test.describe('help panel', async () => {
 
   test.beforeEach(async ({page}): Promise<void> => {
@@ -54,6 +57,10 @@ test.describe('help panel', async () => {
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
+
+    // Wait for tabs container to be fully rendered
+    const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
+    await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
 
     // Click on APIs tab
     const apiTab = page.locator('[data-ouia-component-id="help-panel-tab-api"]');
