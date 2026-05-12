@@ -62,9 +62,8 @@ test.describe('help panel', async () => {
     const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
     await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
 
-    // Click on APIs tab
-    const apiTab = page.locator('[data-ouia-component-id="help-panel-tab-api"]');
-    await apiTab.click();
+    // Click on APIs tab using role selector (PatternFly Tab doesn't pass through OUIA IDs)
+    await page.getByRole('tab', { name: 'APIs' }).click();
 
     // Verify API documentation content is shown by checking for the description text
     await expect(page.getByText(/Browse the APIs for Hybrid Cloud Console services/i)).toBeVisible({ timeout: 10000 });

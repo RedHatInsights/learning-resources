@@ -51,9 +51,8 @@ test.describe('Support Case - Help Panel', () => {
     const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
     await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
 
-    // Step 3: Click on "Support" tab (main tab in single-tier structure)
-    const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await supportTab.click();
+    // Step 3: Click on "Support" tab using role selector (PatternFly Tab doesn't pass through OUIA IDs)
+    await page.getByRole('tab', { name: 'Support' }).click();
 
     // Step 4: Wait for the support panel to finish loading
     // The panel shows a skeleton loader while fetching support cases from API
@@ -86,9 +85,8 @@ test.describe('Support Case - Help Panel', () => {
     const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
     await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
 
-    // Step 3: Click on "Support" tab (main tab in single-tier structure)
-    const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await supportTab.click();
+    // Step 3: Click on "Support" tab using role selector (PatternFly Tab doesn't pass through OUIA IDs)
+    await page.getByRole('tab', { name: 'Support' }).click();
 
     // Step 4: Wait for the support panel to finish loading
     // The panel shows a skeleton loader while fetching support cases from API
@@ -137,9 +135,8 @@ test.describe('Support Case - Help Panel', () => {
     const tabsContainer = page.locator('[data-ouia-component-id="help-panel-tabs"]');
     await expect(tabsContainer).toBeVisible({ timeout: TABS_LOAD_TIMEOUT });
 
-    // Step 3: Click on "Support" tab (main tab in single-tier structure)
-    const supportTab = page.locator('[data-ouia-component-id="help-panel-tab-support"]');
-    await supportTab.click();
+    // Step 3: Click on "Support" tab using role selector (PatternFly Tab doesn't pass through OUIA IDs)
+    await page.getByRole('tab', { name: 'Support' }).click();
 
     // Step 4: Wait for support panel to load and check if user has support cases
     const supportTable = page.locator('[data-ouia-component-id="help-panel-support-cases-table"]');
