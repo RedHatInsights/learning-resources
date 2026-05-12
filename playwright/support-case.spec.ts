@@ -25,6 +25,7 @@ import { disableCookiePrompt } from './test-utils';
 
 // Timeout constants
 const SUPPORT_API_LOAD_TIMEOUT = 15000; // Time to wait for support cases API to load
+const SUBTABS_LOAD_TIMEOUT = 10000; // Time to wait for help panel subtabs to render
 
 test.describe('Support Case - Help Panel', () => {
   test.beforeEach(async ({ page }) => {
@@ -45,6 +46,10 @@ test.describe('Support Case - Help Panel', () => {
     // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
+
+    // Step 2.5: Wait for subtabs container to be visible (ensures "Find help" tab is active and subtabs are rendered)
+    const subtabsContainer = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
+    await expect(subtabsContainer).toBeVisible({ timeout: SUBTABS_LOAD_TIMEOUT });
 
     // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
@@ -76,6 +81,10 @@ test.describe('Support Case - Help Panel', () => {
     // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
+
+    // Step 2.5: Wait for subtabs container to be visible (ensures "Find help" tab is active and subtabs are rendered)
+    const subtabsContainer = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
+    await expect(subtabsContainer).toBeVisible({ timeout: SUBTABS_LOAD_TIMEOUT });
 
     // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
@@ -123,6 +132,10 @@ test.describe('Support Case - Help Panel', () => {
     // Step 2: Wait for help panel to load
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
+
+    // Step 2.5: Wait for subtabs container to be visible (ensures "Find help" tab is active and subtabs are rendered)
+    const subtabsContainer = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
+    await expect(subtabsContainer).toBeVisible({ timeout: SUBTABS_LOAD_TIMEOUT });
 
     // Step 3: Click on "My support cases" tab
     const supportTab = page.locator('[data-ouia-component-id="help-panel-subtab-support"]');
