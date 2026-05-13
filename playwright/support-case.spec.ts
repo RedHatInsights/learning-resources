@@ -66,7 +66,7 @@ test.describe('Support Case - Help Panel', () => {
     const emptyVisible = await emptyState.isVisible().catch(() => false);
     if (emptyVisible) {
       // Empty state: verify the "Open a support case" button is visible
-      await expect(page.getByText(/open a support case/i)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Open a support case' })).toBeVisible();
     } else {
       // Cases exist: verify the table is visible instead
       await expect(supportTable).toBeVisible();
@@ -106,8 +106,8 @@ test.describe('Support Case - Help Panel', () => {
     // Step 6: Set up listener for new page/tab before clicking
     const pagePromise = context.waitForEvent('page');
 
-    // Step 7: Click the "Open a support case" button/link
-    await page.getByText(/open a support case/i).click();
+    // Step 7: Click the "Open a support case" button (use role selector to avoid strict mode violation)
+    await page.getByRole('button', { name: 'Open a support case' }).click();
 
     // Step 8: Wait for new page to open and verify it navigates to Red Hat Customer Portal
     const newPage = await pagePromise;
