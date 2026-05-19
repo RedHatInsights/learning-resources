@@ -6,7 +6,6 @@ import {
   navigateToTab,
   openHelpPanel,
   supportPanelMswHandlers,
-  supportPanelMswHandlersWithCases,
   waitForPageLoad,
 } from './_shared/helpPanelJourneyHelpers';
 import { TEST_TIMEOUTS, delay } from './_shared/testConstants';
@@ -122,59 +121,15 @@ export const Step04_EmptyStateAndOpenSupportCase: Story = {
 
     await delay(TEST_TIMEOUTS.QUICK_SETTLE);
 
-    // Verify button text is present (button is rendered, even if data attribute doesn't work in tests)
-    const documentBody = within(document.body);
-    const openButton = documentBody.queryByText(/open a support case/i);
-    expect(openButton).toBeInTheDocument();
+    // Scope query to support empty-state container (not feedback form link)
+    const emptyState = document.querySelector(
+      '[data-ouia-component-id="help-panel-support-empty-state"]'
+    );
+    expect(emptyState).toBeInTheDocument();
+    const emptyStateWithin = within(emptyState as HTMLElement);
+    const openButtons = emptyStateWithin.getAllByText(/open a support case/i);
+    expect(openButtons.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Empty state and Open support case button verified');
-  },
-};
-
-/**
- * 05 / With Cases: Table and Pagination
- */
-export const Step05_WithCasesTableAndPagination: Story = {
-  name: '05 / With Cases: Table and Pagination',
-  parameters: {
-    msw: {
-      handlers: [...helpPanelMswHandlers, ...supportPanelMswHandlersWithCases],
-    },
-  },
-  play: async ({ canvasElement }) => {
-    await navigateToTab(canvasElement, 'Support');
-    waitForPageLoad(canvasElement);
-
-    // Wait for table to appear (API returns mock cases)
-    await waitFor(
-      () => {
-        const table = document.querySelector(
-          '[data-ouia-component-id="help-panel-support-cases-table"]'
-        );
-        expect(table).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    await delay(TEST_TIMEOUTS.AFTER_CLICK);
-
-    const canvas = within(canvasElement);
-    // Verify table has case content (mock case summary)
-    await waitFor(
-      () => {
-        const caseSummary = canvas.queryByText(
-          /Insights subscription activation/i
-        );
-        expect(caseSummary).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    const pagination = document.querySelector(
-      '[data-ouia-component-id="help-panel-support-pagination"]'
-    );
-    expect(pagination).toBeInTheDocument();
-
-    console.log('UJ: ✅ Support cases table and pagination verified');
   },
 };

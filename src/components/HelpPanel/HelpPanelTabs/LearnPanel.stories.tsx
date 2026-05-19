@@ -9,7 +9,6 @@ import {
 import { HttpResponse, http } from 'msw';
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test';
 import LearnPanel from './LearnPanel';
-import { getOpenQuickstartInHelpPanelStore } from '../../../store/openQuickstartInHelpPanelStore';
 
 /**
  * Helper function to wait for component loading to complete
@@ -213,17 +212,57 @@ const mockLearningResourcesHandlers = [
   http.get('/api/quickstarts/v1/quickstarts', () => {
     return HttpResponse.json({
       data: [
-        // Insights Quick starts
+        // Insights Quick starts - Full quickstart for drill-down testing
         {
           content: {
+            apiVersion: 'console.openshift.io/v1',
+            kind: 'QuickStarts',
             metadata: {
               name: 'insights-qs-1',
               tags: [{ kind: 'bundle', value: 'insights' }],
             },
             spec: {
+              version: 0.1,
               displayName: 'Getting Started with Insights',
-              description: 'Learn the basics',
+              description: 'Learn the basics of Red Hat Insights',
+              introduction:
+                '**Welcome to Red Hat Insights!** This quickstart will guide you through the basics of using Insights to monitor and manage your systems.',
               type: { text: 'Quick start' },
+              durationMinutes: 10,
+              tasks: [
+                {
+                  title: 'Explore the dashboard',
+                  description:
+                    'Take a look at the main dashboard to see an overview of your systems.',
+                  review: {
+                    instructions: 'Did you view the dashboard?',
+                    failedTaskHelp:
+                      'Navigate to the Insights dashboard to continue.',
+                  },
+                },
+                {
+                  title: 'Review your first recommendation',
+                  description:
+                    'Check out the recommendations section to see suggested actions for your systems.',
+                  review: {
+                    instructions: 'Did you find the recommendations section?',
+                    failedTaskHelp:
+                      'Look for the Recommendations tab in the navigation.',
+                  },
+                },
+                {
+                  title: 'Complete your setup',
+                  description:
+                    'Finish configuring your Insights environment by reviewing the settings.',
+                  review: {
+                    instructions: 'Have you reviewed the settings?',
+                    failedTaskHelp:
+                      'Go to Settings to complete your configuration.',
+                  },
+                },
+              ],
+              conclusion:
+                'Congratulations! You have completed the Getting Started with Insights quickstart. You are now ready to use Insights to monitor your systems.',
               link: { href: '#' },
             },
           },
@@ -460,27 +499,6 @@ export const FilterByQuickStart: Story = {
       ['Getting Started with Insights', 'Advisor Quick Start'],
       ['Insights Documentation', 'Vulnerability Docs']
     );
-  },
-};
-
-/**
- * With the Quick start filter applied, clicking a quick start notifies the shared store
- * (opens in the Help Panel as a tab — not via `window.open`).
- */
-export const ClickQuickStartNotifiesHelpPanelStore: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    getOpenQuickstartInHelpPanelStore().updateState('CONSUMED_OPEN');
-
-    await waitForLoadingComplete(canvas);
-    await selectContentType(canvas, 'quickstart');
-
-    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
-
-    await waitFor(() => {
-      const { pendingOpen } = getOpenQuickstartInHelpPanelStore().getState();
-      expect(pendingOpen?.quickstartId).toBe('insights-qs-1');
-    });
   },
 };
 
@@ -867,5 +885,289 @@ export const ClearAllFilters: Story = {
       'Insights Documentation',
       'Advisor Quick Start',
     ]);
+  },
+};
+
+/**
+ * Test quickstart drill-down - clicking a quickstart shows content with breadcrumb and bookmark icon
+ */
+export const QuickstartDrillDown: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter to show only quickstarts
+    await selectContentType(canvas, 'quickstart');
+
+    // Click on a quickstart
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Verify quickstart content is displayed
+    await waitFor(() => {
+      const header = canvas.getByRole('heading', {
+        name: 'Getting Started with Insights',
+        level: 2,
+      });
+      expect(header).toBeInTheDocument();
+    });
+
+    // Verify breadcrumb is present
+    await waitFor(() => {
+      const breadcrumb = canvas.getByRole('button', { name: /learn/i });
+      expect(breadcrumb).toBeInTheDocument();
+    });
+
+    // Verify bookmark icon is present in breadcrumb area
+    await waitFor(() => {
+      const bookmarkButton = canvas.getByRole('button', {
+        name: /bookmark/i,
+      });
+      expect(bookmarkButton).toBeInTheDocument();
+    });
+
+    // Verify introduction text is shown
+    await waitFor(() => {
+      expect(
+        canvas.getByText(/Welcome to Red Hat Insights!/i)
+      ).toBeInTheDocument();
+    });
+
+    // Verify Start button is present
+    await waitFor(() => {
+      const startButton = canvas.getByRole('button', { name: /start/i });
+      expect(startButton).toBeInTheDocument();
+    });
+  },
+};
+
+/**
+ * Test breadcrumb navigation - clicking breadcrumb returns to list view
+ */
+export const BreadcrumbNavigationBack: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter and click quickstart
+    await selectContentType(canvas, 'quickstart');
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Wait for quickstart content
+    await waitFor(() => {
+      const breadcrumb = canvas.getByRole('button', { name: /learn/i });
+      expect(breadcrumb).toBeInTheDocument();
+    });
+
+    // Click breadcrumb to go back
+    const breadcrumb = canvas.getByRole('button', { name: /learn/i });
+    await userEvent.click(breadcrumb);
+
+    // Verify list view is shown again
+    await waitFor(() => {
+      const resourceList = document.querySelector(
+        '[data-ouia-component-id="help-panel-learning-resources-list"]'
+      );
+      expect(resourceList).toBeInTheDocument();
+    });
+
+    // Verify quickstart items are visible again
+    await expectVisibleTitles(canvas, [
+      'Getting Started with Insights',
+      'Advisor Quick Start',
+    ]);
+  },
+};
+
+/**
+ * Test complete quickstart workflow - Start → Continue → Restart
+ */
+export const QuickstartWorkflow: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter and click quickstart
+    await selectContentType(canvas, 'quickstart');
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Wait for quickstart content
+    await waitFor(() => {
+      const startButton = canvas.getByRole('button', { name: /start/i });
+      expect(startButton).toBeInTheDocument();
+    });
+
+    // Click Start button
+    const startButton = canvas.getByRole('button', { name: /start/i });
+    await userEvent.click(startButton);
+
+    // Verify first task is shown
+    await waitFor(
+      () => {
+        expect(canvas.getByText('Explore the dashboard')).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+
+    // Verify Next and Restart buttons appear
+    await waitFor(
+      () => {
+        const nextButton = canvas.getByRole('button', { name: /next/i });
+        const restartButton = canvas.getByRole('button', { name: /restart/i });
+        expect(nextButton).toBeInTheDocument();
+        expect(restartButton).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+
+    // Click Next to go to second task
+    const nextButton = canvas.getByRole('button', { name: /next/i });
+    await userEvent.click(nextButton);
+
+    // Verify second task is shown
+    await waitFor(
+      () => {
+        expect(
+          canvas.getByText('Review your first recommendation')
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+
+    // Click Restart
+    const restartButton = canvas.getByRole('button', { name: /restart/i });
+    await userEvent.click(restartButton);
+
+    // Verify we're back at the introduction
+    await waitFor(
+      () => {
+        expect(
+          canvas.getByText(/Welcome to Red Hat Insights!/i)
+        ).toBeInTheDocument();
+        const startButtonAgain = canvas.getByRole('button', { name: /start/i });
+        expect(startButtonAgain).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+  },
+};
+
+/**
+ * Test quickstart shows duration and metadata
+ */
+export const QuickstartMetadata: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter and click quickstart
+    await selectContentType(canvas, 'quickstart');
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Verify quickstart metadata is displayed
+    await waitFor(() => {
+      // Look for the metadata section with both type and duration
+      const metadataText = canvas.getByText(/Quick start • 10 minutes/i);
+      expect(metadataText).toBeInTheDocument();
+    });
+  },
+};
+
+/**
+ * Test quickstart drill-down preserves state when using breadcrumb
+ */
+export const QuickstartStatePreservation: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter and click quickstart
+    await selectContentType(canvas, 'quickstart');
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Start the quickstart
+    await waitFor(() => {
+      const startButton = canvas.getByRole('button', { name: /start/i });
+      expect(startButton).toBeInTheDocument();
+    });
+
+    const startButton = canvas.getByRole('button', { name: /start/i });
+    await userEvent.click(startButton);
+
+    // Wait for first task
+    await waitFor(
+      () => {
+        expect(canvas.getByText('Explore the dashboard')).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+
+    // Go back to list via breadcrumb
+    const breadcrumb = canvas.getByRole('button', { name: /learn/i });
+    await userEvent.click(breadcrumb);
+
+    // Wait for list to appear
+    await waitFor(() => {
+      const resourceList = document.querySelector(
+        '[data-ouia-component-id="help-panel-learning-resources-list"]'
+      );
+      expect(resourceList).toBeInTheDocument();
+    });
+
+    // Click the same quickstart again
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Verify quickstart reopened (state preserved in context)
+    await waitFor(
+      () => {
+        // After reopening, should see either Continue (if state preserved) or Start button
+        const continueButton = canvas.queryByRole('button', {
+          name: /continue/i,
+        });
+        const startButton = canvas.queryByRole('button', {
+          name: /start/i,
+        });
+
+        // At least one action button should be present
+        expect(continueButton || startButton).toBeTruthy();
+      },
+      { timeout: 5000 }
+    );
+  },
+};
+
+/**
+ * Test bookmark toggle in quickstart drill-down view
+ */
+export const QuickstartBookmarkToggle: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitForLoadingComplete(canvas);
+
+    // Filter and click quickstart
+    await selectContentType(canvas, 'quickstart');
+    await clickResourceLinkByName(canvas, 'Getting Started with Insights');
+
+    // Wait for quickstart to load
+    await waitFor(() => {
+      const breadcrumb = canvas.getByRole('button', { name: /learn/i });
+      expect(breadcrumb).toBeInTheDocument();
+    });
+
+    // Find and click the bookmark button in the breadcrumb area
+    const bookmarkButton = canvas.getByRole('button', {
+      name: /bookmark/i,
+    });
+    expect(bookmarkButton).toBeInTheDocument();
+
+    // Click to toggle bookmark
+    await userEvent.click(bookmarkButton);
+
+    // Verify the bookmark button is still there (icon should change but button remains)
+    await waitFor(() => {
+      const bookmarkButtonAfter = canvas.getByRole('button', {
+        name: /bookmark/i,
+      });
+      expect(bookmarkButtonAfter).toBeInTheDocument();
+    });
   },
 };

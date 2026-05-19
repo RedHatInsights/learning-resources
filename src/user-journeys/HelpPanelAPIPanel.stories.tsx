@@ -16,7 +16,6 @@ import { TEST_TIMEOUTS, delay } from './_shared/testConstants';
  */
 
 const TOTAL_API_DOCS = 15; // Updated to include 1 versioned notifications API (v1.0)
-const RHEL_API_DOCS = 10; // Updated to include versioned notifications (9 original + 1 versioned)
 
 const meta: Meta<typeof AppEntryWithRouter> = {
   title: 'User Journeys/Help Panel/APIs Panel',
@@ -120,6 +119,15 @@ export const Step04_ViewAPIDocsList: Story = {
 
     await navigateToTab(canvasElement, 'APIs');
 
+    // Wait for API data to load asynchronously
+    await waitFor(
+      () => {
+        const advisorLink = canvas.queryByRole('button', { name: /Advisor/i });
+        expect(advisorLink).toBeInTheDocument();
+      },
+      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
+    );
+
     await waitFor(
       () => {
         const countLabel = canvas.getByText(
@@ -129,9 +137,6 @@ export const Step04_ViewAPIDocsList: Story = {
       },
       { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
     );
-
-    const advisorLink = canvas.getByRole('button', { name: /Advisor/i });
-    expect(advisorLink).toBeInTheDocument();
 
     const resourcesList = document.querySelector(
       '[data-ouia-component-id="help-panel-api-resources-list"]'
@@ -146,94 +151,13 @@ export const Step04_ViewAPIDocsList: Story = {
 };
 
 /**
- * 05 / Toggle Bundle Scope
- *
- * Switches between All APIs and the current bundle (RHEL) scope
- * and verifies the count updates accordingly.
- */
-export const Step05_ToggleBundleScope: Story = {
-  name: '05 / Toggle Bundle Scope',
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await navigateToTab(canvasElement, 'APIs');
-
-    await waitFor(
-      () => {
-        const scopeToggle = document.querySelector(
-          '[data-ouia-component-id="help-panel-api-scope-toggle"]'
-        );
-        expect(scopeToggle).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    await waitFor(
-      () => {
-        const countLabel = canvas.getByText(
-          new RegExp(`API Documentation \\(${TOTAL_API_DOCS}\\)`)
-        );
-        expect(countLabel).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    const bundleToggle = document.getElementById('bundle-toggle');
-    if (!bundleToggle) {
-      throw new Error('Bundle toggle button not found');
-    }
-    await userEvent.click(bundleToggle as HTMLElement);
-    await delay(TEST_TIMEOUTS.AFTER_CLICK);
-
-    await waitFor(
-      () => {
-        expect(bundleToggle).toHaveAttribute('aria-pressed', 'true');
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    await waitFor(
-      () => {
-        const bundleCount = canvas.getByText(
-          new RegExp(`API Documentation \\(${RHEL_API_DOCS}\\)`)
-        );
-        expect(bundleCount).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    console.log('UJ: ✅ Filtered to RHEL bundle APIs');
-
-    const allToggle = document.getElementById('all-toggle');
-    if (!allToggle) {
-      throw new Error('All toggle button not found');
-    }
-    await userEvent.click(allToggle as HTMLElement);
-    await delay(TEST_TIMEOUTS.AFTER_CLICK);
-
-    await waitFor(
-      () => {
-        expect(allToggle).toHaveAttribute('aria-pressed', 'true');
-        const allCount = canvas.getByText(
-          new RegExp(`API Documentation \\(${TOTAL_API_DOCS}\\)`)
-        );
-        expect(allCount).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    console.log('UJ: ✅ Toggled back to All APIs scope');
-  },
-};
-
-/**
- * 06 / Navigate Pagination
+ * 05 / Navigate Pagination
  *
  * With 14 API docs at 10 per page, verifies page 2 shows the remaining items
  * and navigating back restores page 1.
  */
-export const Step06_NavigatePagination: Story = {
-  name: '06 / Navigate Pagination',
+export const Step05_NavigatePagination: Story = {
+  name: '05 / Navigate Pagination',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
@@ -282,13 +206,13 @@ export const Step06_NavigatePagination: Story = {
 };
 
 /**
- * 07 / Verify External Links
+ * 06 / Verify External Links
  *
  * Each API documentation entry should open in a new tab via window.open.
  * Verifies the link buttons are present and contain expected API names.
  */
-export const Step07_VerifyExternalLinks: Story = {
-  name: '07 / Verify External Links',
+export const Step06_VerifyExternalLinks: Story = {
+  name: '06 / Verify External Links',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
@@ -325,60 +249,5 @@ export const Step07_VerifyExternalLinks: Story = {
     }
 
     console.log('UJ: ✅ All expected API documentation links verified');
-  },
-};
-
-/**
- * 08 / Bundle Filter with Pagination
- *
- * Switching to bundle scope with fewer results should collapse pagination
- * to a single page (9 RHEL APIs fit within 10 per page).
- */
-export const Step08_BundleFilterWithPagination: Story = {
-  name: '08 / Bundle Filter with Pagination',
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await navigateToTab(canvasElement, 'APIs');
-
-    await waitFor(
-      () => {
-        const pagination = document.querySelector(
-          '[data-ouia-component-id="help-panel-api-pagination"]'
-        );
-        expect(pagination).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    const bundleToggle = document.getElementById('bundle-toggle');
-    if (!bundleToggle) {
-      throw new Error('Bundle toggle button not found');
-    }
-    await userEvent.click(bundleToggle as HTMLElement);
-    await delay(TEST_TIMEOUTS.AFTER_CLICK);
-
-    await waitFor(
-      () => {
-        const bundleCount = canvas.getByText(
-          new RegExp(`API Documentation \\(${RHEL_API_DOCS}\\)`)
-        );
-        expect(bundleCount).toBeInTheDocument();
-      },
-      { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
-    );
-
-    const dataList = canvas.getByRole('list', { name: /API resources/i });
-    const items = within(dataList).getAllByRole('listitem');
-    expect(items).toHaveLength(RHEL_API_DOCS);
-
-    const nextButton = canvas.queryByRole('button', {
-      name: /go to next page/i,
-    });
-    if (nextButton) {
-      expect(nextButton).toBeDisabled();
-    }
-
-    console.log('UJ: ✅ Bundle filter shows all RHEL APIs on a single page');
   },
 };

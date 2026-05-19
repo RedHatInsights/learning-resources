@@ -20,6 +20,7 @@ import {
   Spinner,
   Stack,
   StackItem,
+  Title,
   ToggleGroup,
   ToggleGroupItem,
   Toolbar,
@@ -28,19 +29,28 @@ import {
 } from '@patternfly/react-core';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { suspenseLoader as useSuspenseLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
-import { useOpenQuickStartInHelpPanel } from '../../../utils/openQuickStartInHelpPanel';
 import fetchAllData from '../../../utils/fetchAllData';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 import {
   BookmarkedIcon,
   OutlinedBookmarkedIcon,
 } from '../../common/BookmarkIcon';
-import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { AngleRightIcon, ExternalLinkAltIcon } from '@patternfly/react-icons';
 import axios from 'axios';
 import { API_BASE, FAVORITES } from '../../../hooks/useQuickStarts';
 import { FiltersMetadata } from '../../../utils/FiltersCategoryInterface';
 import { useIntl } from 'react-intl';
 import messages from '../../../Messages';
+import {
+  AllQuickStartStates,
+  QuickStartContextProvider,
+  QuickStartContextValues,
+  QuickStartController,
+  getDefaultQuickStartState,
+} from '@patternfly/quickstarts';
+import { getOpenQuickstartInHelpPanelStore } from '../../../store/openQuickstartInHelpPanelStore';
+import { useGetState } from '@scalprum/react-core';
+import type { OpenQuickstartInHelpPanelState } from '../../../store/openQuickstartInHelpPanelStore';
 
 // Bundle name mapping to get abbreviated names
 const getBundleDisplayName = (bundleValue: string): string => {
@@ -56,9 +66,9 @@ const getBundleDisplayName = (bundleValue: string): string => {
 const LearningResourceItem: React.FC<{
   resource: ExtendedQuickstart;
   onBookmarkToggle: (resource: ExtendedQuickstart) => void;
-}> = ({ resource, onBookmarkToggle }) => {
+  onQuickStartClick?: (quickstartId: string) => void;
+}> = ({ resource, onBookmarkToggle, onQuickStartClick }) => {
   const chrome = useChrome();
-  const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
   const [isBookmarked, setIsBookmarked] = useState(resource.metadata.favorite);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
@@ -85,11 +95,7 @@ const LearningResourceItem: React.FC<{
 
   const handleResourceClick = () => {
     if (resource.spec.type?.text === 'Quick start') {
-      openQuickStartInHelpPanel(
-        resource.metadata.name,
-        resource.spec.displayName,
-        { openDrawer: false }
-      );
+      onQuickStartClick?.(resource.metadata.name);
     } else if (resource.spec.link?.href) {
       window.open(resource.spec.link.href, '_blank', 'noopener,noreferrer');
     }
@@ -164,7 +170,10 @@ const LearningResourceItem: React.FC<{
 
 const LearnPanelContent: React.FC<{
   setNewActionTitle: (title: string) => void;
-}> = () => {
+}> = ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  setNewActionTitle: _setNewActionTitle,
+}) => {
   const intl = useIntl();
   const chrome = useChrome();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
@@ -201,6 +210,39 @@ const LearnPanelContent: React.FC<{
   // Pagination state
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+
+  // Quickstart state
+  const [activeQuickStartID, setActiveQuickStartID] = useState<string>('');
+  const [allQuickStartStates, setAllQuickStartStates] =
+    useState<AllQuickStartStates>({});
+
+  // Listen for quickstart open events from search panel or other sources
+  const openQuickstartStore = getOpenQuickstartInHelpPanelStore();
+  const openQuickstartState =
+    useGetState<OpenQuickstartInHelpPanelState>(openQuickstartStore);
+
+  useEffect(() => {
+    const { pendingOpen } = openQuickstartState;
+    if (!pendingOpen) return;
+    const { quickstartId } = pendingOpen;
+
+    // Open the quickstart in drill-down mode
+    setActiveQuickStartID(quickstartId);
+    // Initialize state if needed
+    if (!allQuickStartStates[quickstartId]) {
+      setAllQuickStartStates((prev) => ({
+        ...prev,
+        [quickstartId]: getDefaultQuickStartState(),
+      }));
+    }
+
+    // Consume the event
+    openQuickstartStore.updateState('CONSUMED_OPEN');
+  }, [
+    openQuickstartState.pendingOpen,
+    allQuickStartStates,
+    openQuickstartStore,
+  ]);
 
   const {
     bundleId = '',
@@ -442,213 +484,386 @@ const LearnPanelContent: React.FC<{
     setSelectedContentTypes([]);
   };
 
-  return (
-    <Stack
-      hasGutter
-      className="pf-v6-u-h-100"
-      data-ouia-component-id="help-panel-learn-root"
-    >
-      <StackItem>
-        <Content>
-          {intl.formatMessage(messages.learnPanelDescription)}{' '}
-          <Button
-            variant="link"
-            component="a"
-            href={`/learning-resources?tab=all`}
-            isInline
-            iconPosition="end"
-          >
-            {intl.formatMessage(messages.allLearningCatalogLinkText)}
-          </Button>
-          .
-        </Content>
-      </StackItem>
+  const handleQuickStartClick = (quickstartId: string) => {
+    setActiveQuickStartID(quickstartId);
+    // Initialize state if needed
+    setAllQuickStartStates((prev) => {
+      if (!prev[quickstartId]) {
+        return {
+          ...prev,
+          [quickstartId]: getDefaultQuickStartState(),
+        };
+      }
+      return prev;
+    });
+  };
 
-      <StackItem>
-        <Stack hasGutter={false}>
+  const handleBackToList = () => {
+    setActiveQuickStartID('');
+  };
+
+  // Find active quickstart
+  const activeQuickStart = allQuickStarts.find(
+    (qs) => qs.metadata.name === activeQuickStartID
+  );
+
+  // Handle bookmark toggle for active quickstart
+  const handleActiveQuickStartBookmark = async () => {
+    if (!activeQuickStart) return;
+
+    try {
+      const user = await chrome.auth.getUser();
+      if (!user) {
+        throw new Error('User not logged in');
+      }
+      const account = user.identity.internal?.account_id;
+
+      const newBookmarkState = !activeQuickStart.metadata.favorite;
+
+      // Optimistically update the local state
+      setAllQuickStarts((prev) =>
+        prev.map((qs) =>
+          qs.metadata.name === activeQuickStart.metadata.name
+            ? {
+                ...qs,
+                metadata: { ...qs.metadata, favorite: newBookmarkState },
+              }
+            : qs
+        )
+      );
+
+      await axios.post(`${API_BASE}${FAVORITES}?account=${account}`, {
+        quickstartName: activeQuickStart.metadata.name,
+        favorite: newBookmarkState,
+      });
+
+      // Refresh data in background
+      handleBookmarkItemToggle();
+    } catch (error) {
+      // Revert on error
+      setAllQuickStarts((prev) =>
+        prev.map((qs) =>
+          qs.metadata.name === activeQuickStart.metadata.name
+            ? {
+                ...qs,
+                metadata: {
+                  ...qs.metadata,
+                  favorite: activeQuickStart.metadata.favorite,
+                },
+              }
+            : qs
+        )
+      );
+    }
+  };
+
+  // Quick starts context value
+  const quickStartContextValue: QuickStartContextValues = {
+    allQuickStarts,
+    activeQuickStartID,
+    setActiveQuickStartID,
+    allQuickStartStates,
+    setAllQuickStartStates,
+  } as QuickStartContextValues;
+
+  return (
+    <QuickStartContextProvider value={quickStartContextValue}>
+      {activeQuickStart ? (
+        <Stack hasGutter className="pf-v6-u-h-100">
           <StackItem>
-            <Flex>
+            <Flex
+              alignItems={{ default: 'alignItemsCenter' }}
+              justifyContent={{ default: 'justifyContentSpaceBetween' }}
+            >
               <FlexItem flex={{ default: 'flex_1' }}>
-                <Select
-                  id="content-type-select"
-                  isOpen={isContentTypeOpen}
-                  toggle={contentTypeToggle}
-                  onSelect={handleContentTypeSelect}
-                  onOpenChange={setIsContentTypeOpen}
-                  shouldFocusToggleOnSelect
-                  data-ouia-component-id="help-panel-content-type-select"
+                <Flex
+                  alignItems={{ default: 'alignItemsCenter' }}
+                  spaceItems={{ default: 'spaceItemsXs' }}
+                  flexWrap={{ default: 'wrap' }}
                 >
-                  <SelectList>
-                    {CONTENT_TYPE_OPTIONS.map((option) => (
-                      <SelectOption
-                        key={option.value}
-                        value={option.value}
-                        hasCheckbox
-                        isSelected={selectedContentTypes.includes(option.value)}
-                        data-ouia-component-id={`help-panel-content-type-option-${option.value}`}
-                      >
-                        {option.label}
-                      </SelectOption>
-                    ))}
-                  </SelectList>
-                </Select>
+                  <FlexItem>
+                    <Button
+                      variant="link"
+                      onClick={handleBackToList}
+                      isInline
+                      className="pf-v6-u-p-0 pf-v6-u-font-size-xs"
+                    >
+                      {intl.formatMessage(messages.breadcrumbLearn)}
+                    </Button>
+                  </FlexItem>
+                  <FlexItem>
+                    <AngleRightIcon className="pf-v6-u-font-size-xs" />
+                  </FlexItem>
+                  <FlexItem>
+                    <span className="pf-v6-u-font-size-xs">
+                      {activeQuickStart.spec.displayName}
+                    </span>
+                  </FlexItem>
+                </Flex>
               </FlexItem>
               <FlexItem>
-                <Checkbox
-                  id="show-bookmarked-only"
-                  label={intl.formatMessage(messages.showBookmarkedOnlyLabel)}
-                  isChecked={showBookmarkedOnly}
-                  onChange={handleBookmarkToggle}
-                  data-ouia-component-id="help-panel-bookmarked-only-checkbox"
+                <Button
+                  variant="plain"
+                  onClick={handleActiveQuickStartBookmark}
+                  icon={
+                    activeQuickStart.metadata.favorite ? (
+                      <BookmarkedIcon />
+                    ) : (
+                      <OutlinedBookmarkedIcon className="pf-v6-u-color-200" />
+                    )
+                  }
+                  className="pf-v6-u-p-0"
+                  aria-label={
+                    activeQuickStart.metadata.favorite
+                      ? 'Remove bookmark'
+                      : 'Add bookmark'
+                  }
                 />
               </FlexItem>
             </Flex>
           </StackItem>
-
-          {/* Filter chips directly below dropdown */}
-          {selectedContentTypes.length > 0 && (
-            <StackItem
-              className="pf-v6-u-mt-sm"
-              data-ouia-component-id="help-panel-selected-content-type-chips"
-            >
-              <Flex
-                alignItems={{ default: 'alignItemsCenter' }}
-                spaceItems={{ default: 'spaceItemsXs' }}
-              >
-                {selectedContentTypes.map((contentType) => (
-                  <FlexItem key={contentType}>
-                    <Label
-                      variant="outline"
-                      onClose={() => handleRemoveContentType(contentType)}
-                      data-ouia-component-id={`help-panel-selected-chip-${contentType}`}
-                    >
-                      {getContentTypeLabel(contentType)}
-                    </Label>
-                  </FlexItem>
-                ))}
-                <FlexItem>
-                  <Button
-                    variant="link"
-                    onClick={handleClearAllFilters}
-                    isInline
-                    className="pf-v6-u-font-size-sm"
-                    data-ouia-component-id="help-panel-clear-filters-button"
-                  >
-                    {intl.formatMessage(messages.clearAllFiltersButtonText)}
-                  </Button>
-                </FlexItem>
-              </Flex>
-            </StackItem>
-          )}
-        </Stack>
-      </StackItem>
-
-      {isLoading ? (
-        <StackItem
-          isFilled
-          className="pf-v6-u-display-flex pf-v6-u-justify-content-center pf-v6-u-align-items-center"
-        >
-          <Spinner size="lg" />
-        </StackItem>
-      ) : (
-        <>
-          {/* Toolbar with results count and toggle group */}
           <StackItem>
-            <Toolbar
-              id="learning-resources-results-toolbar"
-              data-ouia-component-id="help-panel-learning-results-toolbar"
-            >
-              <ToolbarContent>
-                <ToolbarItem>
-                  <Content>
-                    {intl.formatMessage(messages.learningResourcesCountLabel)} (
-                    {filteredResources.length})
-                  </Content>
-                </ToolbarItem>
-                <ToolbarItem>
-                  {!isHomePage && (
-                    <ToggleGroup
-                      isCompact
-                      aria-label="Filter by scope"
-                      data-ouia-component-id="help-panel-scope-toggle"
-                    >
-                      <ToggleGroupItem
-                        text={intl.formatMessage(messages.allToggleText)}
-                        buttonId="all-toggle"
-                        isSelected={activeToggle === 'all'}
-                        onChange={(event, isSelected) =>
-                          handleToggleChange(event, isSelected, 'all')
-                        }
-                        data-ouia-component-id="help-panel-scope-toggle-all"
-                      />
-                      <ToggleGroupItem
-                        text={displayBundleName}
-                        buttonId="bundle-toggle"
-                        isSelected={activeToggle === 'bundle'}
-                        onChange={(event, isSelected) =>
-                          handleToggleChange(event, isSelected, 'bundle')
-                        }
-                        data-ouia-component-id="help-panel-scope-toggle-bundle"
-                      />
-                    </ToggleGroup>
-                  )}
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-          </StackItem>
-
-          {/* Learning resources list with PatternFly List component */}
-          <StackItem isFilled className="pf-v6-u-overflow-hidden">
-            <div
-              className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto"
-              data-ouia-component-id="help-panel-learning-resources-list"
-            >
-              {filteredResources.length > 0 ? (
-                <DataList aria-label="Learning resources">
-                  {paginatedResources.map((resource: ExtendedQuickstart) => (
-                    <DataListItem key={resource.metadata.name}>
-                      <DataListItemRow>
-                        <DataListItemCells
-                          dataListCells={[
-                            <DataListCell key="resource-content" isFilled>
-                              <LearningResourceItem
-                                resource={resource}
-                                onBookmarkToggle={handleBookmarkItemToggle}
-                              />
-                            </DataListCell>,
-                          ]}
-                        />
-                      </DataListItemRow>
-                    </DataListItem>
-                  ))}
-                </DataList>
-              ) : (
-                <Content>
-                  <p>
-                    {intl.formatMessage(messages.noLearningResourcesMessage)}
-                  </p>
-                </Content>
+            <div className="pfext-quick-start-panel-content">
+              <Title headingLevel="h2" size="xl">
+                {activeQuickStart.spec.displayName}
+              </Title>
+              {activeQuickStart.spec.durationMinutes && (
+                <span>
+                  {activeQuickStart.spec.type?.text || 'Quick start'} •{' '}
+                  {activeQuickStart.spec.durationMinutes} minutes
+                </span>
               )}
             </div>
           </StackItem>
+          <StackItem isFilled>
+            <QuickStartController
+              quickStart={activeQuickStart}
+              nextQuickStarts={[]}
+            />
+          </StackItem>
+        </Stack>
+      ) : (
+        <Stack
+          hasGutter
+          className="pf-v6-u-h-100"
+          data-ouia-component-id="help-panel-learn-root"
+        >
+          <StackItem>
+            <Content>
+              {intl.formatMessage(messages.learnPanelDescription)}{' '}
+              <Button
+                variant="link"
+                component="a"
+                href={`/learning-resources?tab=all`}
+                isInline
+                iconPosition="end"
+              >
+                {intl.formatMessage(messages.allLearningCatalogLinkText)}
+              </Button>
+              .
+            </Content>
+          </StackItem>
 
-          {/* Pagination */}
-          {filteredResources.length > 0 && (
-            <StackItem>
-              <Pagination
-                itemCount={filteredResources.length}
-                perPage={perPage}
-                page={page}
-                onSetPage={handleSetPage}
-                onPerPageSelect={handlePerPageSelect}
-                isCompact
-                data-ouia-component-id="help-panel-learning-pagination"
-              />
+          <StackItem>
+            <Stack hasGutter={false}>
+              <StackItem>
+                <Flex>
+                  <FlexItem flex={{ default: 'flex_1' }}>
+                    <Select
+                      id="content-type-select"
+                      isOpen={isContentTypeOpen}
+                      toggle={contentTypeToggle}
+                      onSelect={handleContentTypeSelect}
+                      onOpenChange={setIsContentTypeOpen}
+                      shouldFocusToggleOnSelect
+                      data-ouia-component-id="help-panel-content-type-select"
+                    >
+                      <SelectList>
+                        {CONTENT_TYPE_OPTIONS.map((option) => (
+                          <SelectOption
+                            key={option.value}
+                            value={option.value}
+                            hasCheckbox
+                            isSelected={selectedContentTypes.includes(
+                              option.value
+                            )}
+                            data-ouia-component-id={`help-panel-content-type-option-${option.value}`}
+                          >
+                            {option.label}
+                          </SelectOption>
+                        ))}
+                      </SelectList>
+                    </Select>
+                  </FlexItem>
+                  <FlexItem>
+                    <Checkbox
+                      id="show-bookmarked-only"
+                      label={intl.formatMessage(
+                        messages.showBookmarkedOnlyLabel
+                      )}
+                      isChecked={showBookmarkedOnly}
+                      onChange={handleBookmarkToggle}
+                      data-ouia-component-id="help-panel-bookmarked-only-checkbox"
+                    />
+                  </FlexItem>
+                </Flex>
+              </StackItem>
+
+              {/* Filter chips directly below dropdown */}
+              {selectedContentTypes.length > 0 && (
+                <StackItem
+                  className="pf-v6-u-mt-sm"
+                  data-ouia-component-id="help-panel-selected-content-type-chips"
+                >
+                  <Flex
+                    alignItems={{ default: 'alignItemsCenter' }}
+                    spaceItems={{ default: 'spaceItemsXs' }}
+                  >
+                    {selectedContentTypes.map((contentType) => (
+                      <FlexItem key={contentType}>
+                        <Label
+                          variant="outline"
+                          onClose={() => handleRemoveContentType(contentType)}
+                          data-ouia-component-id={`help-panel-selected-chip-${contentType}`}
+                        >
+                          {getContentTypeLabel(contentType)}
+                        </Label>
+                      </FlexItem>
+                    ))}
+                    <FlexItem>
+                      <Button
+                        variant="link"
+                        onClick={handleClearAllFilters}
+                        isInline
+                        className="pf-v6-u-font-size-sm"
+                        data-ouia-component-id="help-panel-clear-filters-button"
+                      >
+                        {intl.formatMessage(messages.clearAllFiltersButtonText)}
+                      </Button>
+                    </FlexItem>
+                  </Flex>
+                </StackItem>
+              )}
+            </Stack>
+          </StackItem>
+
+          {isLoading ? (
+            <StackItem
+              isFilled
+              className="pf-v6-u-display-flex pf-v6-u-justify-content-center pf-v6-u-align-items-center"
+            >
+              <Spinner size="lg" />
             </StackItem>
+          ) : (
+            <>
+              {/* Toolbar with results count and toggle group */}
+              <StackItem>
+                <Toolbar
+                  id="learning-resources-results-toolbar"
+                  data-ouia-component-id="help-panel-learning-results-toolbar"
+                >
+                  <ToolbarContent>
+                    <ToolbarItem>
+                      <Content>
+                        {intl.formatMessage(
+                          messages.learningResourcesCountLabel
+                        )}{' '}
+                        ({filteredResources.length})
+                      </Content>
+                    </ToolbarItem>
+                    <ToolbarItem>
+                      {!isHomePage && (
+                        <ToggleGroup
+                          isCompact
+                          aria-label="Filter by scope"
+                          data-ouia-component-id="help-panel-scope-toggle"
+                        >
+                          <ToggleGroupItem
+                            text={intl.formatMessage(messages.allToggleText)}
+                            buttonId="all-toggle"
+                            isSelected={activeToggle === 'all'}
+                            onChange={(event, isSelected) =>
+                              handleToggleChange(event, isSelected, 'all')
+                            }
+                            data-ouia-component-id="help-panel-scope-toggle-all"
+                          />
+                          <ToggleGroupItem
+                            text={displayBundleName}
+                            buttonId="bundle-toggle"
+                            isSelected={activeToggle === 'bundle'}
+                            onChange={(event, isSelected) =>
+                              handleToggleChange(event, isSelected, 'bundle')
+                            }
+                            data-ouia-component-id="help-panel-scope-toggle-bundle"
+                          />
+                        </ToggleGroup>
+                      )}
+                    </ToolbarItem>
+                  </ToolbarContent>
+                </Toolbar>
+              </StackItem>
+
+              {/* Learning resources list with PatternFly List component */}
+              <StackItem isFilled className="pf-v6-u-overflow-hidden">
+                <div
+                  className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto"
+                  data-ouia-component-id="help-panel-learning-resources-list"
+                >
+                  {filteredResources.length > 0 ? (
+                    <DataList aria-label="Learning resources">
+                      {paginatedResources.map(
+                        (resource: ExtendedQuickstart) => (
+                          <DataListItem key={resource.metadata.name}>
+                            <DataListItemRow>
+                              <DataListItemCells
+                                dataListCells={[
+                                  <DataListCell key="resource-content" isFilled>
+                                    <LearningResourceItem
+                                      resource={resource}
+                                      onBookmarkToggle={
+                                        handleBookmarkItemToggle
+                                      }
+                                      onQuickStartClick={handleQuickStartClick}
+                                    />
+                                  </DataListCell>,
+                                ]}
+                              />
+                            </DataListItemRow>
+                          </DataListItem>
+                        )
+                      )}
+                    </DataList>
+                  ) : (
+                    <Content>
+                      <p>
+                        {intl.formatMessage(
+                          messages.noLearningResourcesMessage
+                        )}
+                      </p>
+                    </Content>
+                  )}
+                </div>
+              </StackItem>
+
+              {/* Pagination */}
+              {filteredResources.length > 0 && (
+                <StackItem>
+                  <Pagination
+                    itemCount={filteredResources.length}
+                    perPage={perPage}
+                    page={page}
+                    onSetPage={handleSetPage}
+                    onPerPageSelect={handlePerPageSelect}
+                    isCompact
+                    data-ouia-component-id="help-panel-learning-pagination"
+                  />
+                </StackItem>
+              )}
+            </>
           )}
-        </>
+        </Stack>
       )}
-    </Stack>
+    </QuickStartContextProvider>
   );
 };
 
