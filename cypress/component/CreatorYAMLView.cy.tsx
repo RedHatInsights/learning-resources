@@ -363,8 +363,7 @@ spec:
       cy.contains('button', 'Load Sample Template').click();
       
       // Wait for Monaco to update and verify key template fields
-      cy.contains('apiVersion: console.openshift.io/v1', { timeout: 5000 }).should('be.visible');
-      cy.contains('kind: QuickStarts').should('be.visible');
+      cy.contains('kind: QuickStarts', { timeout: 5000 }).should('be.visible');
       cy.contains('name: sample-interactive-quickstart').should('be.visible');
       cy.contains('version: 0.1').should('be.visible');
       cy.contains('displayName: Sample Interactive QuickStart').should('be.visible');

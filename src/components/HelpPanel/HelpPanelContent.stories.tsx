@@ -129,6 +129,13 @@ const mockHelpPanelHandlers = [
   http.post('/api/quickstarts/v1/favorites', async () => {
     return HttpResponse.json({ success: true });
   }),
+  // Support cases API (empty state) - prevents "Failed to fetch" errors
+  http.post('https://api.access.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
+  http.post('https://api.access.stage.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
 ];
 
 const meta: Meta<typeof HelpPanelWrapper> = {
@@ -213,185 +220,9 @@ export const StatusPageLink: Story = {
   },
 };
 
-/**
- * Test opening and closing custom tabs
- */
-export const OpenAndCloseTabs: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+// Story removed: Add/close tab functionality no longer exists in single-tier tab structure
 
-    // Wait for page to load and find the Help button in the header
-    const helpButton = await canvas.findByLabelText(
-      'Toggle help panel',
-      {},
-      { timeout: 5000 }
-    );
-    expect(helpButton).toBeInTheDocument();
-
-    // Click the Help button to open the panel
-    await userEvent.click(helpButton);
-
-    // Wait for the help panel drawer to open
-    await waitFor(
-      () => {
-        const drawer = document.querySelector('.pf-v6-c-drawer.pf-m-expanded');
-        expect(drawer).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    // Wait for the help panel to be visible
-    await waitFor(
-      () => {
-        const helpPanelTitle = document.querySelector(
-          '[data-ouia-component-id="help-panel-title"]'
-        );
-        expect(helpPanelTitle).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    // Find the add tab button
-    const addTabButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-add-tab-button"]'
-    ) as HTMLElement;
-    expect(addTabButton).toBeInTheDocument();
-
-    // Click to add a new tab
-    await userEvent.click(addTabButton);
-
-    // Wait for the new tab to appear
-    await waitFor(
-      () => {
-        const newTab = canvas.getByText('New tab');
-        expect(newTab).toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
-
-    // Verify the tab is now active by checking for the tab content
-    const newTabButton = canvas.getByRole('tab', { name: 'New tab' });
-    expect(newTabButton).toHaveAttribute('aria-selected', 'true');
-
-    // Find the close button for the new tab
-    // The close button is a sibling of the tab link
-    const tabItem = newTabButton.closest('.pf-v6-c-tabs__item');
-    const closeButton = tabItem?.querySelector(
-      '.pf-v6-c-tabs__item-action button'
-    ) as HTMLElement;
-    expect(closeButton).toBeInTheDocument();
-
-    // Click the close button
-    await userEvent.click(closeButton);
-
-    // Verify the tab is removed
-    await waitFor(
-      () => {
-        const removedTab = canvas.queryByRole('tab', { name: 'New tab' });
-        expect(removedTab).not.toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
-  },
-};
-
-/**
- * Test opening multiple tabs and verify overflow dropdown appears
- */
-export const OpenMultipleTabs: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    // Wait for page to load and find the Help button in the header
-    const helpButton = await canvas.findByLabelText(
-      'Toggle help panel',
-      {},
-      { timeout: 5000 }
-    );
-    expect(helpButton).toBeInTheDocument();
-
-    // Click the Help button to open the panel
-    await userEvent.click(helpButton);
-
-    // Wait for the help panel drawer to open
-    await waitFor(
-      () => {
-        const drawer = document.querySelector('.pf-v6-c-drawer.pf-m-expanded');
-        expect(drawer).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    // Wait for the help panel to be visible
-    await waitFor(
-      () => {
-        const helpPanelTitle = document.querySelector(
-          '[data-ouia-component-id="help-panel-title"]'
-        );
-        expect(helpPanelTitle).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    // Find the add tab button
-    const addTabButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-add-tab-button"]'
-    ) as HTMLElement;
-
-    // Keep adding tabs until overflow occurs (max 10 attempts to prevent infinite loop)
-    let overflowItem = null;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (!overflowItem && attempts < maxAttempts) {
-      await userEvent.click(addTabButton);
-      attempts++;
-
-      // Wait briefly for the tab to be added
-      await waitFor(
-        () => {
-          const tabs = canvas.queryAllByRole('tab', { name: 'New tab' });
-          expect(tabs.length).toBeGreaterThanOrEqual(attempts);
-        },
-        { timeout: 1000 }
-      ).catch(() => {
-        // Ignore timeout, we'll check overflow anyway
-      });
-
-      // Check if overflow has appeared
-      overflowItem = document.querySelector(
-        '.pf-v6-c-tabs__item.pf-m-overflow'
-      );
-    }
-
-    // Assert that overflow menu appeared
-    expect(overflowItem).toBeTruthy();
-
-    // Find and close the visible new tab(s)
-    const visibleNewTabs = canvas.queryAllByRole('tab', { name: 'New tab' });
-
-    if (visibleNewTabs.length > 0) {
-      // Close the first visible new tab
-      const firstTabItem = visibleNewTabs[0].closest('.pf-v6-c-tabs__item');
-      const closeButton = firstTabItem?.querySelector(
-        '.pf-v6-c-tabs__item-action button'
-      ) as HTMLElement;
-
-      if (closeButton) {
-        await userEvent.click(closeButton);
-
-        // Wait a bit for the tab to close
-        await waitFor(
-          () => {
-            const tabs = canvas.queryAllByRole('tab', { name: 'New tab' });
-            expect(tabs.length).toBeLessThan(visibleNewTabs.length);
-          },
-          { timeout: 3000 }
-        );
-      }
-    }
-  },
-};
+// Story removed: Tab overflow functionality testing no longer relevant with static tabs
 
 /**
  * Test that the drawer close button works

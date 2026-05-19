@@ -20,20 +20,17 @@ HelpPanelContent (Wrapper)
 │       │       └── DrawerCloseButton
 │       └── DrawerPanelBody
 │           └── HelpPanelCustomTabs
-│               ├── Base Tabs
-│               │   ├── Virtual Assistant Tab (conditional)
-│               │   └── Find Help Tab
-│               ├── Dynamic Tabs (user-created)
-│               └── Tab Content
-│                   ├── SubTabs (for non-VA tabs)
-│                   │   ├── Search
-│                   │   ├── Learn
-│                   │   ├── Knowledge Base
-│                   │   ├── APIs
-│                   │   ├── My Support Cases
-│                   │   └── Feedback
-│                   └── HelpPanelTabContainer
-│                       └── Tab Panel Components
+│               ├── Main Tabs (single tier)
+│               │   ├── Search (feature flagged)
+│               │   ├── Learn
+│               │   ├── APIs
+│               │   ├── Support
+│               │   ├── Feedback
+│               │   └── Virtual Assistant (feature flagged)
+│               ├── Tab Content
+│               │   └── HelpPanelTabContainer
+│               │       └── Tab Panel Components
+│               └── Quick Start Overlay (when active)
 ```
 
 ## 🏗️ Core Components
@@ -48,13 +45,12 @@ The main container component that provides:
 **Key Features:**
 - Loads Virtual Assistant state and models via module federation
 - Conditionally renders Ask Red Hat button based on feature flags
-- Provides ref access to open tabs with custom content
 - Shows "Loading..." state while remote modules load
 
 **Feature Flag Dependencies:**
 ```javascript
-// Status page location
-const showStatusPageInHeader = searchFlag && kbFlag;
+// Status page location - always in header in single-tier structure
+const showStatusPageInHeader = true;
 
 // Ask Red Hat button behavior
 if (askRH) {
@@ -66,44 +62,45 @@ if (askRH) {
 
 ### HelpPanelCustomTabs (`src/components/HelpPanel/HelpPanelCustomTabs.tsx`)
 
-The tab management component that implements:
-- Dynamic tab creation and removal
-- Tab state management
-- Quick start integration
-- Sub-tab navigation
+The single-tier tab navigation component that implements:
+- Static tab rendering
+- Tab selection state management
+- Quick start overlay integration
 
 **Key Responsibilities:**
-1. **Tab Lifecycle Management**
-   - Create base tabs (VA + Find Help)
-   - Add/remove user-created tabs
-   - Update tab titles dynamically
-   - Handle tab closing with Quick Start state confirmation
+1. **Tab Rendering**
+   - Render static tabs based on feature flags
+   - Filter tabs by feature flag availability
+   - Maintain active tab state
 
 2. **State Management**
-   - Maintains active tab state
-   - Tracks all open tabs
-   - Manages Quick Start states
-   - Synchronizes with external Quick Start open requests
+   - Tracks currently active tab ID
+   - Manages Quick Start overlay state
+   - Handles Quick Start state confirmations
 
 3. **Feature Integration**
-   - Quick Start loading and rendering
+   - Quick Start loading and rendering as overlay
    - Virtual Assistant tab (feature flagged)
-   - Custom content tabs (from HelpPanelLink)
+   - Content-specific tabs filtered by feature flags
 
-**Tab Store Pattern:**
+**Tab Structure:**
+All tabs are now static and persistent. No add/close functionality exists.
+
 ```javascript
-// Mock store implementation (to be replaced with API)
-const createTabsStore = (baseTabs) => {
-  let tabs = [...baseTabs];
-  const subscribers = new Map();
+const createMainTabs = (showVA) => {
+  const tabs = [
+    { id: 'search', title: 'Search', tabType: TabType.search, featureFlag: 'platform.chrome.help-panel_search' },
+    { id: 'learn', title: 'Learn', tabType: TabType.learn },
+    { id: 'api', title: 'APIs', tabType: TabType.api },
+    { id: 'support', title: 'Support', tabType: TabType.support },
+    { id: 'feedback', title: 'Feedback', tabType: TabType.feedback },
+  ];
 
-  return {
-    addTab: (tab) => { /* ... notify subscribers */ },
-    updateTab: (tab) => { /* ... notify subscribers */ },
-    removeTab: (tabId) => { /* ... notify subscribers */ },
-    subscribe: (callback) => { /* ... */ },
-    getTabs: () => tabs,
-  };
+  if (showVA) {
+    tabs.push({ id: 'virtual-assistant', title: <AiChatbotIcon />, tabType: TabType.va });
+  }
+
+  return tabs;
 };
 ```
 
@@ -119,11 +116,9 @@ Each tab type has its own panel component:
 |----------|-----------|-------------|
 | `search` | `SearchPanel` | Full-text search across all content |
 | `learn` | `LearnPanel` | Curated learning resources |
-| `kb` | `KBPanel` | Knowledge base articles |
 | `api` | `APIPanel` | API documentation browser |
 | `support` | `SupportPanel` | Support case access |
 | `va` | `VAPanel` | Virtual Assistant integration |
-| `quickstart` | `QuickStartsPanel` | Interactive tutorials |
 | `feedback` | `FeedbackPanel` | User feedback form |
 
 ## 🎯 Tab Types and States
@@ -133,72 +128,51 @@ Each tab type has its own panel component:
 ```typescript
 type TabDefinition = {
   id: string;              // Unique identifier
-  title: ReactNode;        // Display title
+  title: ReactNode;        // Display title (can be icon)
   tabTitle?: string;       // Alternative title text
-  closeable?: boolean;     // Can user close this tab?
   tabType: TabType;        // Type of content
-  isNewTab?: boolean;      // Track if originally a "New tab"
-  customContent?: ReactNode; // Custom content from HelpPanelLink
-  quickstartId?: string;   // Set when tabType is 'quickstart'
+  featureFlag?: string;    // Optional feature flag for visibility
+  icon?: ReactNode;        // Optional icon (for Search tab)
+  customContent?: ReactNode; // Custom content (deprecated)
 };
 ```
 
-### Base Tabs vs Dynamic Tabs
+### Static Tab Architecture
 
-**Base Tabs (Non-closeable):**
-- Created on initialization
-- Cannot be closed by user
-- Virtual Assistant tab (if feature flag enabled)
-- Find Help tab (always present)
+**All Tabs are Static:**
+- Tabs are created on initialization based on feature flags
+- No tabs can be added or removed by users
+- Tab order is fixed: Search, Learn, APIs, Support, Feedback, Virtual Assistant
+- Tabs are filtered based on feature flag availability
 
-**Dynamic Tabs (Closeable):**
-- Created by user via "Add tab" button
-- Created when opening Quick Starts
-- Created via HelpPanelLink component
-- Can be closed with confirmation if Quick Start is in progress
-
-### Tab Creation Flow
-
-```
-User clicks "Add tab"
-    ↓
-Create tab with placeholder title "New tab"
-    ↓
-User selects sub-tab (e.g., Search)
-    ↓
-Tab title updates to match sub-tab
-    ↓
-User performs action (e.g., searches)
-    ↓
-Tab title updates to reflect action (debounced)
-```
+**Quick Starts:**
+- Quick Starts no longer open in tabs
+- Instead, they render as an overlay above the tab content
+- Overlay covers the entire panel with the Quick Start UI
+- Closing the Quick Start returns to the previously active tab
 
 ## 🔄 State Management Patterns
 
 ### Tab State Management
 
-Uses a custom hook pattern with subscriber notifications:
+Simple active tab tracking:
 
 ```javascript
-const useTabs = (apiStoreMock) => {
-  const [tabs, dispatch] = useReducer(() => {
-    return [...apiStoreMock.getTabs()];
-  }, apiStoreMock.getTabs());
+const [activeTabId, setActiveTabId] = useState<string>(defaultTab?.id || 'learn');
 
-  useEffect(() => {
-    const unsubscribe = subscribe(dispatch);
-    return () => unsubscribe();
-  }, []);
-
-  return { tabs, addTab, updateTab, removeTab };
-};
+// Tabs are static and filtered by feature flags
+const allTabs = useMemo(() => createMainTabs(showVA), [showVA]);
+const tabs = useMemo(
+  () => filterTabsByFeatureFlags(allTabs, flags),
+  [allTabs, flags]
+);
 ```
 
 ### Quick Start State Synchronization
 
 Quick Starts can be opened from multiple locations:
 - Learning Resources catalog
-- Quick Starts tab in Help Panel
+- Learn tab in Help Panel
 - External triggers
 
 **Synchronization via Store:**
@@ -211,81 +185,41 @@ useEffect(() => {
   const { pendingOpen } = openQuickstartState;
   if (!pendingOpen) return;
 
-  // Find existing or create new tab
-  const existing = tabs.find(t =>
-    t.tabType === TabType.quickstart &&
-    t.quickstartId === quickstartId
-  );
+  const { quickstartId } = pendingOpen;
 
-  if (existing) {
-    setActiveTab(existing);
-  } else {
-    addTab(newQuickStartTab);
-  }
+  // Open as overlay instead of new tab
+  setActiveQuickstartId(quickstartId);
 
   openQuickstartStore.updateState('CONSUMED_OPEN');
 }, [openQuickstartState.pendingOpen]);
 ```
 
-## 🎨 Sub-Tab Navigation
+## 🎨 Single-Tier Navigation
 
-### Sub-Tab Structure
+### Tab Filtering
 
-Sub-tabs appear within closeable tabs to organize content types:
-
-```javascript
-const subTabs = [
-  {
-    title: 'Search',
-    tabType: TabType.search,
-    icon: <SearchIcon />,
-    featureFlag: 'platform.chrome.help-panel_search',
-  },
-  {
-    title: 'Learn',
-    tabType: TabType.learn,
-    // No feature flag - always available
-  },
-  {
-    title: 'Knowledge base',
-    tabType: TabType.kb,
-    featureFlag: 'platform.chrome.help-panel_knowledge-base',
-  },
-  // ... more sub-tabs
-];
-```
-
-### Sub-Tab Filtering
-
-Sub-tabs are dynamically filtered based on feature flags:
+Tabs are dynamically filtered based on feature flags:
 
 ```javascript
-const filteredSubTabs = useMemo(() => {
-  return subTabs.filter((tab) => {
+const filterTabsByFeatureFlags = (tabs, flags) => {
+  return tabs.filter((tab) => {
     if (typeof tab.featureFlag === 'string') {
       return !!flags.find(({ name }) => name === tab.featureFlag)?.enabled;
     }
     return true; // No feature flag = always show
   });
-}, [flags, subTabs]);
+};
 ```
 
-### Status Page Button Logic
+### Default Tab Selection
 
-The Status Page link appears in different locations based on feature flags:
+- **When Search flag is enabled**: Search tab is default
+- **When Search flag is disabled**: Learn tab is default
+- Falls back to first available tab if neither exists
 
-```javascript
-// In header (DrawerHead)
-const showStatusPageInHeader = searchFlag && kbFlag;
+### Status Page Button
 
-// In sub-tabs
-const showStatusPageButton = !searchFlag && !kbFlag;
-```
-
-**Logic:**
-- **Both Search and KB enabled** → Status Page in header
-- **Both disabled** → Status Page in sub-tabs
-- **One enabled, one disabled** → No Status Page link
+The Status Page link now always appears in the header (DrawerHead) in the single-tier structure.
 
 ## 🔌 Module Federation Integration
 
@@ -312,7 +246,7 @@ const [module] = useLoadModule({
 **Error Handling:**
 - Shows "Loading..." while remote modules load
 - Gracefully handles failed module loads
-- VA tab only appears if `platform.chrome.help-panel_chatbot` flag is enabled
+- VA tab only appears if both `platform.chrome.help-panel_chatbot` and `platform.va.environment.enabled` flags are enabled
 
 ## 🎭 Feature Flag Control Flow
 
@@ -320,17 +254,15 @@ const [module] = useLoadModule({
 
 ```mermaid
 graph TD
-    A[Initialize Help Panel] --> B{VA Flag Enabled?}
-    B -->|Yes| C[Create VA Tab + Find Help Tab]
-    B -->|No| D[Create Find Help Tab Only]
-    C --> E[Render Base Tabs]
+    A[Initialize Help Panel] --> B{VA Flags Enabled?}
+    B -->|Yes| C[Add VA Tab to Tab List]
+    B -->|No| D[Skip VA Tab]
+    C --> E[Filter All Tabs by Feature Flags]
     D --> E
-    E --> F{User Selects Sub-Tab}
-    F --> G{Sub-Tab Has Feature Flag?}
-    G -->|Yes| H{Flag Enabled?}
-    G -->|No| I[Show Sub-Tab]
-    H -->|Yes| I
-    H -->|No| J[Hide Sub-Tab]
+    E --> F[Render Visible Tabs]
+    F --> G{Search Flag Enabled?}
+    G -->|Yes| H[Default to Search Tab]
+    G -->|No| I[Default to Learn Tab]
 ```
 
 ### Ask Red Hat Button
@@ -351,53 +283,31 @@ graph TD
 ### Key Test Scenarios
 
 1. **Tab Management**
-   - Create and close tabs
    - Switch between tabs
-   - Close tab with in-progress Quick Start (modal confirmation)
-   - Dynamic tab title updates
+   - Verify all tabs render when flags enabled
+   - Verify tabs hidden when flags disabled
+   - Default tab selection based on flags
 
 2. **Feature Flag Combinations**
    - All flags enabled
    - All flags disabled
    - Various combinations
+   - Tab visibility updates when flags change
 
 3. **Quick Start Integration**
    - Open Quick Start from catalog
-   - Open Quick Start from Help Panel
+   - Open Quick Start from Learn tab
    - Handle duplicate open requests
-   - Close Quick Start in progress
+   - Close Quick Start in progress (modal confirmation)
+   - Quick Start renders as overlay
+   - Overlay closes returning to previous tab
 
 4. **Remote Module Loading**
    - VA module loads successfully
    - VA module fails to load
    - Timeout handling
 
-5. **Sub-Tab Navigation**
-   - Filter sub-tabs by feature flags
-   - Status Page button location
-   - Default tab selection
-
 ## 📊 Data Flow Diagrams
-
-### Opening a Custom Tab via HelpPanelLink
-
-```
-Component with HelpPanelLink
-    ↓
-User clicks link
-    ↓
-HelpPanelLink calls openHelpPanelTab()
-    ↓
-Exposes ref method to HelpPanelCustomTabs
-    ↓
-openTabWithContent(content)
-    ↓
-Create or update tab with custom content
-    ↓
-Set as active tab
-    ↓
-HelpPanelTabContainer renders custom content
-```
 
 ### Quick Start State Management
 
@@ -408,15 +318,17 @@ openQuickstartInHelpPanelStore.updateState('OPEN', data)
     ↓
 HelpPanelCustomTabs receives state update
     ↓
-Check for existing Quick Start tab
-    ↓
-If exists: activate tab
-    ↓
-If not: create new tab, load Quick Start
+Set activeQuickstartId to render overlay
     ↓
 Mark state as 'CONSUMED_OPEN'
     ↓
-Quick Start renders in tab
+Quick Start renders as full-panel overlay
+    ↓
+User closes Quick Start
+    ↓
+Clear activeQuickstartId
+    ↓
+Return to previously active tab
 ```
 
 ## 🔧 Extension Points
@@ -426,48 +338,37 @@ Quick Start renders in tab
 1. Define new `TabType` enum value in `helpPanelTabsMapper.ts`
 2. Create panel component (e.g., `NewPanel.tsx`)
 3. Add to `helpPanelTabsMapper` object
-4. Add to `subTabs` array with optional feature flag
-5. (Optional) Add to `getSubTabTitle` helper for custom titles
+4. Add to `createMainTabs` function with optional feature flag
+5. (Optional) Add i18n messages for tab title
 
-### Custom Tab Content
+### Deprecated: Custom Tab Content
 
-Components can open custom tabs via `HelpPanelLink`:
-
-```typescript
-<HelpPanelLink
-  content={{
-    id: 'unique-id',
-    title: 'Custom Tab',
-    tabType: TabType.learn,
-    content: <CustomComponent />,
-  }}
->
-  Click to open custom content
-</HelpPanelLink>
-```
+The `openTabWithContent` ref API is deprecated in the single-tier structure. Custom content tabs are no longer supported as all tabs are static.
 
 ## 🎯 Best Practices
 
 ### Performance
 - Use `React.memo` for expensive panel components
 - Lazy load Quick Starts only when needed
-- Debounce title updates (currently 100ms)
+- Tab components unmount when not active (PatternFly `mountOnEnter` behavior)
 
 ### Accessibility
 - All tabs have proper ARIA labels
 - Keyboard navigation supported
 - Focus management on tab switching
+- Quick Start overlay maintains focus trap
 
 ### State Management
-- Keep tab state minimal and serializable
-- Use subscriber pattern for tab store notifications
-- Clear state on tab close
+- Keep tab state minimal (just active tab ID)
+- Quick Start overlay state separate from tab state
+- Clear Quick Start state on close
 
 ### Feature Flags
 - Always provide fallback UI when flags are disabled
 - Test all flag combinations
 - Document flag dependencies in code comments
+- Tabs gracefully hide when flags disabled
 
 ---
 
-This architecture supports a flexible, extensible Help Panel system that can adapt to different feature configurations and user workflows.
+This architecture provides a simplified, single-tier Help Panel navigation system that is easier to use and maintain than the previous nested tab structure.

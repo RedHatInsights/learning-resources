@@ -46,7 +46,7 @@ interface HelpPanelContentProps {
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `toggleDrawer` | `() => void` | Yes | Function to close the Help Panel drawer |
-| `newTab` | `HelpPanelTabContent` | No | Content to open in a new tab |
+| `newTab` | `HelpPanelTabContent` | No | Tab to navigate to (maps to existing static tab by `tabType`) |
 
 ### Usage
 
@@ -81,15 +81,17 @@ export type HelpPanelCustomTabsRef = {
 
 #### `openTabWithContent(content: HelpPanelTabContent)`
 
-Opens a tab with custom content. If a tab with the same ID exists, it updates that tab; otherwise, creates a new one.
+Navigates to an existing static tab by mapping the `tabType` to a corresponding main tab (Search, Learn, APIs, Support, Feedback, or Virtual Assistant).
+
+**Note:** Tabs are now static (no dynamic tab creation). This method translates legacy `HelpPanelTabContent` requests to static tab navigation.
 
 **Parameters:**
 ```typescript
 type HelpPanelTabContent = {
-  id?: string;        // Optional unique ID
-  title: string;      // Tab title
-  tabType: TabType;   // Content type
-  content: ReactNode; // Custom content to render
+  id?: string;        // Optional ID (unused in static model)
+  title: string;      // Tab title (unused in static model)
+  tabType: TabType;   // Content type - maps to existing static tab
+  content?: ReactNode; // Custom content (unused in static model)
 };
 ```
 
@@ -97,12 +99,10 @@ type HelpPanelTabContent = {
 ```typescript
 const tabsRef = useRef<HelpPanelCustomTabsRef>(null);
 
-const openCustomTab = () => {
+const openLearnTab = () => {
   tabsRef.current?.openTabWithContent({
-    id: 'my-custom-tab',
-    title: 'Custom Help',
-    tabType: TabType.learn,
-    content: <CustomHelpContent />,
+    title: 'Learn', // Ignored - static tab titles are used
+    tabType: TabType.learn, // Navigates to the Learn tab
   });
 };
 
@@ -112,30 +112,31 @@ return <HelpPanelCustomTabs ref={tabsRef} />;
 ### Internal State
 
 ```typescript
-// Tab definition structure
+// Tab definition structure (static tabs only)
 type TabDefinition = {
   id: string;
   title: ReactNode;
-  tabTitle?: string;
-  closeable?: boolean;
   tabType: TabType;
-  isNewTab?: boolean;
+  featureFlag?: string;
+  icon?: ReactNode;
   customContent?: ReactNode;
   quickstartId?: string;
 };
 ```
 
-### Tab Lifecycle
+### Static Tab Model
+
+Tabs are now static and created via memoized functions:
 
 1. **Creation:**
-   - Base tabs created on mount
-   - Dynamic tabs created via "Add tab" button or `openTabWithContent`
-   - Quick Start tabs created via `openQuickstartInHelpPanelStore`
+   - All tabs created via `createMainTabs(showVA)` during initialization
+   - Tabs filtered by feature flags via `filterTabsByFeatureFlags(allTabs, flags)`
+   - No dynamic tab addition/removal at runtime
 
-2. **Updates:**
-   - Title updates when user performs actions (debounced 100ms)
-   - Tab type updates when user switches sub-tabs
-   - Content updates for custom content tabs
+2. **Navigation:**
+   - Users switch between existing tabs (Search, Learn, APIs, Support, Feedback, Virtual Assistant)
+   - `openTabWithContent` maps `tabType` to existing static tabs
+   - Quick Start overlays render on top of the active tab (not as separate tabs)
 
 3. **Deletion:**
    - User closes tab via close button
@@ -396,23 +397,6 @@ const title = getSubTabTitle(TabType.search); // "Search"
 const title = getSubTabTitle(TabType.api, intl); // Localized "API documentation"
 ```
 
-### `createTabsStore(baseTabs: TabDefinition[])`
-
-Creates a tab store with subscriber pattern.
-
-**Location:** `src/components/HelpPanel/HelpPanelCustomTabs.tsx`
-
-**Returns:**
-```typescript
-{
-  addTab: (tab: TabDefinition) => void;
-  updateTab: (tab: TabDefinition) => void;
-  removeTab: (tabId: string) => void;
-  subscribe: (callback: () => void) => () => void;
-  getTabs: () => TabDefinition[];
-}
-```
-
 ---
 
 ## Stores
@@ -540,13 +524,14 @@ const setNewActionTitleDebounced = useCallback(
 ### Memoization
 
 ```typescript
-// Base tabs memoized based on feature flag
-const baseTabs = useMemo(() => createBaseTabs(vaFlag), [vaFlag]);
+// All tabs created with feature flags
+const allTabs = useMemo(() => createMainTabs(showVA), [showVA]);
 
-// Filtered sub-tabs memoized
-const filteredSubTabs = useMemo(() => {
-  return subTabs.filter(/* ... */);
-}, [flags, subTabs]);
+// Tabs filtered by feature flags
+const tabs = useMemo(
+  () => filterTabsByFeatureFlags(allTabs, flags),
+  [allTabs, flags]
+);
 ```
 
 ---
