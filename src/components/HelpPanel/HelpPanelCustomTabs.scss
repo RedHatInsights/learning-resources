@@ -46,10 +46,7 @@
   background-color: var(--pf-t--global--background--color--primary--default);
 }
 
-// Sub-tabs row (Learn, APIs, etc.): white background on the subtabs container.
-[data-ouia-component-id="help-panel-subtabs"] {
-  background-color: var(--pf-t--global--background--color--primary--default);
-}
+// No sub-tabs in single-tier structure
 
 // Content container (Learn, APIs, Support, etc.) has no background by default; set white
 // so the tab content area does not show the drawer's default background when scrolling.
@@ -63,37 +60,37 @@
   width: calc(100% + 2 * var(--pf-t--global--spacer--md, 1rem));
 }
 
-.lr-c-help-panel-custom-tab {
-  &.persistent-tab {
-    // the disabled close tab action does not hide the action button
-    // has to be hidden by CSS and the width has to be adjusted
-    .pf-v6-c-tabs__item-action {
-      visibility: hidden;
-      width: 0;
-    }
+.lr-c-help-panel-custom-tabs {
+  .pf-v6-c-tabs__list {
+    background-color: var(--pf-t--global--background--color--primary--default);
   }
 
-  // Add max-width to tab titles while keeping them dynamically sized
+  // Make tab titles smaller to fit all tabs without scrolling
   .pf-v6-c-tabs__item-text {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.lr-c-help-panel-custom-tabs.pf-v6-c-tabs {
-  .pf-v6-c-tabs__item.pf-m-overflow {
-    .pf-v6-c-tabs__link-toggle-icon {
-      // fixes strange alignment of the expand/collapse icon
-      align-self: auto;
-    }
+    font-size: 0.75rem !important;
   }
 
-}
+  // Reduce padding on tab items to fit more tabs
+  .pf-v6-c-tabs__link {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
 
-.pf-v6-c-tabs__list {
-  overflow-y: hidden;
+  // Ensure tabs have the same background as the panel
+  .pf-v6-c-tabs__item {
+    background-color: var(--pf-t--global--background--color--primary--default);
+  }
+
+  // Active tab should also use the primary background
+  .pf-v6-c-tabs__link {
+    background-color: var(--pf-t--global--background--color--primary--default);
+  }
+
+  // Move the active tab indicator from top to bottom
+  .pf-v6-c-tabs__link::after {
+    top: auto !important;
+    bottom: 0 !important;
+  }
 }
 
 // Tab content area: flex column so the drawer child can fill height (flex: 1).
@@ -128,21 +125,31 @@
   }
 }
 
-// Status page link styling (in header next to Help title)
+// Status page link styling (in header actions, before close button)
 .lr-c-status-page-link {
   font-size: var(--pf-t--global--font--size--sm) !important;
-  font-weight: var(--pf-t--global--font--weight--normal) !important;
   text-decoration: none !important;
-  margin-left: var(--pf-t--global--spacer--md) !important;
+  margin-right: var(--pf-t--global--spacer--md) !important;
+  // Align with close button vertically
+  align-self: center !important;
+  padding-top: var(--pf-t--global--spacer--sm) !important;
 
   &:hover {
     text-decoration: none !important;
   }
 }
 
-// Prevent horizontal overflow in subtabs by hiding overflow scrollbars
-[data-ouia-component-id="help-panel-subtabs"] {
-  .pf-v6-c-tabs__scroll-button {
-    display: none !important;
-  }
+// Quickstart overlay: positioned above tabs to show quickstart content
+.lr-c-help-panel-quickstart-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--pf-t--global--background--color--primary--default);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }

@@ -315,6 +315,13 @@ export const helpPanelMswHandlers = [
   http.post('/api/quickstarts/v1/favorites', async () => {
     return HttpResponse.json({ success: true });
   }),
+  // Support cases API (empty state) - prevents "Failed to fetch" errors
+  http.post('https://api.access.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
+  http.post('https://api.access.stage.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
 ];
 
 /**
@@ -503,6 +510,13 @@ export const searchPanelJourneyMswHandlers = [
   http.post('/api/quickstarts/v1/favorites', async () => {
     return HttpResponse.json({ success: true });
   }),
+  // Support cases API (empty state) - prevents "Failed to fetch" errors
+  http.post('https://api.access.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
+  http.post('https://api.access.stage.redhat.com/support/v1/cases/filter', () =>
+    HttpResponse.json({ cases: [] })
+  ),
   // Base handlers last (overridden routes above take priority in MSW)
   ...helpPanelMswHandlers,
 ];
@@ -730,20 +744,6 @@ export const mockApiBundles = [
   },
 ];
 
-/**
- * Shared MSW handlers for API Panel user journeys.
- * Overrides come FIRST because MSW matches the first matching handler.
- */
-export const apiPanelJourneyMswHandlers = [
-  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
-    return HttpResponse.json(mockApiSpecs);
-  }),
-  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
-    return HttpResponse.json(mockApiBundles);
-  }),
-  ...helpPanelMswHandlers,
-];
-
 const supportCasesFilterUrlProd =
   'https://api.access.redhat.com/support/v1/cases/filter';
 const supportCasesFilterUrlStage =
@@ -757,6 +757,21 @@ const emptySupportCasesResponse = () => HttpResponse.json({ cases: [] });
 export const supportPanelMswHandlers = [
   http.post(supportCasesFilterUrlProd, emptySupportCasesResponse),
   http.post(supportCasesFilterUrlStage, emptySupportCasesResponse),
+];
+
+/**
+ * Shared MSW handlers for API Panel user journeys.
+ * Overrides come FIRST because MSW matches the first matching handler.
+ */
+export const apiPanelJourneyMswHandlers = [
+  http.get('/api/chrome-service/v1/static/api-specs-generated.json', () => {
+    return HttpResponse.json(mockApiSpecs);
+  }),
+  http.get('/api/chrome-service/v1/static/bundles-generated.json', () => {
+    return HttpResponse.json(mockApiBundles);
+  }),
+  ...supportPanelMswHandlers,
+  ...helpPanelMswHandlers,
 ];
 
 const mockSupportCases = [
@@ -773,6 +788,139 @@ const mockSupportCases = [
     summary: 'API rate limit clarification',
     lastModifiedDate: new Date(Date.now() - 86400000).toISOString(),
     status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-3',
+    caseNumber: '03012347',
+    summary: 'OpenShift cluster networking problem',
+    lastModifiedDate: new Date(Date.now() - 172800000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-4',
+    caseNumber: '03012348',
+    summary: 'Ansible playbook execution timeout',
+    lastModifiedDate: new Date(Date.now() - 259200000).toISOString(),
+    status: 'Closed',
+  },
+  {
+    id: 'case-5',
+    caseNumber: '03012349',
+    summary: 'Vulnerability scan results not updating',
+    lastModifiedDate: new Date(Date.now() - 345600000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-6',
+    caseNumber: '03012350',
+    summary: 'Cost management report export failing',
+    lastModifiedDate: new Date(Date.now() - 432000000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-7',
+    caseNumber: '03012351',
+    summary: 'SSO authentication redirect loop',
+    lastModifiedDate: new Date(Date.now() - 518400000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-8',
+    caseNumber: '03012352',
+    summary: 'Inventory host registration timeout',
+    lastModifiedDate: new Date(Date.now() - 604800000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-9',
+    caseNumber: '03012353',
+    summary: 'Advisor recommendation not appearing',
+    lastModifiedDate: new Date(Date.now() - 691200000).toISOString(),
+    status: 'Closed',
+  },
+  {
+    id: 'case-10',
+    caseNumber: '03012354',
+    summary: 'Notification settings not saving',
+    lastModifiedDate: new Date(Date.now() - 777600000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-11',
+    caseNumber: '03012355',
+    summary: 'RBAC role permissions clarification',
+    lastModifiedDate: new Date(Date.now() - 864000000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-12',
+    caseNumber: '03012356',
+    summary: 'Compliance policy scan incomplete',
+    lastModifiedDate: new Date(Date.now() - 950400000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-13',
+    caseNumber: '03012357',
+    summary: 'Patch management deployment delay',
+    lastModifiedDate: new Date(Date.now() - 1036800000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-14',
+    caseNumber: '03012358',
+    summary: 'Drift baseline comparison error',
+    lastModifiedDate: new Date(Date.now() - 1123200000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-15',
+    caseNumber: '03012359',
+    summary: 'Remediation playbook generation failed',
+    lastModifiedDate: new Date(Date.now() - 1209600000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-16',
+    caseNumber: '03012360',
+    summary: 'Dashboard widget configuration issue',
+    lastModifiedDate: new Date(Date.now() - 1296000000).toISOString(),
+    status: 'Closed',
+  },
+  {
+    id: 'case-17',
+    caseNumber: '03012361',
+    summary: 'System group filter not working',
+    lastModifiedDate: new Date(Date.now() - 1382400000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-18',
+    caseNumber: '03012362',
+    summary: 'Policy violation alert misconfigured',
+    lastModifiedDate: new Date(Date.now() - 1468800000).toISOString(),
+    status: 'Waiting on Red Hat',
+  },
+  {
+    id: 'case-19',
+    caseNumber: '03012363',
+    summary: 'Edge device connection timeout',
+    lastModifiedDate: new Date(Date.now() - 1555200000).toISOString(),
+    status: 'Waiting on Customer',
+  },
+  {
+    id: 'case-20',
+    caseNumber: '03012364',
+    summary: 'Automation Hub sync failure',
+    lastModifiedDate: new Date(Date.now() - 1641600000).toISOString(),
+    status: 'Closed',
+  },
+  {
+    id: 'case-21',
+    caseNumber: '03012365',
+    summary: 'Subscription usage report discrepancy',
+    lastModifiedDate: new Date(Date.now() - 1728000000).toISOString(),
+    status: 'Waiting on Red Hat',
   },
 ];
 
@@ -851,11 +999,14 @@ export async function openHelpPanel(canvasElement: HTMLElement) {
 }
 
 /**
- * Navigate to a specific tab in the Help Panel.
+ * Navigate to a specific section in the Help Panel.
  * Opens the panel first if not already open.
  *
+ * Note: These are implemented as tabs for accessibility (role="tab"),
+ * but are referred to as "sections" in the UI.
+ *
  * @param canvasElement - The Storybook canvas element
- * @param tabName - The name of the tab to navigate to (e.g., "Learn", "APIs", "Support")
+ * @param tabName - The name of the section to navigate to (e.g., "Learn", "APIs", "Support")
  */
 export async function navigateToTab(
   canvasElement: HTMLElement,
@@ -866,7 +1017,7 @@ export async function navigateToTab(
   // Open help panel (will skip if already open)
   await openHelpPanel(canvasElement);
 
-  // Find and click the tab
+  // Find and click the section tab
   const tab = await canvas.findByRole(
     'tab',
     { name: new RegExp(tabName, 'i') },
@@ -875,7 +1026,7 @@ export async function navigateToTab(
   await expect(tab).toBeInTheDocument();
   await userEvent.click(tab);
 
-  // Wait for tab to be selected
+  // Wait for section to be selected
   await waitFor(
     () => {
       expect(tab).toHaveAttribute('aria-selected', 'true');
@@ -883,8 +1034,8 @@ export async function navigateToTab(
     { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
   );
 
-  // Pause to show tab content loading
+  // Pause to show section content loading
   await delay(TEST_TIMEOUTS.AFTER_TAB_CHANGE);
 
-  console.log(`UJ: ✅ Navigated to ${tabName} tab`);
+  console.log(`UJ: ✅ Navigated to ${tabName} section`);
 }

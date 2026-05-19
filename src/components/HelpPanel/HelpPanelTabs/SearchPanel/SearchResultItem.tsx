@@ -134,7 +134,7 @@ const SearchResultItem: React.FC<{
           };
         case 'quickstart':
           return {
-            tabType: null,
+            tabType: intl.formatMessage(messages.breadcrumbLearn),
             sectionTitle: intl.formatMessage(messages.contentTypeQuickstarts),
             icon: <BookmarkIcon />,
           };

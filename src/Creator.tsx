@@ -238,6 +238,11 @@ const CreatorInternal = ({
               onChangeCurrentStage={setCurrentStage}
               resetCreator={resetCreator}
               files={files}
+              quickStart={quickStart}
+              currentBundles={bundles}
+              currentTags={tags}
+              currentKind={rawKind}
+              onChangeKindDirect={setRawKind}
             />
           </GridItem>
 

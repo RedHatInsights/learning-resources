@@ -15,6 +15,7 @@ import HelpPanelCustomTabs, {
 import { HelpPanelTabContent } from './HelpPanelLink';
 import messages from '../../Messages';
 import './HelpPanelCustomTabs.scss';
+import '@patternfly/quickstarts/dist/quickstarts.min.css';
 
 const HelpPanelContent = ({
   toggleDrawer,
@@ -38,6 +39,8 @@ const HelpPanelContent = ({
       <DrawerHead>
         <Title headingLevel="h2" data-ouia-component-id="help-panel-title">
           Help
+        </Title>
+        <DrawerActions>
           <Button
             variant="link"
             component="a"
@@ -52,8 +55,6 @@ const HelpPanelContent = ({
           >
             {intl.formatMessage(messages.statusPage)}
           </Button>
-        </Title>
-        <DrawerActions>
           <DrawerCloseButton
             onClick={toggleDrawer}
             data-ouia-component-id="help-panel-close-button"

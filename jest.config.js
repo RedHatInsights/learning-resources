@@ -1,4 +1,4 @@
-const transformIgnorePatterns = ['node_modules/(?!(uuid)/)'];
+const transformIgnorePatterns = ['node_modules/(?!(uuid|yaml)/)'];
 
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {

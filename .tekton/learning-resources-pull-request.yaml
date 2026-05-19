@@ -49,8 +49,8 @@ spec:
       #!/bin/bash
       set -ex
 
-      # This duplicates the workspace setup script's purpose, don't do it.
-      # npm install
+      npm run lint
+      npm test -- --runInBand --no-cache
   - name: run-app-script
     value: |
       #!/bin/sh

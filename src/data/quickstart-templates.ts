@@ -1,7 +1,11 @@
-export const DEFAULT_QUICKSTART_YAML = `apiVersion: console.openshift.io/v1
-kind: QuickStarts
+export const DEFAULT_QUICKSTART_YAML = `kind: QuickStarts
 metadata:
   name: sample-interactive-quickstart
+  tags:
+    - kind: bundle
+      value: insights
+    - kind: content
+      value: quickstart
 spec:
   version: 0.1
   displayName: Sample Interactive QuickStart
