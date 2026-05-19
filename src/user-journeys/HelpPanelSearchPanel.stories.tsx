@@ -136,12 +136,18 @@ export const Step04_SearchAndViewResults: Story = {
 
     await searchAndWaitForResults(canvas, 'Insights');
 
-    await canvas.findByText(
+    // Scope query to search results list (not recommended content)
+    const searchResultsList = await canvas.findByRole(
+      'list',
+      { name: /search results/i },
+      { timeout: 5000 }
+    );
+    const results = await within(searchResultsList).findAllByText(
       'Getting started with Red Hat Insights',
       {},
       { timeout: 5000 }
     );
-    await canvas.findByText('Search results');
+    expect(results.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Search returned results');
   },
@@ -184,11 +190,18 @@ export const Step05_SearchAndFilterByType: Story = {
     await userEvent.click(filterToggle);
     await delay(TEST_TIMEOUTS.AFTER_CLICK);
 
-    await canvas.findByText(
+    // Scope query to search results list
+    const searchResultsList = await canvas.findByRole(
+      'list',
+      { name: /search results/i },
+      { timeout: 5000 }
+    );
+    const results = await within(searchResultsList).findAllByText(
       'Red Hat Insights Documentation',
       {},
       { timeout: 5000 }
     );
+    expect(results.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Filtered results by content type');
   },
@@ -237,11 +250,18 @@ export const Step06_ClearAllFilters: Story = {
     await userEvent.click(clearButton);
     await delay(TEST_TIMEOUTS.AFTER_CLICK);
 
-    await canvas.findByText(
+    // Scope query to search results list
+    const searchResultsList = await canvas.findByRole(
+      'list',
+      { name: /search results/i },
+      { timeout: 5000 }
+    );
+    const results = await within(searchResultsList).findAllByText(
       'Getting started with Red Hat Insights',
       {},
       { timeout: 5000 }
     );
+    expect(results.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Cleared all filters');
   },
@@ -296,17 +316,19 @@ export const Step08_ClickRecentQuery: Story = {
     await userEvent.click(queryButton);
 
     await delay(SEARCH_DEBOUNCE_MS);
-    await canvas.findByRole(
+    const searchResultsList = await canvas.findByRole(
       'list',
       { name: /search results/i },
       { timeout: 8000 }
     );
 
-    await canvas.findByText(
+    // Scope query to search results list
+    const results = await within(searchResultsList).findAllByText(
       'Getting Started with Ansible',
       {},
       { timeout: 5000 }
     );
+    expect(results.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Clicked recent query and got results');
   },
@@ -555,11 +577,18 @@ export const Step13_SearchScopeToggle: Story = {
       expect(bundleToggle).toHaveAttribute('aria-pressed', 'true');
     });
 
-    await canvas.findByText(
+    // Scope query to search results list
+    const searchResultsList = await canvas.findByRole(
+      'list',
+      { name: /search results/i },
+      { timeout: 5000 }
+    );
+    const results = await within(searchResultsList).findAllByText(
       'Getting started with Red Hat Insights',
       {},
       { timeout: 5000 }
     );
+    expect(results.length).toBeGreaterThanOrEqual(1);
 
     console.log('UJ: ✅ Toggled search scope to current bundle');
   },

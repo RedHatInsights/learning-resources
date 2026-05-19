@@ -36,28 +36,52 @@ const getMessageText = (messageKey: keyof typeof messages): string => {
 
 const Wrapper = ({ children, flags = defaultFlags, api }: { children: React.ReactNode, flags?: IConfig['bootstrap'], api?: Record<string, any> }) => {
   const [isReady, setIsReady] = useState(false);
-  const scalprum = useRef(
-    initialize({
+
+  // Provide default chrome API if not supplied
+  const defaultApi = {
+    chrome: {
+      getBundleData: () => ({
+        bundleId: 'rhel',
+        bundleTitle: 'RHEL',
+      }),
+      getAvailableBundles: () => [],
+      auth: {
+        getUser: () => Promise.resolve({
+          identity: {
+            user: { username: 'testuser' },
+            internal: { account_id: '12345' },
+          },
+        }),
+        getToken: () => Promise.resolve('mock-token'),
+      },
+    },
+  };
+
+  const scalprum = useRef<ReturnType<typeof initialize> | null>(null);
+
+  // Lazy initialization - only run once per mount
+  if (!scalprum.current) {
+    scalprum.current = initialize({
       appsConfig: {
         virtualAssistant: {
           name: 'virtualAssistant',
           manifestLocation: '/foo/bar.json',
         },
       },
-      api,
-    })
-  );
+      api: api || defaultApi,
+    });
+  }
 
   useEffect(() => {
     // mock the modules
-    scalprum.current.exposedModules['virtualAssistant#state/globalState'] = {
+    scalprum.current!.exposedModules['virtualAssistant#state/globalState'] = {
       default: {foo: 'bar'},
       useVirtualAssistant: () => ([]),
       Models: {}
     };
 
     // mock the VAEmbed component - using the correct module path
-    scalprum.current.exposedModules['virtualAssistant#./VAEmbed'] = {
+    scalprum.current!.exposedModules['virtualAssistant#./VAEmbed'] = {
       default: () => React.createElement('div', {
         'data-testid': 'va-embed-mock'
       }, 'Virtual Assistant Component')
@@ -98,26 +122,29 @@ describe('HelpPanel', () => {
     );
 
     cy.contains('Help').should('be.visible');
-    cy.contains('Find help').should('be.visible');
     // Should default to Search tab when search flag is enabled
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('be.visible');
     cy.contains(getMessageText('searchPanelRecentSearch'), { timeout: 10000 }).should('be.visible');
   })
 
-  it('should not display sub tabs hidden by FF', () => {
+  it('should not display tabs hidden by FF', () => {
     const toggleDrawerSpy = cy.spy();
-    const disabledFlags = [{
-      ...defaultFlags[0],
+    // Disable the Search tab flag (defaultFlags[1])
+    const disabledSearchFlag = [{
+      ...defaultFlags[1],
       enabled: false
     }]
     cy.mount(
-      <Wrapper flags={disabledFlags}>
+      <Wrapper flags={disabledSearchFlag}>
         <HelpPanel toggleDrawer={toggleDrawerSpy} />
       </Wrapper>
     );
 
     cy.contains('Help').should('be.visible');
-    cy.contains('Find help').should('be.visible');
-    cy.contains(getMessageText('knowledgeBaseTitle')).should('not.exist');
+    // Search tab should not be visible when flag is disabled
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('not.exist');
+    // Learn tab should be visible (not feature-flagged)
+    cy.get('[data-ouia-component-id="help-panel-tab-learn"]').should('be.visible');
   })
 
   it('should call close callback', () => {
@@ -132,7 +159,7 @@ describe('HelpPanel', () => {
     cy.wrap(toggleDrawerSpy).should('have.been.called');
   })
 
-  it('should switch sub tabs', () => {
+  it('should switch between tabs', () => {
     const toggleDrawerSpy = cy.spy();
     cy.stub(chrome, 'useChrome').returns({
       getBundleData: () => ({
@@ -146,11 +173,11 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.contains('Learn').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-learn"]').click();
     // Wait for the learn panel to load and check for the description text
     cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
 
-    cy.contains('APIs').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-api"]').click();
     cy.contains(getMessageText('apiDocumentationCountLabel')).should('be.visible');
   })
 
@@ -202,43 +229,33 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.contains('APIs').click();
-    cy.contains(getMessageText('apiDocumentationCountLabel')).should('be.visible');
+    cy.get('[data-ouia-component-id="help-panel-tab-api"]').click();
 
-    cy.contains(`${getMessageText('apiDocumentationCountLabel')} (3)`, { timeout: 10000 }).should('be.visible');
-    // API names now have "API" suffix stripped
-    cy.contains('Provisioning').should('be.visible');
-    cy.contains('Cost Management').should('be.visible');
-    cy.contains('User Access').should('be.visible');
+    // Wait for API tab to be selected
+    cy.get('[data-ouia-component-id="help-panel-tab-api"]').should('have.attr', 'aria-selected', 'true');
 
-    cy.contains('RHEL').should('be.visible');
-    cy.contains('Ansible').should('be.visible');
-    cy.contains('OpenShift').should('be.visible');
-    cy.contains('Settings').should('be.visible');
+    // Wait for API tab content to be visible (not search tab content)
+    cy.get('[id*="pf-tab-section-api"]').should('be.visible').within(() => {
+      cy.contains(getMessageText('apiDocumentationCountLabel'), { timeout: 10000 }).should('be.visible');
 
-    // Check internal link
-    cy.contains(getMessageText('apiDocumentationCatalogLinkText'))
-      .should('have.attr', 'href', 'https://console.redhat.com/docs/api');
+      cy.contains(`${getMessageText('apiDocumentationCountLabel')} (3)`, { timeout: 10000 }).should('be.visible');
+      // API names now have "API" suffix stripped
+      cy.contains('Provisioning').should('be.visible');
+      cy.contains('Cost Management').should('be.visible');
+      cy.contains('User Access').should('be.visible');
+
+      cy.contains('RHEL').should('be.visible');
+      cy.contains('Ansible').should('be.visible');
+      cy.contains('OpenShift').should('be.visible');
+      cy.contains('Settings').should('be.visible');
+
+      // Check internal link
+      cy.contains(getMessageText('apiDocumentationCatalogLinkText'))
+        .should('have.attr', 'href', 'https://console.redhat.com/docs/api');
+    });
   });
 
-  it('should create new panel tab', () => {
-    const toggleDrawerSpy = cy.spy();
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 2) // VA + Find help tabs
-    });
-
-    cy.get('[aria-label="Add tab"]').click();
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 3) // VA + Find help + New tab
-    });
-  })
+  // Test removed: Add/close tab functionality no longer exists in single-tier tab structure
 
   it('should display learn panel features', () => {
     const toggleDrawerSpy = cy.spy();
@@ -248,10 +265,8 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('[aria-label="Add tab"]').click();
-
-    // Force click the Learn tab since it's visually there but Cypress thinks it's hidden
-    cy.contains('Learn').click({ force: true });
+    // Click the Learn tab
+    cy.get('[data-ouia-component-id="help-panel-tab-learn"]').click();
 
     // Wait for the learn panel to load completely
     cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
@@ -262,77 +277,11 @@ describe('HelpPanel', () => {
     cy.contains(getMessageText('showBookmarkedOnlyLabel')).should('be.visible');
   })
 
-  it('should close tab', () => {
-    const toggleDrawerSpy = cy.spy();
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
+  // Test removed: Tab closing functionality no longer exists in single-tier tab structure
 
-    cy.get('[aria-label="Add tab"]').click();
+  // Test removed: Tab titles no longer change - each tab has a static title
 
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 3) // VA + Find help + New tab
-    });
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('[aria-label="Close tab"]').last().click();
-    });
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 2) // Back to VA + Find help tabs
-    });
-
-    // Find help defaults to Search when search flag is enabled; expect Search panel content
-    cy.contains(getMessageText('searchPanelRecentSearch')).should('be.visible');
-  })
-
-  it('should change tab title when switching sub-tabs', () => {
-    const toggleDrawerSpy = cy.spy();
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
-    cy.contains('Find help').should('be.visible');
-    cy.contains(getMessageText('knowledgeBaseTitle')).click();
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      // Second tab is "Find help" tab which changes title, first tab is VA (icon only)
-      cy.get('.pf-v6-c-tabs__item').eq(1).should('contain.text', getMessageText('knowledgeBaseTitle'));
-    });
-  });
-
-  it('should create new tab and maintain focus when closing different tab', () => {
-    const toggleDrawerSpy = cy.spy();
-    cy.mount(
-      <Wrapper>
-        <HelpPanel toggleDrawer={toggleDrawerSpy} />
-      </Wrapper>
-    );
-
-    cy.get('[aria-label="Add tab"]').click();
-    cy.get('[aria-label="Add tab"]').click();
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 4); // VA + Find help + 2 New tabs
-    });
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').last().click();
-    });
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').eq(2).within(() => {
-        cy.get('[aria-label="Close tab"]').click();
-      });
-    });
-
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').should('have.length', 3); // VA + Find help + 1 remaining added tab
-    });
-  });
+  // Test removed: Add/close tab functionality no longer exists
 
   it('should display search tab when feature flag is enabled', () => {
     const toggleDrawerSpy = cy.spy();
@@ -348,7 +297,7 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').should('be.visible');
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('be.visible');
   });
 
   it('should not display search tab when feature flag is disabled', () => {
@@ -381,7 +330,7 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').should('not.exist');
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('not.exist');
   });
 
   it('should verify search tab accessibility and interactions', () => {
@@ -400,15 +349,15 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').should('be.visible');
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]')
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('be.visible');
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]')
       .should('have.attr', 'role', 'tab')
       .should('have.attr', 'aria-selected');
 
-    cy.contains('Learn').click({ force: true });
+    cy.get('[data-ouia-component-id="help-panel-tab-learn"]').click();
     cy.contains(getMessageText('learnPanelDescription'), { timeout: 10000 }).should('be.visible');
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').should('be.visible');
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('be.visible');
   });
 
   it('should click search tab and see search panel description', () => {
@@ -452,6 +401,7 @@ describe('HelpPanel', () => {
             internal: { account_id: '12345' },
           },
         }),
+        getToken: () => Promise.resolve('mock-token'),
       },
     };
 
@@ -461,9 +411,9 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').should('be.visible');
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').should('be.visible');
 
-    cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
     cy.contains(getMessageText('searchPanelDescription')).should('be.visible');
   });
@@ -599,13 +549,8 @@ describe('HelpPanel', () => {
       </Wrapper>
     );
 
-    // Click on Feedback subtab
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').click();
-
-    // Check that the "Find help" tab title updates to "Share feedback"
-    cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-      cy.get('.pf-v6-c-tabs__item').eq(1).should('contain.text', 'Share feedback');
-    });
+    // Click on Feedback tab
+    cy.get('[data-ouia-component-id="help-panel-tab-feedback"]').click();
 
     // Verify feedback panel content is displayed
     cy.contains(getMessageText('tellAboutExperience')).should('be.visible');
@@ -643,7 +588,7 @@ describe('HelpPanel', () => {
     );
 
     // Switch to feedback tab
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-feedback"]').click();
 
     // Verify all feedback options are visible (3 cards)
     cy.contains(getMessageText('shareFeedback')).should('be.visible');
@@ -696,7 +641,7 @@ describe('HelpPanel', () => {
     );
 
     // Navigate to feedback form
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-feedback"]').click();
     // Click on the card that contains the share feedback text
     cy.contains('.pf-v6-c-card', getMessageText('shareFeedback')).click();
 
@@ -734,7 +679,7 @@ describe('HelpPanel', () => {
     );
 
     // Navigate to feedback form
-    cy.get('[data-ouia-component-id="help-panel-subtab-feedback"]').click();
+    cy.get('[data-ouia-component-id="help-panel-tab-feedback"]').click();
     cy.contains('.pf-v6-c-card', getMessageText('shareFeedback')).click();
 
     // Verify form elements are visible and functional
@@ -839,6 +784,7 @@ describe('HelpPanel', () => {
         ],
         auth: {
           getUser: () => Promise.resolve(mockAuthUser),
+          getToken: () => Promise.resolve('mock-token'),
         },
         ...overrides,
       },
@@ -854,7 +800,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       cy.contains(getMessageText('searchPanelRecommendedContent'), { timeout: 10000 }).should('be.visible');
       cy.contains(getMessageText('searchPanelRecentSearch')).should('be.visible');
@@ -871,7 +817,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       cy.get('[data-ouia-component-id="help-panel-recommended-scope-toggle"]', { timeout: 10000 }).should('be.visible');
       cy.get('[data-ouia-component-id="help-panel-recommended-scope-toggle-all"]').should('be.visible');
@@ -893,7 +839,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       cy.contains(getMessageText('searchPanelRecommendedContent'), { timeout: 10000 }).should('be.visible');
       cy.get('[data-ouia-component-id="help-panel-recommended-scope-toggle"]').should('not.exist');
@@ -909,7 +855,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       cy.get('[data-ouia-component-id="help-panel-recommended-scope-toggle"]', { timeout: 10000 }).should('be.visible');
 
@@ -938,7 +884,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       // Wait for recommended content to load with bundle-specific items
       cy.get('[aria-label="Recommended content"]', { timeout: 10000 }).should('be.visible');
@@ -950,66 +896,9 @@ describe('HelpPanel', () => {
       });
     });
 
-    it('should update search tab title when typing in search', () => {
-      const toggleDrawerSpy = cy.spy();
-      interceptSearchPanelAPIs();
+    // Test removed: Tab titles no longer change based on search input
 
-      cy.mount(
-        <Wrapper api={makeChromeApi({
-          getAvailableBundles: () => [{ id: 'rhel', title: 'RHEL' }],
-        })}>
-          <HelpPanel toggleDrawer={toggleDrawerSpy} />
-        </Wrapper>
-      );
-
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
-      cy.contains(getMessageText('searchPanelDescription')).should('be.visible');
-
-      // Type into the search input
-      cy.get('[data-ouia-component-id="help-panel-search-root"]').within(() => {
-        cy.get('input[type="search"], input[type="text"]').first().type('vulnerability');
-      });
-
-      // "Find help" tab title should update to reflect the search query
-      cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-        cy.get('.pf-v6-c-tabs__item').eq(1).should('contain.text', 'vulnerability');
-      });
-    });
-
-    it('should revert search tab title when clearing search', () => {
-      const toggleDrawerSpy = cy.spy();
-      interceptSearchPanelAPIs();
-
-      cy.mount(
-        <Wrapper api={makeChromeApi({
-          getAvailableBundles: () => [{ id: 'rhel', title: 'RHEL' }],
-        })}>
-          <HelpPanel toggleDrawer={toggleDrawerSpy} />
-        </Wrapper>
-      );
-
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
-      cy.contains(getMessageText('searchPanelDescription')).should('be.visible');
-
-      // Type into the search input
-      cy.get('[data-ouia-component-id="help-panel-search-root"]').within(() => {
-        cy.get('input[type="search"], input[type="text"]').first().type('vulnerability');
-      });
-
-      cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-        cy.get('.pf-v6-c-tabs__item').eq(1).should('contain.text', 'vulnerability');
-      });
-
-      // Clear the search input
-      cy.get('[data-ouia-component-id="help-panel-search-root"]').within(() => {
-        cy.get('input[type="search"], input[type="text"]').first().clear();
-      });
-
-      // "Find help" tab title should revert to "Search"
-      cy.get('[data-ouia-component-id="help-panel-tabs"]').within(() => {
-        cy.get('.pf-v6-c-tabs__item').eq(1).should('contain.text', 'Search');
-      });
-    });
+    // Test removed: Tab titles no longer change based on search input
 
     it('should hide recommended content when search text is entered', () => {
       const toggleDrawerSpy = cy.spy();
@@ -1023,7 +912,7 @@ describe('HelpPanel', () => {
         </Wrapper>
       );
 
-      cy.get('[data-ouia-component-id="help-panel-subtab-search"]').click();
+      cy.get('[data-ouia-component-id="help-panel-tab-search"]').click();
 
       // Recommended content is visible before searching
       cy.contains(getMessageText('searchPanelRecommendedContent'), { timeout: 10000 }).should('be.visible');

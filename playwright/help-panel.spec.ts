@@ -34,27 +34,33 @@ test.describe('help panel', async () => {
     await expect(helpPanelTitle).not.toBeVisible();
   });
 
-  test('displays subtabs', async ({page}) => {
+  test('displays main tabs', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
     // Tier 2: Wait for help panel to finish loading
-    const subtabs = page.locator('[data-ouia-component-id="help-panel-subtabs"]');
-    await expect(subtabs).toBeVisible();
+    const tabs = page.locator('[data-ouia-component-id="help-panel-tabs"]');
+    await expect(tabs).toBeVisible();
+
+    // Verify main tabs are present (Learn, APIs, Support, Feedback)
+    await expect(page.getByRole('tab', { name: 'Learn' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'APIs' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Support' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Feedback' })).toBeVisible();
   });
 
-  test('allows switching between subtabs', async ({page}) => {
+  test('allows switching between main tabs', async ({page}) => {
     await page.getByLabel('Toggle help panel').click();
 
     // Tier 2: Wait for help panel to finish loading
     const helpPanelTitle = page.locator('[data-ouia-component-id="help-panel-title"]');
     await expect(helpPanelTitle).toBeVisible();
 
-    // Click on APIs subtab
-    const apiTab = page.locator('[data-ouia-component-id="help-panel-subtab-api"]');
+    // Click on APIs tab
+    const apiTab = page.locator('[data-ouia-component-id="help-panel-tab-api"]');
     await apiTab.click();
 
-    // Verify API documentation content is shown by checking for unique content in that tab
-    await expect(page.getByText('No API documentation found matching your criteria.')).toBeVisible();
+    // Verify API documentation content is shown by checking for the description text
+    await expect(page.getByText(/Browse the APIs for Hybrid Cloud Console services/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('displays status page link in header', async ({page}) => {
@@ -70,16 +76,5 @@ test.describe('help panel', async () => {
     await expect(statusPageLink).toHaveText('Red Hat status page');
   });
 
-  test('can add a new tab', async ({page}) => {
-    await page.getByLabel('Toggle help panel').click();
-
-    // Tier 2: Wait for help panel to finish loading
-    const addTabButton = page.locator('[data-ouia-component-id="help-panel-add-tab-button"]');
-    await expect(addTabButton).toBeVisible();
-
-    await addTabButton.click();
-
-    // Verify a new tab appears
-    await expect(page.getByText('New tab')).toBeVisible();
-  });
+  // Test removed: Add tab functionality no longer exists in single-tier tab structure
 });

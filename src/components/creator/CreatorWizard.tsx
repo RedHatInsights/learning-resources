@@ -36,6 +36,7 @@ import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome'
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
 import SimpleButton from '../SimpleButton';
 import DdfNumberInput from '../DdfNumberInput';
+import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import {
   NAME_BUNDLES,
   NAME_DESCRIPTION,
@@ -66,6 +67,11 @@ export type CreatorWizardProps = {
   filterData: FilterData;
   onChangeTags: (tags: { [kind: string]: string[] }) => void;
   onChangeMetadataTags: (tags: Array<{ kind: string; value: string }>) => void;
+  quickStart?: ExtendedQuickstart;
+  currentBundles?: string[];
+  currentTags?: { [kind: string]: string[] };
+  currentKind?: ItemKind | null;
+  onChangeKindDirect?: (kind: ItemKind | null) => void;
 };
 
 type ViewMode = 'wizard' | 'creator';
@@ -312,10 +318,43 @@ const CreatorWizard = ({
   onChangeMetadataTags,
   files,
   filterData,
+  quickStart,
+  currentBundles,
+  currentTags,
+  currentKind,
+  onChangeKindDirect,
 }: CreatorWizardProps) => {
   const chrome = useChrome();
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
   const schema = useMemo(() => makeSchema(chrome, filterData), []);
+  const availableBundles = useMemo(() => chrome.getAvailableBundles(), []);
+
+  // Derive initialValues from shared state so wizard ↔ YAML stays in sync.
+  // FormRenderer is conditionally rendered (unmounted in YAML mode), so it
+  // picks up fresh initialValues each time the user switches back to wizard.
+  const initialValues = useMemo(() => {
+    if (!quickStart) return undefined;
+    return {
+      [NAME_KIND]: currentKind || undefined,
+      [NAME_BUNDLES]: currentBundles,
+      [NAME_TAGS]: currentTags,
+      [NAME_TITLE]: quickStart.spec.displayName || '',
+      [NAME_DESCRIPTION]: quickStart.spec.description || '',
+      [NAME_DURATION]: quickStart.spec.durationMinutes,
+      [NAME_URL]: quickStart.spec.link?.href,
+      [NAME_PREREQUISITES]: quickStart.spec.prerequisites,
+      [NAME_PANEL_INTRODUCTION]: quickStart.spec.introduction,
+      [NAME_TASK_TITLES]: quickStart.spec.tasks?.map((t) => t.title || '') || [
+        '',
+      ],
+      [NAME_TASKS_ARRAY]: quickStart.spec.tasks?.map((t) => ({
+        description: t.description,
+        enable_work_check: !!t.review,
+        work_check_instructions: t.review?.instructions,
+        work_check_help: t.review?.failedTaskHelp,
+      })),
+    };
+  }, [quickStart, currentKind, currentBundles, currentTags]);
 
   // Update stage when switching to creator mode to show preview
   const handleViewModeChange = (newMode: ViewMode) => {
@@ -368,6 +407,7 @@ const CreatorWizard = ({
         <FormRenderer
           onSubmit={() => {}}
           schema={schema}
+          initialValues={initialValues}
           componentMapper={componentMapper}
         >
           {({ formFields }) => (
@@ -409,6 +449,12 @@ const CreatorWizard = ({
           onChangeBundles={onChangeBundles}
           onChangeTags={onChangeTags}
           onChangeMetadataTags={onChangeMetadataTags}
+          onChangeKind={onChangeKindDirect}
+          quickStart={quickStart}
+          currentBundles={currentBundles}
+          currentTags={currentTags}
+          filterData={filterData}
+          bundles={availableBundles}
         />
       )}
     </CreatorWizardContext.Provider>
