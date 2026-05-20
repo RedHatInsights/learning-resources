@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { disableCookiePrompt } from './test-utils';
+import { disableCookiePrompt, PAGE_LOAD_TIMEOUT, ELEMENT_VISIBLE_TIMEOUT } from './test-utils';
 
 // Timeout constants
-const TABS_LOAD_TIMEOUT = 10000; // Time to wait for help panel tabs to render
+const TABS_LOAD_TIMEOUT = ELEMENT_VISIBLE_TIMEOUT; // Time to wait for help panel tabs to render
 
 test.describe('help panel', async () => {
 
@@ -11,7 +11,7 @@ test.describe('help panel', async () => {
     await disableCookiePrompt(page);
 
     // Navigate to dashboard - authentication state is already loaded from global setup
-    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+    await page.goto('/', { waitUntil: 'load', timeout: PAGE_LOAD_TIMEOUT });
 
     // Tier 1: Wait for chrome header to be fully loaded before interacting with help panel
     await expect(page.getByText('Hi,')).toBeVisible();
@@ -66,7 +66,7 @@ test.describe('help panel', async () => {
     await page.getByRole('tab', { name: 'APIs' }).click();
 
     // Verify API documentation content is shown by checking for the description text
-    await expect(page.getByText(/Browse the APIs for Hybrid Cloud Console services/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Browse the APIs for Hybrid Cloud Console services/i)).toBeVisible({ timeout: ELEMENT_VISIBLE_TIMEOUT });
   });
 
   test('displays status page link in header', async ({page}) => {

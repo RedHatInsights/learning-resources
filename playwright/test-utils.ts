@@ -9,9 +9,14 @@ export {
 // Local utility - Path for learning resources
 export const LEARNING_RESOURCES_PATH = '/learning-resources';
 
+// Timeout constants (in milliseconds)
+export const PAGE_LOAD_TIMEOUT = 60000; // Time to wait for page navigation to complete
+export const ELEMENT_VISIBLE_TIMEOUT = 10000; // Time to wait for elements to become visible
+export const RESOURCE_COUNT_TIMEOUT = 20000; // Time to wait for resource count to be extracted
+
 // Waits for the count to be within the specified range, then returns it
 // This handles React rendering timing and filter application delays
-export async function waitForCountInRange(page: Page, minCount: number, maxCount: number, timeout: number = 20000): Promise<number> {
+export async function waitForCountInRange(page: Page, minCount: number, maxCount: number, timeout: number = RESOURCE_COUNT_TIMEOUT): Promise<number> {
   // Target the tab that shows a number (avoids matching placeholder "All learning resources ()")
   const countElement = page.getByText(/All learning resources \(\d+\)/).first();
 
@@ -50,7 +55,7 @@ export async function extractResourceCount(page: Page): Promise<number> {
   // Target the tab that already shows a number (avoids matching placeholder "All learning resources ()")
   const countElement = page.getByText(/All learning resources \(\d+\)/);
 
-  await expect(countElement).toBeAttached({ timeout: 20000 });
+  await expect(countElement).toBeAttached({ timeout: RESOURCE_COUNT_TIMEOUT });
 
   const countText = await countElement.first().textContent();
   const match = countText?.match(/All learning resources \((\d+)\)/);

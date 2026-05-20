@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { disableCookiePrompt, extractResourceCount, waitForCountInRange, LEARNING_RESOURCES_PATH } from './test-utils';
+import { disableCookiePrompt, extractResourceCount, waitForCountInRange, LEARNING_RESOURCES_PATH, PAGE_LOAD_TIMEOUT } from './test-utils';
 
 test.describe('all learning resources', async () => {
 
@@ -8,7 +8,10 @@ test.describe('all learning resources', async () => {
     await disableCookiePrompt(page);
 
     // Navigate to dashboard - authentication state is already loaded from global setup
-    await page.goto('/', { waitUntil: 'load', timeout: 60000 });
+    await page.goto('/', { waitUntil: 'load', timeout: PAGE_LOAD_TIMEOUT });
+
+    // Wait for chrome header to be fully loaded
+    await expect(page.getByText('Hi,')).toBeVisible();
   });
 
   test('appears in the help menu and the link works', async({page}) => {
