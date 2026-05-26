@@ -28,9 +28,12 @@ const VAErrorElement: React.FC = () => {
 const VAPanel: React.FC<{
   setNewActionTitle: (title: string) => void;
 }> = () => {
-  const virtualAssistantProps: ScalprumComponentProps = {
+  const virtualAssistantProps: ScalprumComponentProps & {
+    hideHeader?: boolean;
+  } = {
     scope: 'virtualAssistant',
     module: './VAEmbed',
+    hideHeader: true,
     fallback: (
       <Stack hasGutter className="pf-v6-u-h-100">
         <StackItem
@@ -45,13 +48,9 @@ const VAPanel: React.FC<{
   };
 
   return (
-    <Stack hasGutter className="pf-v6-u-h-100">
-      <StackItem isFilled className="pf-v6-u-overflow-hidden">
-        <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
-          <ScalprumComponent {...virtualAssistantProps} />
-        </div>
-      </StackItem>
-    </Stack>
+    <div className="pf-v6-u-h-100 pf-v6-u-display-flex pf-v6-u-flex-direction-column">
+      <ScalprumComponent {...virtualAssistantProps} />
+    </div>
   );
 };
 

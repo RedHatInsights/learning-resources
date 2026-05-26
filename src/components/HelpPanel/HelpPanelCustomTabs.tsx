@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 
+import classnames from 'classnames';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
 import { getOpenQuickstartInHelpPanelStore } from '../../store/openQuickstartInHelpPanelStore';
@@ -203,7 +204,12 @@ const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
                       : (tabTitle as string)
                   }
                 >
-                  <div className="lr-c-help-panel-tab-content">
+                  <div
+                    className={classnames('lr-c-help-panel-tab-content', {
+                      'lr-c-help-panel-tab-content--va-wrapper':
+                        tab.tabType === TabType.va,
+                    })}
+                  >
                     <HelpPanelTabContainer
                       activeTabType={tab.tabType}
                       setNewActionTitle={setNewActionTitle}
