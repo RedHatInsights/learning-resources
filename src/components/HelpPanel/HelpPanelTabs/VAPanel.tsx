@@ -69,8 +69,10 @@ const VAPanel: React.FC<{
   };
 
   return (
-    <div className="pf-v6-u-h-100 pf-v6-u-display-flex pf-v6-u-flex-direction-column">
-      <ScalprumComponent {...virtualAssistantProps} />
+    <div className="pf-v6-u-h-100 pf-v6-u-display-flex pf-v6-u-flex-direction-column pf-v6-u-min-height-0">
+      <div className="pf-v6-u-flex-grow-1 pf-v6-u-min-height-0">
+        <ScalprumComponent {...virtualAssistantProps} />
+      </div>
     </div>
   );
 };
