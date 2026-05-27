@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Content, Spinner, Stack, StackItem } from '@patternfly/react-core';
 import {
   ScalprumComponent,
   ScalprumComponentProps,
+  useLoadModule,
 } from '@scalprum/react-core';
 import { useIntl } from 'react-intl';
 import messages from '../../../Messages';
@@ -28,12 +29,32 @@ const VAErrorElement: React.FC = () => {
 const VAPanel: React.FC<{
   setNewActionTitle: (title: string) => void;
 }> = () => {
-  const virtualAssistantProps: ScalprumComponentProps & {
-    hideHeader?: boolean;
-  } = {
+  const [globalState] = useLoadModule(
+    {
+      scope: 'virtualAssistant',
+      module: './state/globalState',
+    },
+    undefined
+  );
+
+  useEffect(() => {
+    if (globalState) {
+      const stateModule = globalState as Record<string, unknown>;
+      const singleton = (stateModule.VirtualAssistantStateSingleton ??
+        (stateModule.default as Record<string, unknown> | undefined)
+          ?.VirtualAssistantStateSingleton) as
+        | { setHideHeader: (value: boolean) => void }
+        | undefined;
+      singleton?.setHideHeader(true);
+      return () => {
+        singleton?.setHideHeader(false);
+      };
+    }
+  }, [globalState]);
+
+  const virtualAssistantProps: ScalprumComponentProps = {
     scope: 'virtualAssistant',
     module: './VAEmbed',
-    hideHeader: true,
     fallback: (
       <Stack hasGutter className="pf-v6-u-h-100">
         <StackItem
