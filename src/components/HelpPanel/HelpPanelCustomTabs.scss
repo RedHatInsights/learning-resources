@@ -99,6 +99,12 @@
   flex-direction: column;
   flex: 1 1 0;
   min-height: 0;
+
+  // Hide chatbot header (icon, assistant name, close button) — redundant
+  // in the help panel context where the panel itself has close/navigation.
+  .pf-chatbot__header {
+    display: none;
+  }
 }
 
 // Tab content area: flex column so the drawer child can fill height (flex: 1).
