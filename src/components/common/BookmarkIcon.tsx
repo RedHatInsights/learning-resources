@@ -8,13 +8,13 @@ export const OutlinedBookmarkedIcon = ({
 }: {
   className?: string;
 }) => (
-  <Icon className={className}>
-    <OutlinedBookmarkIcon className="lr-c-bookmark__icon" />
+  <Icon isInline className={className}>
+    <OutlinedBookmarkIcon className="lr-c-bookmark__icon--outlined" />
   </Icon>
 );
 
 export const BookmarkedIcon = ({ className }: { className?: string }) => (
-  <Icon className={className}>
+  <Icon isInline className={className}>
     <BookmarkIcon className="lr-c-bookmark__icon" />
   </Icon>
 );

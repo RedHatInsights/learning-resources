@@ -15,8 +15,21 @@ export interface CategoryGroup {
 
 export type CategoryID = keyof FetchQuickstartsOptions;
 
+/** Keys of FetchQuickstartsOptions whose value type is string or string[] (filterable categories). */
+export type FilterCategoryID = Exclude<
+  {
+    [K in keyof FetchQuickstartsOptions]: FetchQuickstartsOptions[K] extends
+      | string
+      | string[]
+      | undefined
+      ? K
+      : never;
+  }[keyof FetchQuickstartsOptions],
+  undefined
+>;
+
 export interface FiltersCategory {
-  categoryId: CategoryID;
+  categoryId: FilterCategoryID;
   categoryName: string;
   categoryData: CategoryGroup[];
   loaderOptions: FetchQuickstartsOptions;
@@ -31,6 +44,7 @@ export const FiltersCategoryMetadata: Record<CategoryID, string> = {
   'use-case': 'Use case',
   'display-name': 'Display name',
   bundle: '',
+  fuzzy: '',
 };
 
 export const FiltersMetadata: Record<string, string> = {
@@ -38,6 +52,7 @@ export const FiltersMetadata: Record<string, string> = {
   ansible: 'Ansible',
   openshift: 'OpenShift',
   rhel: 'RHEL (Red Hat Enterprise Linux)',
+  insights: 'RHEL',
   iam: 'IAM (Identity and Access Management)',
   settings: 'Settings',
   'subscriptions-services': 'Subscriptions services',

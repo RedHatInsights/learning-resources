@@ -1,357 +1,225 @@
-import {
-  Button,
-  Tab,
-  TabTitleText,
-  Tabs,
-  debounce,
-} from '@patternfly/react-core';
+import { Tab, TabTitleText, Tabs } from '@patternfly/react-core';
 import React, {
-  PropsWithChildren,
   ReactNode,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
-  useReducer,
   useState,
 } from 'react';
-import classNames from 'classnames';
 
-import './HelpPanelCustomTabs.scss';
 import HelpPanelTabContainer from './HelpPanelTabs/HelpPanelTabContainer';
 import { TabType } from './HelpPanelTabs/helpPanelTabsMapper';
+import { getOpenQuickstartInHelpPanelStore } from '../../store/openQuickstartInHelpPanelStore';
+import { useGetState } from '@scalprum/react-core';
 import { useFlag, useFlags } from '@unleash/proxy-client-react';
-import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { SearchIcon } from '@patternfly/react-icons';
+import { AiChatbotIcon } from '../common/AiChatbotIcon';
+import { HelpPanelTabContent } from './HelpPanelLink';
+import type { OpenQuickstartInHelpPanelState } from '../../store/openQuickstartInHelpPanelStore';
 
 type TabDefinition = {
   id: string;
   title: ReactNode;
-  tabTitle?: string;
-  closeable?: boolean;
-  tabType: TabType;
-  isNewTab?: boolean; // Track if this was originally a "New tab"
-};
-
-type SubTab = Omit<TabDefinition, 'id'> & {
   tabType: TabType;
   featureFlag?: string;
+  icon?: ReactNode;
+  customContent?: ReactNode; // For custom content in tabs (from HelpPanelLink)
+  /** Set when tabType is TabType.quickstart */
+  quickstartId?: string;
 };
 
-const baseTabs: TabDefinition[] = [
-  {
-    id: 'find-help',
-    title: 'Find help',
-    closeable: false,
-    tabType: TabType.learn,
-  },
-];
-
-const subTabs: SubTab[] = [
-  {
-    title: 'Search',
-    tabType: TabType.search,
-    featureFlag: 'platform.chrome.help-panel_search',
-  },
-  {
-    title: 'Learn',
-    tabType: TabType.learn,
-  },
-  {
-    title: 'Knowledge base',
-    tabType: TabType.kb,
-    featureFlag: 'platform.chrome.help-panel_knowledge-base',
-  },
-  {
-    title: 'APIs',
-    tabType: TabType.api,
-  },
-  {
-    title: 'My support cases',
-    tabTitle: 'Support',
-    tabType: TabType.support,
-  },
-];
-
-// Helper function to get sub-tab title by TabType
-const getSubTabTitle = (tabType: TabType): string => {
-  const subTab = subTabs.find((tab) => tab.tabType === tabType);
-  return subTab?.tabTitle || (subTab?.title as string) || 'Find help';
+export type HelpPanelCustomTabsRef = {
+  openTabWithContent: (content: HelpPanelTabContent) => void;
 };
 
-const NEW_TAB_PLACEHOLDER = 'New tab';
-
-// just mocking the tabs store until we have API
-const createTabsStore = () => {
-  let tabs: TabDefinition[] = [...baseTabs];
-  const subscribers = new Map<string, () => void>();
-  const addTab = (tab: TabDefinition) => {
-    tabs.push(tab);
-  };
-
-  const updateTab = (tab: TabDefinition) => {
-    tabs = tabs.map((t) => (t.id === tab.id ? tab : t));
-  };
-
-  const removeTab = (tabId: string) => {
-    tabs = tabs.filter((t) => t.id !== tabId);
-  };
-
-  const subscribe = (callback: () => void) => {
-    const id = crypto.randomUUID();
-    subscribers.set(id, callback);
-    return () => {
-      subscribers.delete(id);
-    };
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wrapNotify = (cb: (...args: any[]) => void) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (...args: any[]) => {
-      cb(...args);
-      for (const callback of subscribers.values()) {
-        callback();
-      }
-    };
-  };
-
-  return {
-    addTab: wrapNotify(addTab),
-    updateTab: wrapNotify(updateTab),
-    removeTab: wrapNotify(removeTab),
-    subscribe,
-    getTabs: () => tabs,
-  };
-};
-
-const useTabs = (apiStoreMock: ReturnType<typeof createTabsStore>) => {
-  const [tabs, dispatch] = useReducer(() => {
-    return [...apiStoreMock.getTabs()];
-  }, apiStoreMock.getTabs());
-  const { getTabs, subscribe, ...rest } = apiStoreMock;
-
-  useEffect(() => {
-    const unsubscribe = subscribe(dispatch);
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  return {
-    tabs,
-    ...rest,
-  };
-};
-
-function isTabType(value: string): value is TabType {
-  return Object.values(TabType).includes(value as TabType);
-}
-
-const SubTabs = ({
-  children,
-  activeSubTabKey,
-  setActiveSubTabKey,
-}: PropsWithChildren<{
-  activeSubTabKey: TabType;
-  setActiveSubTabKey: (key: TabType) => void;
-}>) => {
-  const flags = useFlags();
-  const filteredSubTabs = useMemo(() => {
-    return subTabs.filter((tab) => {
-      if (typeof tab.featureFlag === 'string') {
-        return !!flags.find(({ name }) => name === tab.featureFlag)?.enabled;
-      }
-      return true;
-    });
-  }, [flags, subTabs]);
-
-  const searchFlag = useFlag('platform.chrome.help-panel_search');
-  const kbFlag = useFlag('platform.chrome.help-panel_knowledge-base');
-
-  const showStatusPageButton = !searchFlag && !kbFlag;
-  return (
-    <>
-      <Tabs
-        mountOnEnter
-        isBox={false}
-        isSubtab
-        activeKey={activeSubTabKey}
-        onSelect={(_e, eventKey) => {
-          if (typeof eventKey === 'string' && isTabType(eventKey)) {
-            setActiveSubTabKey(eventKey);
-          }
-        }}
-        data-ouia-component-id="help-panel-subtabs"
-      >
-        <>
-          {filteredSubTabs.map((tab) => (
-            <Tab
-              eventKey={tab.tabType}
-              key={tab.tabType}
-              title={<TabTitleText>{tab.title}</TabTitleText>}
-              data-ouia-component-id={`help-panel-subtab-${tab.tabType}`}
-            />
-          ))}
-          {showStatusPageButton && (
-            <Button
-              variant="link"
-              component="a"
-              href="https://status.redhat.com/"
-              target="_blank"
-              isInline
-              className="pf-v6-u-font-size-sm pf-v6-u-font-weight-normal pf-v6-u-ml-md lr-c-status-page-button"
-              icon={<ExternalLinkAltIcon />}
-              iconPosition="end"
-              data-ouia-component-id="help-panel-status-page-subtabs-button"
-            >
-              Red Hat status page
-            </Button>
-          )}
-        </>
-      </Tabs>
-      {children}
-    </>
-  );
-};
-
-const HelpPanelCustomTabs = () => {
-  const apiStoreMock = useMemo(() => createTabsStore(), []);
-  const [activeTab, setActiveTab] = useState<TabDefinition>(baseTabs[0]);
-
-  const [newActionTitle, setNewActionTitle] = useState<string | undefined>(
-    undefined
-  );
-  const { tabs, addTab, removeTab, updateTab } = useTabs(apiStoreMock);
-
-  const setNewActionTitleDebounced: (title: string) => void = useCallback(
-    debounce((title: string) => {
-      console.log({ activeTab });
-      if (
-        (!newActionTitle || activeTab.title === NEW_TAB_PLACEHOLDER) &&
-        activeTab.closeable
-      ) {
-        setNewActionTitle(title);
-        updateTab({
-          ...activeTab,
-          title,
-        });
-      }
-    }, 2000),
-    [activeTab]
-  );
-
-  const handleAddTab = () => {
-    // The title will be a placeholder until action is taken by the user
-    setNewActionTitle(undefined);
-    const newTabId = crypto.randomUUID();
-    const tab = {
-      id: newTabId,
-      title: NEW_TAB_PLACEHOLDER,
-      closeable: true,
+// Define all main tabs in display order: Search, Learn, APIs, Support, Feedback, Chatbot
+const createMainTabs = (showVA: boolean): TabDefinition[] => {
+  const tabs: TabDefinition[] = [
+    {
+      id: 'search',
+      title: 'Search',
+      tabType: TabType.search,
+      icon: <SearchIcon />,
+      featureFlag: 'platform.chrome.help-panel_search',
+    },
+    {
+      id: 'learn',
+      title: 'Learn',
       tabType: TabType.learn,
-      isNewTab: true,
-    };
-    addTab(tab);
-    setTimeout(() => {
-      // just make sure the tab is added
-      // once async is done, we should use optimistic UI pattern
-      setActiveTab(tab);
+    },
+    {
+      id: 'api',
+      title: 'APIs',
+      tabType: TabType.api,
+    },
+    {
+      id: 'support',
+      title: 'Support',
+      tabType: TabType.support,
+    },
+    {
+      id: 'feedback',
+      title: 'Feedback',
+      tabType: TabType.feedback,
+    },
+  ];
+
+  // Add chatbot as the last tab if enabled
+  if (showVA) {
+    tabs.push({
+      id: 'virtual-assistant',
+      title: <AiChatbotIcon />,
+      tabType: TabType.va,
     });
-  };
+  }
 
-  const handleClose = (_e: unknown, tabId: number | string) => {
-    if (typeof tabId === 'string') {
-      const closingTabIndex = tabs.findIndex((tab) => tab.id === tabId);
-      const isClosingActiveTab = activeTab.id === tabId;
-
-      removeTab(tabId);
-      if (isClosingActiveTab) {
-        const remainingTabs = tabs.filter((tab) => tab.id !== tabId);
-
-        if (remainingTabs.length > 0) {
-          const newActiveIndex =
-            closingTabIndex >= remainingTabs.length
-              ? remainingTabs.length - 1
-              : closingTabIndex;
-
-          setActiveTab(remainingTabs[newActiveIndex]);
-        }
-      }
-    }
-  };
-
-  useEffect(() => {
-    // Ensure the Add tab button has a stable OUIA id
-    const addButton = document.querySelector(
-      '[data-ouia-component-id="help-panel-tabs"] button[aria-label="Add tab"]'
-    ) as HTMLButtonElement | null;
-    if (addButton) {
-      addButton.setAttribute(
-        'data-ouia-component-id',
-        'help-panel-add-tab-button'
-      );
-    }
-  }, [tabs.length]);
-
-  return (
-    <Tabs
-      className="lr-c-help-panel-custom-tabs"
-      isOverflowHorizontal={{ showTabCount: true }}
-      isBox
-      mountOnEnter
-      unmountOnExit
-      onAdd={handleAddTab}
-      onClose={handleClose}
-      activeKey={activeTab.id}
-      onSelect={(_e, eventKey) => {
-        if (typeof eventKey === 'string') {
-          const nextTab = tabs.find((tab) => tab.id === eventKey);
-          if (nextTab) {
-            setActiveTab(nextTab);
-          }
-        }
-      }}
-      data-ouia-component-id="help-panel-tabs"
-      addButtonAriaLabel="Add tab"
-    >
-      {tabs.map((tab) => (
-        <Tab
-          // Need to fix the icon as we can't remove it on tab by tab basis
-          isCloseDisabled={!tab.closeable}
-          className={classNames('lr-c-help-panel-custom-tab', {
-            'persistent-tab': !tab.closeable,
-          })}
-          eventKey={tab.id}
-          key={tab.id}
-          title={<TabTitleText>{tab.title}</TabTitleText>}
-          data-ouia-component-id={`help-panel-tab-${tab.id}`}
-        >
-          <SubTabs
-            activeSubTabKey={tab.tabType ?? TabType.learn}
-            setActiveSubTabKey={(tabType) => {
-              let newTitle = tab.title;
-              if (!tab.closeable) {
-                newTitle = getSubTabTitle(tabType);
-              } else if (tab.isNewTab) {
-                newTitle = getSubTabTitle(tabType);
-              }
-              const nextTab = {
-                ...tab,
-                tabType: tabType,
-                title: newTitle,
-              };
-              updateTab(nextTab);
-              setActiveTab(nextTab);
-            }}
-          >
-            <HelpPanelTabContainer
-              activeTabType={tab.tabType}
-              setNewActionTitle={setNewActionTitleDebounced}
-            />
-          </SubTabs>
-        </Tab>
-      ))}
-    </Tabs>
-  );
+  return tabs;
 };
+
+// Helper function to filter tabs based on feature flags
+const filterTabsByFeatureFlags = (
+  tabs: TabDefinition[],
+  flags: ReturnType<typeof useFlags>
+): TabDefinition[] => {
+  return tabs.filter((tab) => {
+    if (typeof tab.featureFlag === 'string') {
+      return !!flags.find(({ name }) => name === tab.featureFlag)?.enabled;
+    }
+    return true;
+  });
+};
+
+const HelpPanelCustomTabs = React.forwardRef<HelpPanelCustomTabsRef>(
+  (_, ref) => {
+    const vaFlag = useFlag('platform.chrome.help-panel_chatbot');
+    const vaEnvFlag = useFlag('platform.va.environment.enabled');
+    const flags = useFlags();
+    const showVA = vaFlag && vaEnvFlag;
+
+    // Create tabs and filter by feature flags
+    const allTabs = useMemo(() => createMainTabs(showVA), [showVA]);
+    const tabs = useMemo(
+      () => filterTabsByFeatureFlags(allTabs, flags),
+      [allTabs, flags]
+    );
+
+    // Default to first available tab (Search if enabled, otherwise Learn)
+    const defaultTab = useMemo(() => {
+      return tabs.find((t) => t.tabType === TabType.search) ?? tabs[0];
+    }, [tabs]);
+
+    const [activeTabId, setActiveTabId] = useState<string>(
+      defaultTab?.id || 'learn'
+    );
+
+    // Placeholder for setNewActionTitle - no longer used but kept for TabContainer API compatibility
+    const setNewActionTitle = useCallback((title: string) => {
+      // No-op: tabs are now static, titles don't change
+      // This function is called by panel components but does nothing in single-tier structure
+      void title; // Explicitly mark as intentionally unused
+    }, []);
+
+    // openTabWithContent translates dynamic tab requests to static tab selection
+    const openTabWithContent = useCallback(
+      (content: HelpPanelTabContent) => {
+        // Map the requested tabType to the corresponding static tab
+        const targetTab = tabs.find((tab) => tab.tabType === content.tabType);
+        if (targetTab) {
+          setActiveTabId(targetTab.id);
+        } else {
+          console.warn(
+            `openTabWithContent: No static tab found for tabType "${content.tabType}". ` +
+              'The tab may be hidden by feature flags or not exist.'
+          );
+        }
+      },
+      [tabs]
+    );
+
+    // Expose methods to parent via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        openTabWithContent,
+      }),
+      [openTabWithContent]
+    );
+
+    // Handle quickstart opening requests
+    const openQuickstartStore = getOpenQuickstartInHelpPanelStore();
+    const openQuickstartState =
+      useGetState<OpenQuickstartInHelpPanelState>(openQuickstartStore);
+
+    useEffect(() => {
+      const { pendingOpen } = openQuickstartState;
+      if (!pendingOpen) return;
+
+      // Switch to Learn tab (quickstart will be opened in drill-down mode by LearnPanel)
+      const learnTab = tabs.find((tab) => tab.tabType === TabType.learn);
+      if (learnTab) {
+        setActiveTabId(learnTab.id);
+      }
+
+      // Note: we do NOT consume the event here - LearnPanel will consume it after opening the quickstart
+    }, [openQuickstartState.pendingOpen, tabs]);
+
+    // Update active tab when tabs change (due to feature flags)
+    useEffect(() => {
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab && tabs.length > 0) {
+        // Current active tab is no longer available, fall back to first tab
+        setActiveTabId(tabs[0].id);
+      }
+    }, [tabs, activeTabId]);
+
+    return (
+      <>
+        <div className="lr-c-help-panel-tabs-wrapper">
+          <Tabs
+            className="lr-c-help-panel-custom-tabs"
+            isBox
+            activeKey={activeTabId}
+            onSelect={(_e, eventKey) => {
+              if (typeof eventKey === 'string') {
+                setActiveTabId(eventKey);
+              }
+            }}
+            data-ouia-component-id="help-panel-tabs"
+            variant="default"
+          >
+            {tabs.map((tab) => {
+              const tabTitle = tab.title;
+
+              return (
+                <Tab
+                  eventKey={tab.id}
+                  key={tab.id}
+                  title={<TabTitleText>{tab.icon || tabTitle}</TabTitleText>}
+                  data-ouia-component-id={`help-panel-tab-${tab.id}`}
+                  aria-label={
+                    tab.tabType === TabType.va
+                      ? 'Virtual Assistant'
+                      : (tabTitle as string)
+                  }
+                >
+                  <div className="lr-c-help-panel-tab-content">
+                    <HelpPanelTabContainer
+                      activeTabType={tab.tabType}
+                      setNewActionTitle={setNewActionTitle}
+                      customContent={tab.customContent}
+                    />
+                  </div>
+                </Tab>
+              );
+            })}
+          </Tabs>
+        </div>
+      </>
+    );
+  }
+);
+
+HelpPanelCustomTabs.displayName = 'HelpPanelCustomTabs';
 
 export default HelpPanelCustomTabs;

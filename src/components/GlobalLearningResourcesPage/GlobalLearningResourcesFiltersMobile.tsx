@@ -66,6 +66,7 @@ export const GlobalLearningResourcesFiltersMobile: React.FC<
       setLoaderOptions({
         ...(loaderOptions || loaderOptionsFalllback),
         'display-name': value,
+        fuzzy: !!value?.trim(),
       });
     }
   };

@@ -18,14 +18,9 @@ import ExternalLinkAltIcon from '@patternfly/react-icons/dist/dynamic/icons/exte
 import HeadsetIcon from '@patternfly/react-icons/dist/dynamic/icons/headset-icon';
 import AttentionBellIcon from '@patternfly/react-icons/dist/dynamic/icons/attention-bell-icon';
 import InProgressIcon from '@patternfly/react-icons/dist/dynamic/icons/in-progress-icon';
-import {
-  Table,
-  TableVariant,
-  Tbody,
-  Td,
-  Thead,
-  Tr,
-} from '@patternfly/react-table';
+import { Table, TableVariant, Tbody, Td, Tr } from '@patternfly/react-table';
+import { useIntl } from 'react-intl';
+import messages from '../../../Messages';
 
 const SUPPORT_CASE_URL =
   'https://access.redhat.com/support/cases/#/case/new/get-support?caseCreate=true';
@@ -48,22 +43,41 @@ const statusTypes = {
   redHatWaiting: 'Waiting on Red Hat',
 };
 
+// Spacing between status text and icon: --pf-t--global--spacer--sm (.5rem / 8px)
+// https://www.patternfly.org/design-foundations/spacers#spacer-tokens
+const statusContentClass =
+  'pf-v6-u-display-inline-flex pf-v6-u-align-items-center pf-v6-u-text-nowrap';
+const statusIconSpacerStyle = {
+  marginInlineStart: 'var(--pf-t--global--spacer--sm)',
+};
+
 export const statusIcons = (status: string) => {
   const statusMapper = {
     [statusTypes.customerWaiting]: (
-      <Icon className="pf-t--global--icon--color--status--info--default">
-        {status} <AttentionBellIcon />{' '}
-      </Icon>
+      <span className={statusContentClass}>
+        <span>{status}</span>
+        <Icon
+          className="pf-t--global--icon--color--status--info--default"
+          style={statusIconSpacerStyle}
+          isInline
+        >
+          <AttentionBellIcon />
+        </Icon>
+      </span>
     ),
     [statusTypes.redHatWaiting]: (
-      <Icon>
-        {status} <InProgressIcon />{' '}
-      </Icon>
+      <span className={statusContentClass}>
+        <span>{status}</span>
+        <Icon style={statusIconSpacerStyle} isInline>
+          <InProgressIcon />
+        </Icon>
+      </span>
     ),
   };
   return statusMapper[status] ?? '';
 };
 const SupportPanel: React.FunctionComponent = () => {
+  const intl = useIntl();
   const [cases, setCases] = useState<Case[]>([]);
   const chrome = useChrome();
   const [isLoading, setIsLoading] = useState(false);
@@ -143,18 +157,15 @@ const SupportPanel: React.FunctionComponent = () => {
       ) : cases.length === 0 ? (
         <EmptyState
           icon={HeadsetIcon}
-          titleText={
-            <Title headingLevel="h4" size="lg">
-              No open support cases
-            </Title>
-          }
+          titleText={intl.formatMessage(messages.noOpenSupportCasesTitle)}
+          headingLevel="h4"
           variant={EmptyStateVariant.lg}
           data-ouia-component-id="help-panel-support-empty-state"
         >
           <EmptyStateBody>
             <Stack>
               <StackItem>
-                We can&apos;t find any active support cases opened by you.
+                {intl.formatMessage(messages.noSupportCasesMessage)}
               </StackItem>
             </Stack>
           </EmptyStateBody>
@@ -164,31 +175,33 @@ const SupportPanel: React.FunctionComponent = () => {
             iconPosition="end"
             href={SUPPORT_CASE_URL}
             onClick={() => {
-              window.open(SUPPORT_CASE_URL, '_blank');
+              window.open(SUPPORT_CASE_URL, '_blank', 'noopener,noreferrer');
             }}
             data-ouia-component-id="help-panel-open-support-case-button"
           >
-            Open a support case
+            {intl.formatMessage(messages.openSupportCaseButtonText)}
           </Button>
         </EmptyState>
       ) : (
         <>
           <Content component={ContentVariants.p}>
-            Quickly see the status on all of your open support cases. To manage
-            support cases or open a new one, visit the{' '}
+            {intl.formatMessage(messages.supportPanelDescription)}{' '}
             <Content
               component={ContentVariants.a}
               isVisitedLink
               href={SUPPORT_CASE_URL}
             >
-              Customer Portal
+              {intl.formatMessage(messages.customerPortalLinkText)}
             </Content>
           </Content>
+          <Title headingLevel="h3" size="md">
+            {intl.formatMessage(messages.supportCasesTableTitle)} (
+            {cases.length})
+          </Title>
           <Table
             variant={TableVariant.compact}
             data-ouia-component-id="help-panel-support-cases-table"
           >
-            <Thead>My open support cases ({cases.length})</Thead>
             <Tbody>
               {cases.map((c) => (
                 <Tr key={c.id}>

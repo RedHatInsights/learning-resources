@@ -8,9 +8,9 @@
   --pf-v6-c-card--child--PaddingInlineStart: var(--pf-t--global--spacer--md);
 
   &--bookmark {
-    color: var(--pf-t--color--blue--50);
+    color: var(--pf-t--global--color--brand--default);
     &:hover {
-      color: var(--pf-t--color--blue--50);
+      color: var(--pf-t--global--color--brand--hover);
     }
   }
 

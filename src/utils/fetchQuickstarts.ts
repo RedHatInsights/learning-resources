@@ -28,6 +28,7 @@ export type FetchQuickstartsOptions = {
   'use-case'?: string[];
   'display-name'?: string;
   bundle?: string;
+  fuzzy?: boolean;
 };
 
 export const loaderOptionsFalllback: FetchQuickstartsOptions = {
@@ -39,7 +40,11 @@ export const loaderOptionsFalllback: FetchQuickstartsOptions = {
 
 async function fetchQuickstarts(
   getUser: ChromeAPI['auth']['getUser'],
-  { ['display-name']: displayName, ...options }: FetchQuickstartsOptions = {}
+  {
+    ['display-name']: displayName,
+    fuzzy: useFuzzy,
+    ...options
+  }: FetchQuickstartsOptions = {}
 ) {
   const user = await getUser();
   if (!user) {
@@ -59,6 +64,7 @@ async function fetchQuickstarts(
         ...(displayName?.trim() && {
           'display-name': displayName?.trim(),
         }),
+        ...(useFuzzy === true && displayName?.trim() && { fuzzy: true }),
       },
     })
     .then(({ data }) => {

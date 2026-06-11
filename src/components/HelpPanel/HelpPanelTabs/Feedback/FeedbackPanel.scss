@@ -1,0 +1,31 @@
+.feedback-panel {
+  height: 100%;
+}
+
+.feedback-card {
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  cursor: pointer;
+
+  // PF v6 removes ::before border on clickable cards (expects selectableActions).
+  // Restore border for hover/focus on our onClick-based clickable cards.
+  &.pf-v6-c-card.pf-m-clickable {
+    &::before {
+      border: var(--pf-t--global--border--width--box--default) solid transparent;
+    }
+
+    &:hover::before,
+    &:focus-visible::before,
+    &:focus-within::before {
+      border-color: var(--pf-t--global--border--color--brand--default);
+    }
+  }
+}
+
+.feedback-card-icon {
+  color: var(--pf-t--global--color--brand--default);
+}
+
+.feedback-external-link-icon {
+  margin-left: 4px;
+}
+

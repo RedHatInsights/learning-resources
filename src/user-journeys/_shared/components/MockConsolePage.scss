@@ -1,0 +1,10 @@
+// Mock Console Page styles for Help Panel user journey
+// Minimal styles to ensure proper drawer panel layout
+
+.mock-console-page {
+  [data-ouia-component-id='help-panel-drawer'] .pf-v6-c-drawer__panel-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+}

@@ -89,6 +89,16 @@ const CreatorInternal = ({
     }));
   };
 
+  const updateMetadataTags = (tags: Array<{ kind: string; value: string }>) => {
+    setRawQuickStart((old) => ({
+      ...old,
+      metadata: {
+        ...old.metadata,
+        tags,
+      },
+    }));
+  };
+
   const setKind = (newKind: ItemKind | null) => {
     if (newKind !== null) {
       const meta = metaForKind(newKind);
@@ -222,11 +232,17 @@ const CreatorInternal = ({
               onChangeQuickStartSpec={(spec) => {
                 updateSpec(() => spec);
               }}
+              onChangeMetadataTags={updateMetadataTags}
               filterData={filterData}
               onChangeBundles={setBundles}
               onChangeCurrentStage={setCurrentStage}
               resetCreator={resetCreator}
               files={files}
+              quickStart={quickStart}
+              currentBundles={bundles}
+              currentTags={tags}
+              currentKind={rawKind}
+              onChangeKindDirect={setRawKind}
             />
           </GridItem>
 

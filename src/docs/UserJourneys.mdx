@@ -1,0 +1,223 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="User Journeys/Overview" />
+
+# User Journeys
+
+User journeys are interactive stories that demonstrate complete workflows through the Help Panel. They simulate a user opening the console, clicking the Help button, navigating through tabs, and interacting with content.
+
+## 🎯 Purpose
+
+User journeys serve multiple purposes:
+
+1. **Documentation** - Show how the Help Panel works in realistic scenarios
+2. **Testing** - Automated interaction testing with visual verification
+3. **Demonstration** - Help stakeholders understand user workflows
+4. **Regression Prevention** - Catch breaking changes in user flows
+
+## 📚 Available Journeys
+
+### Help Panel / Learn Panel
+
+Tests the complete user workflow for accessing and filtering learning resources through the Help Panel.
+
+**Steps:**
+1. **Page Loads** - Console page loads with Help button in masthead
+2. **Open Help Panel** - User clicks Help button to open the Help Panel drawer
+3. **Navigate to Learn Tab** - User navigates to the Learn tab
+4. **Filter and Toggle Options** - User filters by content type (Quick start) and toggles bookmarked only
+5. **Toggle Bundle Scope** - User switches between All resources and current bundle (Red Hat Insights)
+6. **Clear All Filters** - User applies a filter (Documentation) and clears all filters
+
+**What it tests:**
+- Console page structure and loading
+- Help Panel drawer opening and closing
+- Tab navigation
+- Learn panel content rendering
+- Content type filtering with dropdown selection
+- Bookmarked only checkbox toggle
+- Bundle scope toggle (All vs current bundle)
+- Filter chip appearance and removal
+- Clear all filters functionality
+
+**Manual Testing:**
+Use the "Manual Testing" story to explore the Help Panel interactively without automated steps running.
+
+### Help Panel / Support Panel
+
+Tests the user workflow for viewing support cases and opening a new case from the Help Panel (Support tab).
+
+**Steps:**
+1. **Page Loads** - Console page loads with Help button in masthead
+2. **Open Help Panel** - User clicks Help button to open the Help Panel drawer
+3. **Navigate to Support Tab** - User navigates to the Support tab
+4. **Empty State and Open Support Case** - User sees empty state and "Open support case" button when there are no cases
+5. **With Cases: Table and Pagination** - When cases exist, user sees the cases table and pagination
+
+**What it tests:**
+- Console page structure and Help Panel drawer
+- Tab navigation to Support
+- Support panel empty state and primary action (Open support case)
+- Support cases table and pagination when mock cases are returned
+
+**Manual Testing:**
+Use the "Manual Testing" story to explore the Support tab interactively.
+
+## 🏗️ Creating New Tab Journeys
+
+Use the shared helpers in `src/user-journeys/_shared/helpPanelJourneyHelpers.ts` to create journeys for other Help Panel tabs (APIs, Support, Feedback, etc.).
+
+See `HELP_PANEL_JOURNEY_TEMPLATE.md` for detailed examples.
+
+### Shared Helpers
+
+**`waitForPageLoad(canvasElement)`** - Waits for console page and Help button to be present
+
+**`openHelpPanel(canvasElement)`** - Opens the Help Panel drawer (checks if already open)
+
+**`navigateToTab(canvasElement, tabName)`** - Opens panel and navigates to a specific tab
+
+**`helpPanelMswHandlers`** - Mock API handlers for learning resources (filters, quickstarts, favorites)
+
+**`supportPanelMswHandlers`** - Mock support cases API (empty state). Use with **`supportPanelMswHandlersWithCases`** for table/pagination testing.
+
+### Example: Creating an APIs Tab Journey
+
+```typescript
+import { navigateToTab, helpPanelMswHandlers } from './_shared/helpPanelJourneyHelpers';
+
+const meta: Meta = {
+  title: 'User Journeys/Help Panel/APIs Tab',
+  component: AppEntryWithRouter,
+  parameters: {
+    layout: 'fullscreen',
+    msw: { handlers: helpPanelMswHandlers },
+  },
+};
+
+export const Step01_NavigateToAPIsTab: Story = {
+  play: async ({ canvasElement }) => {
+    await navigateToTab(canvasElement, 'APIs');
+    // Add tab-specific assertions here
+  },
+};
+```
+
+## 📋 Best Practices
+
+### Use Realistic Console Structure
+
+The mock console page (`MockConsolePage.tsx`) includes:
+- Masthead with Help button
+- Main content area with feature cards
+- Help Panel drawer that slides in from the right
+- Proper drawer height styling
+
+### Wait for Async Operations
+
+Always use `await` with async queries:
+
+```typescript
+// ✅ Good - waits for element
+const button = await canvas.findByRole('button', { name: 'Help' });
+
+// ❌ Bad - might fail intermittently
+const button = canvas.getByRole('button', { name: 'Help' });
+```
+
+### Use Stable Selectors
+
+Prefer `data-ouia-component-id` and role-based queries:
+
+```typescript
+// ✅ Good - stable selector with regex
+await canvas.findByRole('button', { name: /toggle help panel/i });
+
+// ✅ Good - OUIA component ID
+document.querySelector('[data-ouia-component-id="help-panel-drawer"]');
+
+// ❌ Avoid - fragile text selector
+await canvas.findByText('Help');
+```
+
+### Handle PatternFly Portals
+
+PatternFly v6 components like `Select` render dropdown menus in portals outside the canvas element:
+
+```typescript
+// Wait for dropdown option to appear in portal
+await waitFor(() => {
+  const option = document.querySelector('[data-ouia-component-id="help-panel-content-type-option-quickstart"]');
+  expect(option).toBeInTheDocument();
+});
+
+// Click the checkbox within the option
+const checkbox = document.querySelector(
+  '[data-ouia-component-id="help-panel-content-type-option-quickstart"] input[type="checkbox"]'
+) as HTMLElement;
+await userEvent.click(checkbox);
+```
+
+### Use IDs for Unique Elements
+
+When role-based queries match multiple elements, use `document.getElementById`:
+
+```typescript
+// Multiple buttons have "Red Hat Insights" in their text
+// Use ID for the specific toggle button
+const bundleToggle = document.getElementById('bundle-toggle') as HTMLElement;
+await userEvent.click(bundleToggle);
+```
+
+## 🔍 Debugging
+
+### Common Issues
+
+**Help Panel content not visible**: Check that the drawer panel has proper height CSS. See `MockConsolePage.scss`.
+
+**API errors**: Verify MSW handlers are included in story parameters:
+```typescript
+parameters: {
+  msw: { handlers: helpPanelMswHandlers }
+}
+```
+
+**Dropdown options not found**: PatternFly Select renders in a portal. Use `document.querySelector()` instead of `canvas.querySelector()`.
+
+**Multiple elements found**: Use more specific selectors like `data-ouia-component-id` or `getElementById()` instead of text-based queries.
+
+**Panel opens twice**: The `openHelpPanel` helper checks if the panel is already open to avoid toggling it closed.
+
+## 🎬 Running User Journeys
+
+### In Storybook
+
+```bash
+npm run storybook
+```
+
+Navigate to "User Journeys" → "Help Panel" (Learn Panel, Support Panel, etc.) and click on individual stories.
+
+### Via Play Function
+
+Click the "Play" button in the Storybook interactions panel to run the automated test.
+
+### Manual Testing
+
+Use the "Manual Testing" story to interact with the Help Panel without automated steps.
+
+## 🧪 Test Data
+
+The MSW handlers provide mock data for:
+- **8 learning resources** across 3 bundles (Insights, Ansible, OpenShift)
+- **2 content types**: Documentation and Quick start
+- **2 bookmarked resources** (Advisor Quick Start, Vulnerability Management Documentation)
+- **Product family filters**: RHEL, Ansible, OpenShift
+
+This data supports testing bundle scope toggling, content type filtering, and bookmark filtering.
+
+For the Support Panel journey, **supportPanelMswHandlers** returns no cases (empty state); **supportPanelMswHandlersWithCases** returns mock cases for table and pagination steps.
+
+---
+
+User journeys make Help Panel workflows testable and documentable. Use the shared helpers to quickly create journeys for all tabs.

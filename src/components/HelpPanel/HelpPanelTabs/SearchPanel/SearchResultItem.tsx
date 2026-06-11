@@ -1,0 +1,306 @@
+import React, { useEffect, useState } from 'react';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  Button,
+  Flex,
+  FlexItem,
+  Label,
+  Stack,
+  StackItem,
+} from '@patternfly/react-core';
+import './SearchResultItem.scss';
+import {
+  BookOpenIcon,
+  BookmarkIcon,
+  CloudIcon,
+  ExternalLinkAltIcon,
+  HeadsetIcon,
+  LightbulbIcon,
+  VectorSquareIcon,
+} from '@patternfly/react-icons';
+import { useIntl } from 'react-intl';
+import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
+import axios from 'axios';
+import { useOpenQuickStartInHelpPanel } from '../../../../utils/openQuickStartInHelpPanel';
+import useNavigateKeepPanel from '../../../../hooks/useNavigateKeepPanel';
+import { getBundleDisplayName } from '../../../../utils/bundleUtils';
+import {
+  BookmarkedIcon,
+  OutlinedBookmarkedIcon,
+} from '../../../common/BookmarkIcon';
+import { FavoriteIcon } from '../../../common/FavoriteIcon';
+import { API_BASE, FAVORITES } from '../../../../hooks/useQuickStarts';
+import messages from '../../../../Messages';
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  description: string;
+  url?: string;
+  type: 'documentation' | 'quickstart' | 'api' | 'support' | 'kb' | 'service';
+  tags?: string[];
+  relevanceScore?: number;
+  bundleTags?: string[];
+  isBookmarked?: boolean;
+  resourceName?: string;
+  isFavorited?: boolean;
+}
+
+// Search Result Item Component
+const SearchResultItem: React.FC<{
+  result: SearchResult;
+  onBookmarkToggle?: (resourceName: string, newBookmarkState: boolean) => void;
+  onFavoriteToggle?: (pathname: string, newFavoriteState: boolean) => void;
+}> = ({ result, onBookmarkToggle, onFavoriteToggle }) => {
+  const intl = useIntl();
+  const chrome = useChrome();
+  const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
+  const navigateKeepPanel = useNavigateKeepPanel();
+  const [isBookmarked, setIsBookmarked] = useState(
+    result.isBookmarked ?? false
+  );
+  const [isFavorited, setIsFavorited] = useState(result.isFavorited ?? false);
+
+  useEffect(() => {
+    setIsBookmarked(result.isBookmarked ?? false);
+  }, [result.isBookmarked]);
+
+  useEffect(() => {
+    setIsFavorited(result.isFavorited ?? false);
+  }, [result.isFavorited]);
+
+  const isBookmarkable =
+    (result.type === 'documentation' || result.type === 'quickstart') &&
+    !!result.resourceName;
+
+  const isFavoriteable = result.type === 'service' && !!result.url;
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!result.resourceName) return;
+
+    try {
+      const user = await chrome.auth.getUser();
+      if (!user) {
+        throw new Error('User not logged in');
+      }
+      const account = user.identity.internal?.account_id;
+
+      const newState = !isBookmarked;
+      setIsBookmarked(newState);
+      await axios.post(`${API_BASE}${FAVORITES}?account=${account}`, {
+        quickstartName: result.resourceName,
+        favorite: newState,
+      });
+      onBookmarkToggle?.(result.resourceName!, newState);
+    } catch (error) {
+      setIsBookmarked(result.isBookmarked ?? false);
+    }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!result.url) return;
+
+    const newState = !isFavorited;
+    setIsFavorited(newState);
+    onFavoriteToggle?.(result.url, newState);
+  };
+
+  const handleResultClick = () => {
+    if (result.type === 'quickstart' && result.id.startsWith('lr-')) {
+      const resourceName = result.id.replace('lr-', '');
+      openQuickStartInHelpPanel(resourceName, result.title, {
+        openDrawer: false,
+      });
+    } else if (result.url) {
+      if (result.type === 'service') {
+        // Use client-side navigation to preserve help panel state
+        try {
+          const url = new URL(result.url, window.location.origin);
+          if (url.origin === window.location.origin) {
+            navigateKeepPanel(`${url.pathname}${url.search}${url.hash}`);
+          } else {
+            window.location.assign(result.url);
+          }
+        } catch {
+          navigateKeepPanel(result.url);
+        }
+      } else {
+        window.open(result.url, '_blank', 'noopener,noreferrer');
+      }
+    }
+  };
+
+  const getBreadcrumbConfig = (type: SearchResult['type']) => {
+    switch (type) {
+      case 'documentation':
+        return {
+          tabType: intl.formatMessage(messages.breadcrumbLearn),
+          sectionTitle: intl.formatMessage(messages.contentTypeDocumentation),
+          icon: <BookOpenIcon />,
+        };
+      case 'quickstart':
+        return {
+          tabType: intl.formatMessage(messages.breadcrumbLearn),
+          sectionTitle: intl.formatMessage(messages.contentTypeQuickstarts),
+          icon: <BookmarkIcon />,
+        };
+      case 'api':
+        return {
+          tabType: intl.formatMessage(messages.breadcrumbApis),
+          sectionTitle: intl.formatMessage(messages.breadcrumbApiDocumentation),
+          icon: <VectorSquareIcon />,
+        };
+      case 'kb':
+        return {
+          tabType: intl.formatMessage(messages.breadcrumbKnowledgeBase),
+          sectionTitle: intl.formatMessage(
+            messages.breadcrumbKnowledgeBaseArticles
+          ),
+          icon: <LightbulbIcon />,
+        };
+      case 'support':
+        return {
+          tabType: intl.formatMessage(messages.breadcrumbSupport),
+          sectionTitle: intl.formatMessage(messages.breadcrumbSupportTickets),
+          icon: <HeadsetIcon />,
+        };
+      case 'service':
+        return {
+          tabType: null,
+          sectionTitle: intl.formatMessage(
+            messages.breadcrumbHybridCloudService
+          ),
+          icon: <CloudIcon className="pf-v6-u-color-blue-400" />,
+        };
+      default:
+        return { tabType: null, sectionTitle: type, icon: null };
+    }
+  };
+
+  const config = getBreadcrumbConfig(result.type);
+
+  return (
+    <Flex
+      alignItems={{ default: 'alignItemsFlexStart' }}
+      spaceItems={{ default: 'spaceItemsSm' }}
+    >
+      {isBookmarkable && (
+        <FlexItem>
+          <Button
+            variant="plain"
+            className="pf-v6-u-p-0"
+            onClick={handleBookmarkClick}
+            icon={
+              isBookmarked ? (
+                <BookmarkedIcon />
+              ) : (
+                <OutlinedBookmarkedIcon className="pf-v6-u-color-200" />
+              )
+            }
+            aria-label={intl.formatMessage(
+              isBookmarked
+                ? messages.unbookmarkLearningResource
+                : messages.bookmarkLearningResource
+            )}
+          />
+        </FlexItem>
+      )}
+
+      {isFavoriteable && (
+        <FlexItem>
+          <Button
+            variant="plain"
+            className="pf-v6-u-p-0"
+            onClick={handleFavoriteClick}
+            icon={<FavoriteIcon isFavorited={isFavorited} />}
+            aria-label={intl.formatMessage(
+              isFavorited
+                ? messages.unfavoriteService
+                : messages.favoriteService,
+              { title: result.title }
+            )}
+          />
+        </FlexItem>
+      )}
+
+      <FlexItem flex={{ default: 'flex_1' }}>
+        <Stack hasGutter>
+          <StackItem>
+            <Button
+              variant="link"
+              onClick={handleResultClick}
+              isInline
+              className="pf-v6-u-text-align-left pf-v6-u-p-0"
+              icon={
+                result.url &&
+                result.type !== 'quickstart' &&
+                result.type !== 'service' ? (
+                  <ExternalLinkAltIcon />
+                ) : undefined
+              }
+              iconPosition="end"
+            >
+              {result.title}
+            </Button>
+          </StackItem>
+
+          <StackItem>
+            <Flex
+              justifyContent={{ default: 'justifyContentSpaceBetween' }}
+              alignItems={{ default: 'alignItemsCenter' }}
+            >
+              <FlexItem>
+                <Flex
+                  alignItems={{ default: 'alignItemsCenter' }}
+                  spaceItems={{ default: 'spaceItemsSm' }}
+                >
+                  {config.icon && (
+                    <FlexItem className="pf-v6-u-font-size-sm pf-v6-u-color-200">
+                      {config.icon}
+                    </FlexItem>
+                  )}
+                  <FlexItem>
+                    <Breadcrumb className="lr-c-search-result-breadcrumb">
+                      {config.tabType && (
+                        <BreadcrumbItem>{config.tabType}</BreadcrumbItem>
+                      )}
+                      <BreadcrumbItem>{config.sectionTitle}</BreadcrumbItem>
+                    </Breadcrumb>
+                  </FlexItem>
+                </Flex>
+              </FlexItem>
+              {result.bundleTags && result.bundleTags.length > 0 && (
+                <FlexItem>
+                  <Flex spaceItems={{ default: 'spaceItemsXs' }}>
+                    {result.bundleTags.map((tag, index: number) => {
+                      const displayName = getBundleDisplayName(tag, {
+                        allowFallback: false,
+                      });
+                      if (!displayName) return null;
+
+                      return (
+                        <FlexItem key={index}>
+                          <Label color="grey" variant="filled" isCompact>
+                            {displayName}
+                          </Label>
+                        </FlexItem>
+                      );
+                    })}
+                  </Flex>
+                </FlexItem>
+              )}
+            </Flex>
+          </StackItem>
+        </Stack>
+      </FlexItem>
+    </Flex>
+  );
+};
+
+export default SearchResultItem;

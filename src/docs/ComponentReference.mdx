@@ -1,0 +1,539 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Documentation/Component Reference" />
+
+# Component Reference
+
+This document provides detailed reference information for Help Panel components.
+
+## 📦 Component Index
+
+### Core Components
+
+- **HelpPanelContent** - Main container for the Help Panel
+- **HelpPanelCustomTabs** - Tab management and navigation
+- **HelpPanelTabContainer** - Routes tab types to panel components
+- **HelpPanelLink** - Component to open custom tabs from external components
+
+### Panel Components
+
+- **SearchPanel** - Full-text search interface
+- **LearnPanel** - Learning resources browser
+- **KBPanel** - Knowledge base articles
+- **APIPanel** - API documentation browser
+- **SupportPanel** - Support case access
+- **VAPanel** - Virtual Assistant integration
+- **QuickStartsPanel** - Interactive tutorials
+- **FeedbackPanel** - User feedback form
+
+---
+
+## HelpPanelContent
+
+**Location:** `src/components/HelpPanel/HelpPanelContent.tsx`
+
+Main component that provides the Help Panel header, status page link, and tab container.
+
+### Props
+
+```typescript
+interface HelpPanelContentProps {
+  toggleDrawer: () => void;
+  newTab?: HelpPanelTabContent;
+}
+```
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `toggleDrawer` | `() => void` | Yes | Function to close the Help Panel drawer |
+| `newTab` | `HelpPanelTabContent` | No | Tab to navigate to (maps to existing static tab by `tabType`) |
+
+### Usage
+
+```typescript
+<HelpPanelContent toggleDrawer={handleCloseDrawer} />
+```
+
+### Features
+
+- Displays "Help" title with status page link
+- Status page link is always visible in the header
+- Provides drawer close button
+- Contains HelpPanelCustomTabs for tab navigation
+
+---
+
+## HelpPanelCustomTabs
+
+**Location:** `src/components/HelpPanel/HelpPanelCustomTabs.tsx`
+
+Manages tab lifecycle, state, and navigation.
+
+### Ref Interface
+
+```typescript
+export type HelpPanelCustomTabsRef = {
+  openTabWithContent: (content: HelpPanelTabContent) => void;
+};
+```
+
+### Methods (via ref)
+
+#### `openTabWithContent(content: HelpPanelTabContent)`
+
+Navigates to an existing static tab by mapping the `tabType` to a corresponding main tab (Search, Learn, APIs, Support, Feedback, or Virtual Assistant).
+
+**Note:** Tabs are now static (no dynamic tab creation). This method translates legacy `HelpPanelTabContent` requests to static tab navigation.
+
+**Parameters:**
+```typescript
+type HelpPanelTabContent = {
+  id?: string;        // Optional ID (unused in static model)
+  title: string;      // Tab title (unused in static model)
+  tabType: TabType;   // Content type - maps to existing static tab
+  content?: ReactNode; // Custom content (unused in static model)
+};
+```
+
+**Example:**
+```typescript
+const tabsRef = useRef<HelpPanelCustomTabsRef>(null);
+
+const openLearnTab = () => {
+  tabsRef.current?.openTabWithContent({
+    title: 'Learn', // Ignored - static tab titles are used
+    tabType: TabType.learn, // Navigates to the Learn tab
+  });
+};
+
+return <HelpPanelCustomTabs ref={tabsRef} />;
+```
+
+### Internal State
+
+```typescript
+// Tab definition structure (static tabs only)
+type TabDefinition = {
+  id: string;
+  title: ReactNode;
+  tabType: TabType;
+  featureFlag?: string;
+  icon?: ReactNode;
+  customContent?: ReactNode;
+  quickstartId?: string;
+};
+```
+
+### Static Tab Model
+
+Tabs are now static and created via memoized functions:
+
+1. **Creation:**
+   - All tabs created via `createMainTabs(showVA)` during initialization
+   - Tabs filtered by feature flags via `filterTabsByFeatureFlags(allTabs, flags)`
+   - No dynamic tab addition/removal at runtime
+
+2. **Navigation:**
+   - Users switch between existing tabs (Search, Learn, APIs, Support, Feedback, Virtual Assistant)
+   - `openTabWithContent` maps `tabType` to existing static tabs
+   - Quick Start overlays render on top of the active tab (not as separate tabs)
+
+3. **Deletion:**
+   - User closes tab via close button
+   - Quick Starts in progress require confirmation modal
+   - Cannot close base tabs (VA, Find Help)
+
+### Feature Flags
+
+- `platform.chrome.help-panel_chatbot` - Virtual Assistant tab visibility
+
+---
+
+## HelpPanelTabContainer
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/HelpPanelTabContainer.tsx`
+
+Routes active tab type to the appropriate panel component.
+
+### Props
+
+```typescript
+interface HelpPanelTabContainerProps {
+  activeTabType: TabType;
+  setNewActionTitle: (title: string) => void;
+  customContent?: ReactNode;
+}
+```
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `activeTabType` | `TabType` | Yes | Current active tab type |
+| `setNewActionTitle` | `(title: string) => void` | Yes | Callback to update tab title |
+| `customContent` | `ReactNode` | No | Custom content to render instead of default panel |
+
+### Implementation
+
+```typescript
+const HelpPanelTabContainer = ({
+  activeTabType,
+  setNewActionTitle,
+  customContent,
+}) => {
+  // If custom content provided, render it
+  if (customContent) {
+    return <>{customContent}</>;
+  }
+
+  // Otherwise route to appropriate panel component
+  const PanelComponent = helpPanelTabsMapper[activeTabType];
+  return <PanelComponent setNewActionTitle={setNewActionTitle} />;
+};
+```
+
+---
+
+## HelpPanelLink
+
+**Location:** `src/components/HelpPanel/HelpPanelLink.tsx`
+
+Component that allows external components to open custom tabs in the Help Panel.
+
+### Props
+
+```typescript
+interface HelpPanelLinkProps {
+  content: HelpPanelTabContent;
+  children: ReactNode;
+  onClick?: () => void;
+}
+```
+
+### Usage
+
+```typescript
+<HelpPanelLink
+  content={{
+    id: 'api-endpoint-details',
+    title: 'POST /api/users',
+    tabType: TabType.api,
+    content: <APIEndpointDetails endpoint="/api/users" />,
+  }}
+>
+  View API details
+</HelpPanelLink>
+```
+
+### Behavior
+
+1. Renders children as a clickable element
+2. On click, opens Help Panel if closed
+3. Calls `openTabWithContent` on HelpPanelCustomTabs ref
+4. Optionally calls custom `onClick` handler
+
+---
+
+## Panel Components
+
+All panel components share a common interface:
+
+```typescript
+interface PanelComponentProps {
+  setNewActionTitle: (title: string) => void;
+}
+```
+
+### SearchPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/SearchPanel/SearchPanel.tsx`
+
+Provides full-text search across all learning resources.
+
+**Features:**
+- Search form with query input
+- Recommended content when no search query
+- Search results with relevance scoring
+- Auto-updates tab title with search query
+
+**Title Updates:**
+```typescript
+// When user types "kubernetes"
+setNewActionTitle("kubernetes");
+// Tab title becomes "kubernetes"
+```
+
+### LearnPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/LearnPanel.tsx`
+
+Displays curated learning resources organized by type.
+
+**Features:**
+- Content type filtering (videos, documentation, tutorials, etc.)
+- Product/service filtering
+- Direct links to learning materials
+
+### KBPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/KBPanel.tsx`
+
+Provides access to Red Hat knowledge base articles.
+
+**Features:**
+- Search knowledge base
+- Browse by category
+- View article details
+- External links to full articles
+
+**Feature Flag:** `platform.chrome.help-panel_knowledge-base`
+
+### APIPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/APIPanel.tsx`
+
+API documentation browser for Red Hat services.
+
+**Features:**
+- Service selection
+- Endpoint browsing
+- Request/response examples
+- Search functionality
+
+### SupportPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/SupportPanel.tsx`
+
+Direct access to user's support cases.
+
+**Features:**
+- View open cases
+- Create new cases
+- Link to case details
+- Support resources
+
+### VAPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/VAPanel.tsx`
+
+Virtual Assistant integration panel.
+
+**Features:**
+- Chat interface
+- Context-aware suggestions
+- Integration with remote VA module
+
+**Feature Flag:** `platform.chrome.help-panel_chatbot`
+
+**Dependencies:**
+- Remote module: `virtualAssistant`
+- Must be loaded via module federation
+
+### QuickStartsPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/QuickStartsPanel.tsx`
+
+Renders interactive Quick Start tutorials.
+
+**Props:**
+```typescript
+interface QuickStartsPanelProps {
+  activeQuickStartID: string;
+  quickStarts: ExtendedQuickstart[];
+  loading: boolean;
+  allQuickStartStates: AllQuickStartStates;
+  setAllQuickStartStates: Dispatch<SetStateAction<AllQuickStartStates>>;
+  onClose: (status: string | number) => void;
+  onCloseNotInProgress: () => void;
+}
+```
+
+**Features:**
+- Interactive step-by-step tutorials
+- Progress tracking
+- Confirmation on close if in progress
+
+### FeedbackPanel
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/Feedback/FeedbackPanel.tsx`
+
+User feedback collection form.
+
+**Features:**
+- Feedback form
+- Category selection
+- Thank you confirmation
+
+---
+
+## Tab Type Enum
+
+**Location:** `src/components/HelpPanel/HelpPanelTabs/helpPanelTabsMapper.ts`
+
+```typescript
+export enum TabType {
+  'search' = 'search',
+  'learn' = 'learn',
+  'kb' = 'kb',
+  'api' = 'api',
+  'support' = 'support',
+  'va' = 'va',
+  'quickstart' = 'quickstart',
+  'feedback' = 'feedback',
+}
+```
+
+---
+
+## Helper Functions
+
+### `getSubTabTitle(tabType: TabType, intl?: ReturnType<typeof useIntl>): string`
+
+Returns the display title for a given tab type.
+
+**Location:** `src/components/HelpPanel/HelpPanelCustomTabs.tsx`
+
+**Usage:**
+```typescript
+const title = getSubTabTitle(TabType.search); // "Search"
+const title = getSubTabTitle(TabType.api, intl); // Localized "API documentation"
+```
+
+---
+
+## Stores
+
+### openQuickstartInHelpPanelStore
+
+**Location:** `src/store/openQuickstartInHelpPanelStore.ts`
+
+Global store for coordinating Quick Start opening from external components.
+
+**State:**
+```typescript
+type OpenQuickstartInHelpPanelState = {
+  pendingOpen?: {
+    quickstartId: string;
+    displayName: string;
+  };
+};
+```
+
+**Methods:**
+- `updateState('OPEN', data)` - Request Quick Start open
+- `updateState('CONSUMED_OPEN')` - Mark request as consumed
+
+**Usage:**
+```typescript
+// From catalog or other component
+const store = getOpenQuickstartInHelpPanelStore();
+store.updateState('OPEN', {
+  quickstartId: 'my-quickstart',
+  displayName: 'My Quick Start',
+});
+
+// Help Panel listens and responds
+useEffect(() => {
+  const { pendingOpen } = openQuickstartState;
+  if (!pendingOpen) return;
+  // Handle open...
+  store.updateState('CONSUMED_OPEN');
+}, [openQuickstartState.pendingOpen]);
+```
+
+---
+
+## Styling
+
+### SCSS Files
+
+- **HelpPanelCustomTabs.scss** - Main tab styling
+  - Tab overflow handling
+  - Close button styling
+  - Active tab indicators
+  - Virtual Assistant tab icon styles
+
+### CSS Classes
+
+- `.lr-c-help-panel-tabs-wrapper` - Main tabs container
+- `.lr-c-help-panel-custom-tabs` - Tabs component wrapper
+- `.lr-c-help-panel-custom-tab` - Individual tab styling
+- `.lr-c-help-panel-tab-content` - Tab content area
+- `.lr-c-help-panel-tab-content--quickstart` - Quick Start tab content
+- `.lr-c-status-page-button` - Status page link button
+- `.persistent-tab` - Non-closeable tabs
+
+### PatternFly Utility Classes
+
+Components use PatternFly v6 utility classes:
+- `pf-v6-u-font-size-sm` - Small font size
+- `pf-v6-u-font-weight-normal` - Normal font weight
+- `pf-v6-u-ml-md` - Medium left margin
+- `pf-v6-u-align-items-flex-start` - Flex alignment
+
+---
+
+## Accessibility
+
+### ARIA Labels
+
+All interactive elements have proper ARIA labels:
+```typescript
+<Button aria-label="Add tab" />
+<Tab aria-label="Virtual Assistant" />
+<Tabs data-ouia-component-id="help-panel-tabs" />
+```
+
+### Keyboard Navigation
+
+- **Tab**: Navigate between tabs
+- **Arrow Keys**: Navigate within tabs
+- **Enter/Space**: Activate selected tab
+- **Escape**: Close tab (if closeable)
+
+### OUIA Component IDs
+
+All components have OpenUI Automation (OUIA) IDs for testing:
+- `help-panel-title`
+- `help-panel-close-button`
+- `help-panel-tabs`
+- `help-panel-tab-{id}`
+- `help-panel-subtabs`
+- `help-panel-subtab-{type}`
+
+---
+
+## Performance Considerations
+
+### Lazy Loading
+
+- Quick Starts loaded asynchronously after user authentication
+- Remote modules (VA) loaded on demand
+- Tab content only rendered when active
+
+### Debouncing
+
+```typescript
+// Tab title updates debounced to 100ms
+const setNewActionTitleDebounced = useCallback(
+  debounce((title: string) => {
+    // Update logic
+  }, 100),
+  [dependencies]
+);
+```
+
+### Memoization
+
+```typescript
+// All tabs created with feature flags
+const allTabs = useMemo(() => createMainTabs(showVA), [showVA]);
+
+// Tabs filtered by feature flags
+const tabs = useMemo(
+  () => filterTabsByFeatureFlags(allTabs, flags),
+  [allTabs, flags]
+);
+```
+
+---
+
+This reference guide provides comprehensive information for developers working with Help Panel components.

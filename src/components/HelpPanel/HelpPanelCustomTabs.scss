@@ -1,33 +1,147 @@
-.lr-c-help-panel-custom-tab {
-  &.persistent-tab {
-    // the disabled close tab action does not hide the action button
-    // has to be hidden by CSS and the width has to be adjusted
-    .pf-v6-c-tabs__item-action {
-      visibility: hidden;
-      width: 0;
-    }
+// Help panel is rendered inside the platform's notification drawer with class "learningResources".
+// Custom background override needed because prod has both PF5 and PF6, causing version conflicts.
+.lr-c-help-panel-background-override {
+  background-color: var(--pf-v6-c-notification-drawer--BackgroundColor) !important;
+}
+
+// Wrapper so tab list and tab content sections can share height; tab content gets remaining space.
+.lr-c-help-panel-tabs-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  & > .pf-v6-c-tabs {
+    flex-shrink: 0;
   }
 
-  // Add max-width to tab titles while keeping them dynamically sized
+  // Hidden tab panels must not participate in layout (avoid white space from inactive tabs).
+  // Our flex rules would override [hidden]'s display, so we force hidden panels out of layout.
+  & > .pf-v6-c-tab-content[hidden] {
+    display: none !important;
+  }
+
+  // Visible tab content section fills remaining height for quickstart full-height layout.
+  & > .pf-v6-c-tab-content:not([hidden]) {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.lr-c-help-panel-custom-tabs {
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+.lr-c-help-panel-custom-tabs .pf-v6-c-tabs__list {
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+// No sub-tabs in single-tier structure
+
+// Content container (Learn, APIs, Support, etc.) has no background by default; set white
+// so the tab content area does not show the drawer's default background when scrolling.
+[data-ouia-component-id="help-panel-content-container"] {
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+// Make DataList row lines extend full width (content container has padding that insets the list).
+[data-ouia-component-id="help-panel-content-container"] .pf-v6-c-data-list {
+  margin-inline: calc(-1 * var(--pf-t--global--spacer--md, 1rem));
+  width: calc(100% + 2 * var(--pf-t--global--spacer--md, 1rem));
+}
+
+.lr-c-help-panel-custom-tabs {
+  .pf-v6-c-tabs__list {
+    background-color: var(--pf-t--global--background--color--primary--default);
+  }
+
+  // Make tab titles smaller to fit all tabs without scrolling
   .pf-v6-c-tabs__item-text {
-    max-width: 120px;
+    font-size: 0.75rem !important;
+  }
+
+  // Reduce padding on tab items to fit more tabs
+  .pf-v6-c-tabs__link {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  // Ensure tabs have the same background as the panel
+  .pf-v6-c-tabs__item {
+    background-color: var(--pf-t--global--background--color--primary--default);
+  }
+
+  // Active tab should also use the primary background
+  .pf-v6-c-tabs__link {
+    background-color: var(--pf-t--global--background--color--primary--default);
+  }
+
+  // Move the active tab indicator from top to bottom
+  .pf-v6-c-tabs__link::after {
+    top: auto !important;
+    bottom: 0 !important;
+  }
+}
+
+// Tab content area: flex column so the drawer child can fill height (flex: 1).
+.lr-c-help-panel-tab-content--quickstart {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+// PatternFly custom drawer: we override so the quickstart panel is full-width inside the tab (no main content area).
+.lr-c-help-panel-quickstart-drawer {
+  flex: 1;
+  min-height: 0;
+
+  // Empty drawer content: take no space so the panel uses the full tab.
+  .pf-v6-c-drawer__content {
+    flex: 0 0 0;
+    min-width: 0;
+    width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  // Panel: full width (override default 50%), no side borders. Height from parent; panel scrolls by default.
+  .pf-v6-c-drawer__panel {
+    flex: 1 1 100%;
+    min-width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    --pf-v6-c-drawer__panel--BorderInlineStartWidth: 0;
+    --pf-v6-c-drawer__panel--BorderInlineEndWidth: 0;
   }
 }
 
-.lr-c-help-panel-custom-tabs.pf-v6-c-tabs {
-  .pf-v6-c-tabs__item.pf-m-overflow {
-    .pf-v6-c-tabs__link-toggle-icon {
-      // fixes strange alignment of the expand/collapse icon
-      align-self: auto;
-    }
-  }
+// Status page link styling (in header actions, before close button)
+.lr-c-status-page-link {
+  font-size: var(--pf-t--global--font--size--sm) !important;
+  text-decoration: none !important;
+  margin-right: var(--pf-t--global--spacer--md) !important;
+  // Align with close button vertically
+  align-self: center !important;
+  padding-top: var(--pf-t--global--spacer--sm) !important;
 
+  &:hover {
+    text-decoration: none !important;
+  }
 }
 
-// Align Red Hat status page button with tabs
-.lr-c-status-page-button {
-  transform: translateY(8px) !important;
+// Quickstart overlay: positioned above tabs to show quickstart content
+.lr-c-help-panel-quickstart-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--pf-t--global--background--color--primary--default);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }

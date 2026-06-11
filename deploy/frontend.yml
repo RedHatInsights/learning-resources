@@ -20,14 +20,13 @@ objects:
           - /apps/learning-resources
       image: ${IMAGE}:${IMAGE_TAG}
       feoConfigEnabled: true
-      bundleSegments:
-        - segmentId: learning-resources-openshift
-          bundleId: openshift
-          position: 10000
+      navigationSegments:
+        - segmentId: openshift-learning-resources
           navItems:
             - id: learningResourcesOpenShift
               title: Learning Resources
               href: /openshift/learning-resources
+      bundleSegments:
         - segmentId: learning-resources-ansible
           bundleId: ansible
           position: 10000
@@ -63,6 +62,25 @@ objects:
             - id: learningResourcesSettings
               title: Learning Resources
               href: /settings/learning-resources
+        - segmentId: learning-resources-global
+          position: 1000
+          bundleId: staging
+          navItems:
+            - id: globalLearningResourcesPage
+              title: Learning Resources
+              href: /learning-resources
+        - segmentId: learning-resources-creator
+          position: 2000
+          bundleId: staging
+          navItems:
+            - id: learningResourcesCreator
+              title: Learning Resources Creator
+              href: /learning-resources/creator
+              permissions:
+                - method: featureFlag
+                  args:
+                    - platform.chrome.quickstarts.creator
+                    - true
       module:
         manifestLocation: /apps/learning-resources/fed-mods.json
         modules:
@@ -101,6 +119,22 @@ objects:
                 args:
                 - platform.chrome.quickstarts.creator
                 - true
+      widgetRegistry:
+        - scope: learningResources
+          module: ./BookmarkedLearningResourcesWidget
+          featureFlag: widget.learningResources.enable
+          defaults:
+            w: 2
+            h: 4
+            maxH: 10
+            minH: 1
+          config:
+            title: Bookmarked learning resources
+            icon: OutlinedBookmarkIcon
+            headerLink:
+              title: View all
+              href: /learning-resources?tab=all
+            featureFlag: platform.learning-resources.global-learning-resources
       searchEntries:
         - id: learning-resources
           title: All Learning Resources

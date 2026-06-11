@@ -1,4 +1,12 @@
 .lr-c-creator-yaml-view {
+  &__toolbar {
+    margin-bottom: var(--pf-t--global--spacer--md);
+  }
+
+  &__metadata {
+    margin-bottom: var(--pf-t--global--spacer--md);
+  }
+
   &__editor {
     height: 600px;
     max-height: 70vh;

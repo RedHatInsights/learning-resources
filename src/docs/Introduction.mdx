@@ -1,0 +1,105 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Documentation/Introduction" />
+
+# Welcome to Learning Resources Storybook
+
+Welcome to the **Learning Resources** documentation! This Storybook provides comprehensive documentation for the Learning Resources application, with a focus on the Help Panel architecture.
+
+## 🎯 What is Learning Resources?
+
+The Learning Resources application is a Red Hat Console application that provides:
+
+- **Centralized Learning Hub** - Unified access to all learning materials across Red Hat services
+- **Help Panel** - Context-aware help system with multiple content types
+- **Quick Starts** - Step-by-step guided tutorials
+- **Content Discovery** - Search and filtering across documentation, videos, tutorials, and more
+- **API Documentation** - Searchable API references for Red Hat services
+
+## 🏗️ Architecture Overview
+
+The application is built with modern React patterns:
+
+### Key Technologies
+- **React 18** with functional components and hooks
+- **PatternFly 6** for design system and components
+- **React Router 6** for navigation
+- **TypeScript** for type safety
+- **Module Federation** for remote module loading (Virtual Assistant)
+- **Unleash** for feature flags
+
+### Integration Points
+- **Red Hat Console Chrome** - Platform integration
+- **Virtual Assistant** - AI-powered help (remote module)
+- **Quick Starts** - Interactive tutorials
+- **Feature Flags (Unleash)** - Feature toggling
+
+## 📚 Documentation Structure
+
+### 🏛️ Architecture Documentation
+- **Help Panel Architecture** - Detailed overview of the Help Panel system
+- **Component Structure** - How components are organized
+- **Feature Flag Integration** - How feature flags control functionality
+
+## 🎯 Help Panel Overview
+
+The Help Panel is the centerpiece of the Learning Resources experience, providing:
+
+### Content Types
+- **Search** - Full-text search across all content
+- **Learn** - Curated learning resources
+- **Knowledge Base** - Access to Red Hat knowledge articles
+- **APIs** - API documentation browser
+- **My Support Cases** - Direct access to support
+- **Quick Starts** - Interactive guided tutorials
+- **Virtual Assistant** - AI-powered help (feature flagged)
+- **Feedback** - User feedback collection
+
+### Key Features
+- **Tabbed Interface** - Multiple concurrent help sessions
+- **Dynamic Tabs** - Create new tabs, rename based on content
+- **Feature Flag Control** - Content types can be toggled via feature flags
+- **Remote Module Loading** - Virtual Assistant loads as a federated module
+- **Persistent State** - Tab state maintained during session
+
+## 🚀 Getting Started
+
+### For Developers
+1. **Install dependencies**: `npm install`
+2. **Start Storybook**: `npm run storybook`
+3. **Build Storybook**: `npm run build-storybook`
+
+### For Product Managers
+- Review the **Help Panel Architecture** documentation for system overview
+- Understand feature flag dependencies and their impact
+
+### For Designers
+- Understand the tabbed interface patterns
+- Review the content type organization
+
+## 🎭 Feature Flags
+
+The Help Panel uses several feature flags to control functionality:
+
+### Content Type Flags
+- `platform.chrome.help-panel_search` - Search tab
+- `platform.chrome.help-panel_knowledge-base` - Knowledge base tab
+- `platform.chrome.help-panel_chatbot` - Virtual Assistant tab
+- `platform.chrome.help-panel_direct-ask-redhat` - Direct Ask Red Hat integration
+
+### UI Behavior
+- When both Search and KB flags are enabled: Status Page link appears in header
+- When both are disabled: Status Page link appears in subtabs
+- Virtual Assistant tab appears as a primary tab when chatbot flag is enabled
+
+## 🔗 Useful Links
+
+- [Learning Resources Repository](https://github.com/RedHatInsights/learning-resources)
+- [PatternFly Design System](https://www.patternfly.org/)
+- [Red Hat Console Documentation](https://consoledot.pages.redhat.com/)
+
+---
+
+**Happy exploring!** 🎉
+
+Use the sidebar navigation to browse documentation sections.
