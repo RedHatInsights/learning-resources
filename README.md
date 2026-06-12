@@ -114,5 +114,3 @@ function MyComponent() {
 - `data-ouia-component-id?: string` - Testing identifier
 
 **Note:** Must be used within insights-chrome environment. The component uses `chrome.drawerActions.toggleDrawerContent()` to open the help panel.
-
-
