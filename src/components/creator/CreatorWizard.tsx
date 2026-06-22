@@ -354,7 +354,7 @@ const CreatorWizard = ({
         work_check_help: t.review?.failedTaskHelp,
       })),
     };
-  }, [quickStart, currentKind, currentBundles, currentTags]);
+  }, [viewMode]);
 
   // Update stage when switching to creator mode to show preview
   const handleViewModeChange = (newMode: ViewMode) => {
