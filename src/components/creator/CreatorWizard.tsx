@@ -97,6 +97,10 @@ type FormTaskValue = {
   work_check_help?: string;
 };
 
+const isValidUrl = (s: string): boolean => {
+  try { new URL(s); return true; } catch { return false; }
+}
+
 const PropUpdater = ({
   values,
   onChangeKind,
@@ -172,7 +176,7 @@ const PropUpdater = ({
       description: description ?? '',
       icon: null,
       link:
-        meta?.fields?.url && url !== undefined
+        meta?.fields?.url && url !== undefined && isValidUrl(url)
           ? {
               text: 'View documentation',
               href: url,
@@ -187,7 +191,6 @@ const PropUpdater = ({
       tasks: effectiveTasks,
     });
 
-    onChangeKind(kind);
   }, [
     meta,
     rawKind,
