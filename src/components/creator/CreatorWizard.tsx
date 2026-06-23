@@ -98,8 +98,13 @@ type FormTaskValue = {
 };
 
 const isValidUrl = (s: string): boolean => {
-  try { new URL(s); return true; } catch { return false; }
-}
+  try {
+    new URL(s);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const PropUpdater = ({
   values,
@@ -191,6 +196,7 @@ const PropUpdater = ({
       tasks: effectiveTasks,
     });
 
+    onChangeKind(kind);
   }, [
     meta,
     rawKind,
@@ -332,9 +338,9 @@ const CreatorWizard = ({
   const schema = useMemo(() => makeSchema(chrome, filterData), []);
   const availableBundles = useMemo(() => chrome.getAvailableBundles(), []);
 
-  // Derive initialValues from shared state so wizard ↔ YAML stays in sync.
-  // FormRenderer is conditionally rendered (unmounted in YAML mode), so it
-  // picks up fresh initialValues each time the user switches back to wizard.
+  // [viewMode] only, including props like quickStart, currentKind, etc would recompute on
+  // every keystroke and cause fields to spazz/lose focus. FormRenderer is unmounted in YAML
+  // mode, so switching back triggers a remount with fresh initialValues anyway.
   const initialValues = useMemo(() => {
     if (!quickStart) return undefined;
     return {
