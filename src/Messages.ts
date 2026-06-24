@@ -124,6 +124,10 @@ const messages = defineMessages({
     id: 'helpPanel.api.noDocsFound',
     defaultMessage: 'No API documentation found matching your criteria.',
   },
+  apiSearchPlaceholder: {
+    id: 'helpPanel.api.searchPlaceholder',
+    defaultMessage: 'Search API documentation',
+  },
 
   // Support Panel
   noOpenSupportCasesTitle: {
