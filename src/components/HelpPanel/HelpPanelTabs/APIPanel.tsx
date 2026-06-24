@@ -29,7 +29,6 @@ import {
   fetchBundles,
 } from '../../../utils/fetchBundleInfoAPI';
 import { getBundleDisplayName } from '../../../utils/bundleUtils';
-import useNavigateKeepPanel from '../../../hooks/useNavigateKeepPanel';
 
 interface APIDoc {
   name: string;
@@ -234,27 +233,10 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
 
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const chrome = useChrome();
-  const navigateKeepPanel = useNavigateKeepPanel();
 
-  const handleResourceClick = () => {
+  const getConsoleDocsUrl = () => {
     const environment = chrome.getEnvironment();
-    const consoleDocsUrl = convertToConsoleDocsUrl(
-      resource.name,
-      resource.url,
-      environment
-    );
-    // Use client-side navigation to preserve help panel state
-    try {
-      const url = new URL(consoleDocsUrl);
-      const target = `${url.pathname}${url.search}${url.hash}`;
-      if (url.origin === window.location.origin) {
-        navigateKeepPanel(target);
-      } else {
-        window.location.assign(consoleDocsUrl);
-      }
-    } catch {
-      navigateKeepPanel(consoleDocsUrl);
-    }
+    return convertToConsoleDocsUrl(resource.name, resource.url, environment);
   };
 
   return (
@@ -272,7 +254,8 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
           <FlexItem>
             <Button
               variant="link"
-              onClick={handleResourceClick}
+              component="a"
+              href={getConsoleDocsUrl()}
               isInline
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
             >
@@ -299,7 +282,6 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
 const APIPanelContent: React.FC = () => {
   const intl = useIntl();
   const chrome = useChrome();
-  const navigateKeepPanel = useNavigateKeepPanel();
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -387,10 +369,6 @@ const APIPanelContent: React.FC = () => {
             component="a"
             href="/docs/api"
             data-ouia-component-id="help-panel-api-docs-link"
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault();
-              navigateKeepPanel('/docs/api');
-            }}
             isInline
           >
             {intl.formatMessage(messages.apiDocumentationCatalogLinkText)}

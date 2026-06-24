@@ -119,7 +119,7 @@ export const Step04_ViewAPIDocsList: Story = {
     // Wait for API data to load asynchronously
     await waitFor(
       () => {
-        const advisorLink = canvas.queryByRole('button', { name: /Advisor/i });
+        const advisorLink = canvas.queryByRole('link', { name: /Advisor/i });
         expect(advisorLink).toBeInTheDocument();
       },
       { timeout: TEST_TIMEOUTS.ELEMENT_WAIT }
@@ -217,7 +217,7 @@ export const Step06_VerifyExternalLinks: Story = {
 
     await waitFor(
       () => {
-        const advisorLink = canvas.getByRole('button', {
+        const advisorLink = canvas.getByRole('link', {
           name: /Advisor/i,
         });
         expect(advisorLink).toBeInTheDocument();
@@ -241,7 +241,7 @@ export const Step06_VerifyExternalLinks: Story = {
     ];
 
     for (const apiName of expectedAPIs) {
-      const link = canvas.getByRole('button', { name: new RegExp(apiName) });
+      const link = canvas.getByRole('link', { name: new RegExp(apiName) });
       expect(link).toBeInTheDocument();
     }
 

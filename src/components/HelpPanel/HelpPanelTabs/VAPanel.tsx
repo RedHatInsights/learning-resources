@@ -15,7 +15,7 @@ const VAErrorElement: React.FC = () => {
   console.error('VA Panel: Virtual Assistant module failed to load');
 
   return (
-    <Stack hasGutter className="pf-v6-u-h-100">
+    <Stack className="pf-v6-u-h-100 pf-v6-u-p-md">
       <StackItem>
         <Content>
           {intl.formatMessage(messages.virtualAssistantNotAvailable)}
@@ -32,26 +32,17 @@ const VAPanel: React.FC<{
     scope: 'virtualAssistant',
     module: './VAEmbed',
     fallback: (
-      <Stack hasGutter className="pf-v6-u-h-100">
-        <StackItem
-          isFilled
-          className="pf-v6-u-display-flex pf-v6-u-justify-content-center pf-v6-u-align-items-center"
-        >
-          <Spinner size="lg" />
-        </StackItem>
-      </Stack>
+      <div className="pf-v6-u-h-100 pf-v6-u-display-flex pf-v6-u-justify-content-center pf-v6-u-align-items-center">
+        <Spinner size="lg" />
+      </div>
     ),
     ErrorComponent: <VAErrorElement />,
   };
 
   return (
-    <Stack hasGutter className="pf-v6-u-h-100">
-      <StackItem isFilled className="pf-v6-u-overflow-hidden">
-        <div className="pf-v6-u-h-100 pf-v6-u-overflow-y-auto">
-          <ScalprumComponent {...virtualAssistantProps} />
-        </div>
-      </StackItem>
-    </Stack>
+    <div className="pf-v6-u-h-100">
+      <ScalprumComponent {...virtualAssistantProps} />
+    </div>
   );
 };
 

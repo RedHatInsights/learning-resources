@@ -45,6 +45,7 @@ const Wrapper = ({ children, flags = defaultFlags, api }: { children: React.Reac
         bundleTitle: 'RHEL',
       }),
       getAvailableBundles: () => [],
+      getEnvironment: () => 'stage',
       chromeHistory: { push: () => {}, replace: () => {} },
       auth: {
         getUser: () => Promise.resolve({
@@ -168,6 +169,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       chromeHistory: { push: () => {}, replace: () => {} },
+      getEnvironment: () => 'stage',
     } as any);
     cy.mount(
       <Wrapper>
@@ -223,6 +225,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       getAvailableBundles: () => [{ id: 'rhel', title: 'RHEL' }],
+      getEnvironment: () => 'stage',
     } as any);
 
     cy.mount(
@@ -293,6 +296,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       chromeHistory: { push: () => {}, replace: () => {} },
+      getEnvironment: () => 'stage',
     } as any);
     cy.mount(
       <Wrapper>
@@ -326,6 +330,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       chromeHistory: { push: () => {}, replace: () => {} },
+      getEnvironment: () => 'stage',
     } as any);
 
     cy.mount(
@@ -346,6 +351,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       chromeHistory: { push: () => {}, replace: () => {} },
+      getEnvironment: () => 'stage',
     } as any);
 
     cy.mount(
@@ -399,6 +405,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       getAvailableBundles: () => [],
+      getEnvironment: () => 'stage',
       chromeHistory: { push: () => {}, replace: () => {} },
       auth: {
         getUser: () => Promise.resolve({
@@ -533,6 +540,7 @@ describe('HelpPanel', () => {
         bundleId: 'rhel',
         bundleTitle: 'RHEL',
       }),
+      getEnvironment: () => 'stage',
       auth: {
         getUser: () => Promise.resolve({
           identity: {
@@ -571,6 +579,7 @@ describe('HelpPanel', () => {
         bundleId: 'rhel',
         bundleTitle: 'RHEL',
       }),
+      getEnvironment: () => 'stage',
       auth: {
         getUser: () => Promise.resolve({
           identity: {
@@ -624,6 +633,7 @@ describe('HelpPanel', () => {
         bundleId: 'rhel',
         bundleTitle: 'RHEL',
       }),
+      getEnvironment: () => 'stage',
       auth: {
         getUser: () => Promise.resolve({
           identity: {
@@ -677,6 +687,7 @@ describe('HelpPanel', () => {
         bundleTitle: 'RHEL',
       }),
       chromeHistory: { push: () => {}, replace: () => {} },
+      getEnvironment: () => 'stage',
     } as any);
 
     cy.mount(
@@ -789,6 +800,7 @@ describe('HelpPanel', () => {
           { id: 'rhel', title: 'RHEL' },
           { id: 'openshift', title: 'OpenShift' },
         ],
+        getEnvironment: () => 'stage',
         auth: {
           getUser: () => Promise.resolve(mockAuthUser),
           getToken: () => Promise.resolve('mock-token'),

@@ -14,11 +14,15 @@ const HelpPanelTabContainer = ({
     return helpPanelTabsMapper[activeTabType];
   }, [activeTabType]);
 
+  // VA tab should fill the entire panel without padding
+  const shouldRemovePadding = activeTabType === TabType.va;
+  const containerClassName = shouldRemovePadding ? '' : 'pf-v6-u-p-md';
+
   // If custom content is provided, render it directly
   if (customContent) {
     return (
       <div
-        className="pf-v6-u-p-md"
+        className={containerClassName}
         data-ouia-component-id="help-panel-content-container"
       >
         {customContent}
@@ -29,7 +33,7 @@ const HelpPanelTabContainer = ({
   // Otherwise, render the standard tab component
   return (
     <div
-      className="pf-v6-u-p-md"
+      className={containerClassName}
       data-ouia-component-id="help-panel-content-container"
     >
       <ActiveComponent setNewActionTitle={setNewActionTitle} />

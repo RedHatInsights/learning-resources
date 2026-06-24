@@ -145,3 +145,8 @@
   min-height: 0;
   height: 100%;
 }
+
+// Hide chatbot header when embedded in help panel
+.lr-c-help-panel-tabs-wrapper .pf-chatbot__header {
+  display: none;
+}
