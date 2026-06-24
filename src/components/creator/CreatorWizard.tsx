@@ -99,8 +99,8 @@ type FormTaskValue = {
 
 const isValidUrl = (s: string): boolean => {
   try {
-    new URL(s);
-    return true;
+    const { protocol } = new URL(s);
+    return protocol === 'http:' || protocol === 'https:';
   } catch {
     return false;
   }
