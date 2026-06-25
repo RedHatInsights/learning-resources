@@ -53,7 +53,7 @@ jobs:
             /home/runner/.cache/Cypress
             **/.cypress-cache 
           key: cypress-install-cache-${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      - uses: cypress-io/github-action@v5
+      - uses: cypress-io/github-action@v7.4.0
         with:
             component: true
             install-command: npm i
