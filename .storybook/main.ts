@@ -44,6 +44,10 @@ const config: StorybookConfig = {
           process.cwd(),
           '.storybook/hooks/scalprum.js'
         ),
+        'chrome/search/useOramaSearch': path.resolve(
+          process.cwd(),
+          'src/__mocks__/chrome/search/useOramaSearch.ts'
+        ),
       },
     };
 

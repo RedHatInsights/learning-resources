@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import APIPanel, {
   convertToConsoleDocsUrl,
@@ -12,6 +18,17 @@ import {
 
 // Mock the fetch functions
 jest.mock('../../../utils/fetchBundleInfoAPI');
+
+// Mock useOramaSearch hook
+const mockQuery = jest.fn().mockResolvedValue([]);
+const mockUseOramaSearch = jest.fn(() => ({
+  query: mockQuery,
+  isReady: true,
+}));
+jest.mock('chrome/search/useOramaSearch', () => ({
+  __esModule: true,
+  default: () => mockUseOramaSearch(),
+}));
 
 // Mock useChrome hook
 jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
@@ -248,6 +265,210 @@ describe('APIPanel', () => {
 
     // No version in URL
     expect(screen.getByText('Cost-Management')).toBeInTheDocument();
+  });
+});
+
+describe('APIPanel search', () => {
+  const mockSetNewActionTitle = jest.fn();
+
+  const sampleBundleInfo = [
+    {
+      bundleLabels: ['insights'],
+      frontendName: 'notifications',
+      url: 'https://developers.redhat.com/api-catalog/api/notifications/v1',
+    },
+    {
+      bundleLabels: ['insights'],
+      frontendName: 'advisor',
+      url: 'https://developers.redhat.com/api-catalog/api/advisor/v2',
+    },
+    {
+      bundleLabels: ['openshift'],
+      frontendName: 'cost-management',
+      url: 'https://developers.redhat.com/api-catalog/api/cost-management/v1',
+    },
+  ];
+
+  const sampleBundles = [
+    { id: 'insights', title: 'RHEL', navItems: [] },
+    { id: 'openshift', title: 'OpenShift', navItems: [] },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockFetchBundleInfo.mockResolvedValue(sampleBundleInfo);
+    mockFetchBundles.mockResolvedValue(sampleBundles);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders search input', async () => {
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText('Search API documentation')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('calls query with debounced search text', async () => {
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Notifications v1')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search API documentation');
+    fireEvent.change(searchInput, { target: { value: 'notif' } });
+
+    expect(mockQuery).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    await waitFor(() => {
+      expect(mockQuery).toHaveBeenCalledWith('notif');
+    });
+  });
+
+  it('displays search results when query returns matches', async () => {
+    mockQuery.mockResolvedValue([
+      {
+        id: '1',
+        score: 0.9,
+        document: {
+          name: 'notifications',
+          displayName: 'Notifications v1',
+          services: ['RHEL'],
+          url: 'https://developers.redhat.com/api-catalog/api/notifications/v1',
+        },
+      },
+    ]);
+
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Notifications v1')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search API documentation');
+    fireEvent.change(searchInput, { target: { value: 'notif' } });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Notifications v1')).toBeInTheDocument();
+      expect(screen.getByText(/API Documentation \(1\)/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows empty state when search returns no results', async () => {
+    mockQuery.mockResolvedValue([]);
+
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Notifications v1')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search API documentation');
+    fireEvent.change(searchInput, { target: { value: 'zzzznonexistent' } });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No API documentation found matching your criteria/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('shows all items when search is cleared', async () => {
+    mockQuery.mockResolvedValue([
+      {
+        id: '1',
+        score: 0.9,
+        document: {
+          name: 'notifications',
+          displayName: 'Notifications v1',
+          services: ['RHEL'],
+          url: 'https://developers.redhat.com/api-catalog/api/notifications/v1',
+        },
+      },
+    ]);
+
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/API Documentation \(3\)/i)).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search API documentation');
+    fireEvent.change(searchInput, { target: { value: 'notif' } });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/API Documentation \(1\)/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(searchInput, { target: { value: '' } });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/API Documentation \(3\)/i)).toBeInTheDocument();
+    });
+  });
+
+  it('calls setNewActionTitle on search change', async () => {
+    render(
+      <IntlProvider locale="en" defaultLocale="en">
+        <APIPanel setNewActionTitle={mockSetNewActionTitle} />
+      </IntlProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Notifications v1')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search API documentation');
+    fireEvent.change(searchInput, { target: { value: 'test' } });
+
+    expect(mockSetNewActionTitle).toHaveBeenCalledWith('test');
   });
 });
 
