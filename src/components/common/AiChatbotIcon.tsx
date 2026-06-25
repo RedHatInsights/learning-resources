@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface AiChatbotIconProps {
   className?: string;
@@ -11,8 +12,11 @@ export const AiChatbotIcon = ({
   width = 20,
   height = 20,
 }: AiChatbotIconProps) => {
-  const iconPath =
-    '/apps/frontend-assets/technology-icons/rh-ui-icon-ai-chatbot.svg';
+  const isDark = useDarkMode();
+  const iconPath = isDark
+    ? '/apps/frontend-assets/technology-icons/rh-ui-icon-ai-chatbot-dark.svg'
+    : '/apps/frontend-assets/technology-icons/rh-ui-icon-ai-chatbot.svg';
+
   return (
     <svg width={width} height={height} className={className}>
       <image xlinkHref={iconPath} width={width} height={height} />
