@@ -19,6 +19,7 @@ jest.mock('@redhat-cloud-services/frontend-components/useChrome', () => ({
     getBundleData: () => ({ bundleId: 'insights' }),
     getAvailableBundles: () => [{ id: 'insights', title: 'RHEL' }],
     chromeHistory: { push: jest.fn(), replace: jest.fn() },
+    drawerActions: { setDrawerPanelContent: jest.fn() },
     getEnvironment: () => 'prod',
   }),
 }));

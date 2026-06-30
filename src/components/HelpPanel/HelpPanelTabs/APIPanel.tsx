@@ -29,6 +29,7 @@ import {
   fetchBundles,
 } from '../../../utils/fetchBundleInfoAPI';
 import { getBundleDisplayName } from '../../../utils/bundleUtils';
+import useNavigateKeepPanel from '../../../hooks/useNavigateKeepPanel';
 
 interface APIDoc {
   name: string;
@@ -233,10 +234,23 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
 
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const chrome = useChrome();
+  const navigateKeepPanel = useNavigateKeepPanel();
 
-  const getConsoleDocsUrl = () => {
+  const handleClick = () => {
     const environment = chrome.getEnvironment();
-    return convertToConsoleDocsUrl(resource.name, resource.url, environment);
+    const fullUrl = convertToConsoleDocsUrl(
+      resource.name,
+      resource.url,
+      environment
+    );
+    // Extract the pathname for client-side navigation
+    try {
+      const url = new URL(fullUrl);
+      navigateKeepPanel(url.pathname);
+    } catch {
+      // Fallback for relative paths
+      navigateKeepPanel(fullUrl);
+    }
   };
 
   return (
@@ -254,8 +268,7 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
           <FlexItem>
             <Button
               variant="link"
-              component="a"
-              href={getConsoleDocsUrl()}
+              onClick={handleClick}
               isInline
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
             >
@@ -282,6 +295,7 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
 const APIPanelContent: React.FC = () => {
   const intl = useIntl();
   const chrome = useChrome();
+  const navigateKeepPanel = useNavigateKeepPanel();
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -366,8 +380,7 @@ const APIPanelContent: React.FC = () => {
           {intl.formatMessage(messages.apiPanelDescription)}{' '}
           <Button
             variant="link"
-            component="a"
-            href="/docs/api"
+            onClick={() => navigateKeepPanel('/docs/api')}
             data-ouia-component-id="help-panel-api-docs-link"
             isInline
           >
