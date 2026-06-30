@@ -236,21 +236,35 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const chrome = useChrome();
   const navigateKeepPanel = useNavigateKeepPanel();
 
-  const handleClick = () => {
-    const environment = chrome.getEnvironment();
-    const fullUrl = convertToConsoleDocsUrl(
-      resource.name,
-      resource.url,
-      environment
-    );
-    // Extract the pathname for client-side navigation
+  const environment = chrome.getEnvironment();
+  const fullUrl = convertToConsoleDocsUrl(
+    resource.name,
+    resource.url,
+    environment
+  );
+
+  const path = (() => {
     try {
       const url = new URL(fullUrl);
-      navigateKeepPanel(url.pathname);
+      return `${url.pathname}${url.search}${url.hash}`;
     } catch {
-      // Fallback for relative paths
-      navigateKeepPanel(fullUrl);
+      return fullUrl;
     }
+  })();
+
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateKeepPanel(path);
   };
 
   return (
@@ -268,6 +282,8 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
           <FlexItem>
             <Button
               variant="link"
+              component="a"
+              href={path}
               onClick={handleClick}
               isInline
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
@@ -380,7 +396,21 @@ const APIPanelContent: React.FC = () => {
           {intl.formatMessage(messages.apiPanelDescription)}{' '}
           <Button
             variant="link"
-            onClick={() => navigateKeepPanel('/docs/api')}
+            component="a"
+            href="/docs/api"
+            onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
+              if (
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              navigateKeepPanel('/docs/api');
+            }}
             data-ouia-component-id="help-panel-api-docs-link"
             isInline
           >

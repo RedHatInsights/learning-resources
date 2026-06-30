@@ -655,7 +655,21 @@ const LearnPanelContent: React.FC<{
               {intl.formatMessage(messages.learnPanelDescription)}{' '}
               <Button
                 variant="link"
-                onClick={() => navigateKeepPanel('/learning-resources?tab=all')}
+                component="a"
+                href="/learning-resources?tab=all"
+                onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
+                  if (
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  navigateKeepPanel('/learning-resources?tab=all');
+                }}
                 isInline
                 iconPosition="end"
               >
