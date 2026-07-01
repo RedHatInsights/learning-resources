@@ -1,3 +1,4 @@
+const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const { ModuleFederationPlugin } = require('webpack').container;
 
@@ -41,6 +42,9 @@ const config = {
   },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    alias: {
+      'chrome/search/useOramaSearch': path.resolve(__dirname, '../src/__mocks__/chrome/search/useOramaSearch.ts'),
+    },
   },
   plugins: [
     new MiniCssExtractPlugin(),

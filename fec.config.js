@@ -1,4 +1,5 @@
 const path = require('path');
+const { NormalModuleReplacementPlugin } = require('webpack');
 
 module.exports = {
   appUrl: [
@@ -25,7 +26,12 @@ module.exports = {
    * Add additional webpack plugins
    */
   frontendCRDPath: path.resolve(__dirname, './deploy/frontend.yml'),
-  plugins: [],
+  plugins: [
+    new NormalModuleReplacementPlugin(
+      /^chrome\/search\/useOramaSearch$/,
+      path.resolve(__dirname, 'src/__mocks__/chrome/search/useOramaSearch.ts')
+    ),
+  ],
   moduleFederation: {
     exposes: {
       './RootApp': path.resolve(__dirname, './src/AppEntry.tsx'),

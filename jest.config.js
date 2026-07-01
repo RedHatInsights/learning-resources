@@ -10,6 +10,7 @@ module.exports = {
   roots: ['<rootDir>/src/'],
   moduleNameMapper: {
     '\\.(css|scss)$': 'identity-obj-proxy',
+    '^chrome/(.*)$': '<rootDir>/src/__mocks__/chrome/$1',
   },
   transformIgnorePatterns,
   setupFilesAfterEnv: ['<rootDir>/config/jest.setup.js'],
