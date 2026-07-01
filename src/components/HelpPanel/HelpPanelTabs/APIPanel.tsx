@@ -29,6 +29,7 @@ import {
   fetchBundles,
 } from '../../../utils/fetchBundleInfoAPI';
 import { getBundleDisplayName } from '../../../utils/bundleUtils';
+import useNavigateKeepPanel from '../../../hooks/useNavigateKeepPanel';
 
 interface APIDoc {
   name: string;
@@ -233,10 +234,37 @@ const mapBundleInfoWithTitles = async (): Promise<APIDoc[]> => {
 
 const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
   const chrome = useChrome();
+  const navigateKeepPanel = useNavigateKeepPanel();
 
-  const getConsoleDocsUrl = () => {
-    const environment = chrome.getEnvironment();
-    return convertToConsoleDocsUrl(resource.name, resource.url, environment);
+  const environment = chrome.getEnvironment();
+  const fullUrl = convertToConsoleDocsUrl(
+    resource.name,
+    resource.url,
+    environment
+  );
+
+  const path = (() => {
+    try {
+      const url = new URL(fullUrl);
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return fullUrl;
+    }
+  })();
+
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateKeepPanel(path);
   };
 
   return (
@@ -255,7 +283,8 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
             <Button
               variant="link"
               component="a"
-              href={getConsoleDocsUrl()}
+              href={path}
+              onClick={handleClick}
               isInline
               className="pf-v6-u-text-align-left pf-v6-u-p-0"
             >
@@ -282,6 +311,7 @@ const APIResourceItem: React.FC<{ resource: APIDoc }> = ({ resource }) => {
 const APIPanelContent: React.FC = () => {
   const intl = useIntl();
   const chrome = useChrome();
+  const navigateKeepPanel = useNavigateKeepPanel();
   const [activeToggle, setActiveToggle] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -368,6 +398,19 @@ const APIPanelContent: React.FC = () => {
             variant="link"
             component="a"
             href="/docs/api"
+            onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
+              if (
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              navigateKeepPanel('/docs/api');
+            }}
             data-ouia-component-id="help-panel-api-docs-link"
             isInline
           >
