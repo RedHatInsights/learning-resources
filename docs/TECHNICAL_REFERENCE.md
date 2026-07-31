@@ -441,13 +441,8 @@ The application uses multiple CI/CD platforms for comprehensive testing and depl
 ```mermaid
 graph TD
     A[Git Push/PR] --> B{Platform}
-    B -->|Legacy| C[Travis CI]
     B -->|Modern| D[GitHub Actions]
-    B -->|K8s Native| E[Tekton]
-
-    C --> C1[Lint]
-    C1 --> C2[Test]
-    C2 --> C3[Deploy to Repo]
+    B -->|K8s Native| E[Tekton/Konflux]
 
     D --> D1[Install Dependencies]
     D1 --> D2[Cypress Component Tests]
@@ -461,26 +456,6 @@ graph TD
     E -->|Pull Request| E5[Extended Tests]
     E5 --> E6[Playwright E2E]
     E6 --> E7[Dev Proxy Tests]
-```
-
-**Travis CI Configuration:** `.travis.yml`
-
-```yaml
-language: node_js
-node_js: 18
-stages:
-  - lint
-  - test
-  - deploy
-
-jobs:
-  include:
-    - stage: lint
-      script: npm run lint
-    - stage: test
-      script: npm test
-    - stage: deploy
-      script: npm run deploy
 ```
 
 **GitHub Actions:** `.github/workflows/test.yml`
@@ -1180,7 +1155,6 @@ npm run test:e2e:debug        # Debug mode
 
 | File | Purpose |
 |------|---------|
-| `/.travis.yml` | Travis CI pipeline configuration |
 | `/.github/workflows/test.yml` | GitHub Actions workflow for component tests |
 | `/.tekton/learning-resources-push.yaml` | Tekton push pipeline (master branch) |
 | `/.tekton/learning-resources-pull-request.yaml` | Tekton PR pipeline with E2E tests |
