@@ -51,11 +51,12 @@ test.describe('help panel - Learn tab', () => {
     const contentTypeToggle = page.getByRole('button', { name: /content type/i });
     await contentTypeToggle.click();
 
-    // Select "Documentation" filter - scope to the Select menu
-    await page.locator('[data-ouia-component-id="help-panel-content-type-select"]').getByText('Documentation', { exact: true }).click();
+    // Select "Documentation" filter - must click the checkbox input, not the text
+    const documentationCheckbox = page.locator('[data-ouia-component-id="help-panel-content-type-option-documentation"] input[type="checkbox"]');
+    await documentationCheckbox.click();
 
-    // Wait for state update and filtering
-    await page.waitForTimeout(1000);
+    // Wait for filter chip to appear
+    await expect(page.locator('[data-ouia-component-id="help-panel-selected-chip-documentation"]')).toBeVisible();
 
     // Verify count has changed (should be less than or equal to initial) - this confirms filter is applied
     await expect(async () => {
@@ -74,16 +75,22 @@ test.describe('help panel - Learn tab', () => {
     const contentTypeToggle = page.getByRole('button', { name: /content type/i });
     await contentTypeToggle.click();
 
-    // Select Quick starts
-    await page.locator('[data-ouia-component-id="help-panel-content-type-select"]').getByText('Quick starts', { exact: true }).click();
-    await page.waitForTimeout(500);
+    // Select Quick starts - must click the checkbox input, not the text
+    const quickstartCheckbox = page.locator('[data-ouia-component-id="help-panel-content-type-option-quickstart"] input[type="checkbox"]');
+    await quickstartCheckbox.click();
+
+    // Wait for filter chip to appear
+    await expect(page.locator('[data-ouia-component-id="help-panel-selected-chip-quickstart"]')).toBeVisible();
 
     // Verify toggle button shows selection count of 1
     await expect(contentTypeToggle).toContainText('1');
 
     // Select another filter - Learning paths
-    await page.locator('[data-ouia-component-id="help-panel-content-type-select"]').getByText('Learning paths', { exact: true }).click();
-    await page.waitForTimeout(500);
+    const learningPathCheckbox = page.locator('[data-ouia-component-id="help-panel-content-type-option-learningPath"] input[type="checkbox"]');
+    await learningPathCheckbox.click();
+
+    // Wait for filter chip to appear
+    await expect(page.locator('[data-ouia-component-id="help-panel-selected-chip-learningPath"]')).toBeVisible();
 
     // Verify toggle button shows selection count of 2
     await expect(contentTypeToggle).toContainText('2');
