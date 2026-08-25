@@ -150,3 +150,26 @@
 .lr-c-help-panel-tabs-wrapper .pf-chatbot__header {
   display: none;
 }
+
+// VA tab: make chatbot fill available height instead of leaving a gap at the bottom.
+// The remote virtualAssistant module renders several wrapper divs that don't propagate
+// height. We make each one a flex column so the chain reaches .pf-chatbot--embedded.
+[data-ouia-component-id="help-panel-content-container"]:has(.pf-chatbot--embedded) {
+  overflow-y: hidden;
+
+  .pf-v6-u-h-100,
+  .virtualAssistant,
+  .va-embed,
+  [id="ai-chatbot"],
+  .universal-chatbot-relative {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+  }
+
+  .pf-chatbot--embedded {
+    height: 100% !important;
+  }
+}
