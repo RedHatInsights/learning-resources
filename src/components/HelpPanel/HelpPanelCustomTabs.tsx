@@ -74,6 +74,14 @@ const createMainTabs = (showVA: boolean): TabDefinition[] => {
     });
   }
 
+  // MAO tab — dark-launched via feature flag, filtered by filterTabsByFeatureFlags
+  tabs.push({
+    id: 'mao',
+    title: 'MAO (preview)',
+    tabType: TabType.mao,
+    featureFlag: 'platform.chrome.help-panel_mao',
+  });
+
   return tabs;
 };
 

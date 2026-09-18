@@ -75,6 +75,7 @@ jest.mock('./HelpPanelTabs/helpPanelTabsMapper', () => ({
     api: 'api',
     support: 'support',
     va: 'va',
+    mao: 'mao',
     quickstart: 'quickstart',
     feedback: 'feedback',
   },
@@ -340,5 +341,78 @@ describe('HelpPanelCustomTabs ref API (openTabWithContent)', () => {
     );
 
     consoleWarnSpy.mockRestore();
+  });
+});
+
+describe('HelpPanelCustomTabs MAO tab (dark launch)', () => {
+  beforeEach(() => {
+    mockUseFlag.mockImplementation((flagName: string) => {
+      if (flagName === 'platform.chrome.help-panel_chatbot') return true;
+      if (flagName === 'platform.va.environment.enabled') return true;
+      return true;
+    });
+    mockUseFlags.mockReturnValue([
+      { name: 'platform.chrome.help-panel_search', enabled: true },
+      { name: 'platform.chrome.help-panel_knowledge-base', enabled: true },
+      { name: 'platform.chrome.help-panel_chatbot', enabled: true },
+      { name: 'platform.chrome.help-panel_mao', enabled: true },
+    ]);
+  });
+
+  it('shows MAO tab when feature flag is enabled', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    const maoTab = screen.getByRole('tab', { name: /mao \(preview\)/i });
+    expect(maoTab).toBeInTheDocument();
+  });
+
+  it('hides MAO tab when feature flag is disabled', () => {
+    mockUseFlags.mockReturnValue([
+      { name: 'platform.chrome.help-panel_search', enabled: true },
+      { name: 'platform.chrome.help-panel_knowledge-base', enabled: true },
+      { name: 'platform.chrome.help-panel_chatbot', enabled: true },
+      { name: 'platform.chrome.help-panel_mao', enabled: false },
+    ]);
+
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    const maoTab = screen.queryByRole('tab', { name: /mao \(preview\)/i });
+    expect(maoTab).not.toBeInTheDocument();
+  });
+
+  it('does not show MAO tab when flag is absent from flags list', () => {
+    mockUseFlags.mockReturnValue([
+      { name: 'platform.chrome.help-panel_search', enabled: true },
+      { name: 'platform.chrome.help-panel_knowledge-base', enabled: true },
+      { name: 'platform.chrome.help-panel_chatbot', enabled: true },
+    ]);
+
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    const maoTab = screen.queryByRole('tab', { name: /mao \(preview\)/i });
+    expect(maoTab).not.toBeInTheDocument();
+  });
+
+  it('does not affect existing tabs when MAO flag is enabled', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    // All standard tabs still present
+    expect(screen.getByRole('tab', { name: /search/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /learn/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /apis/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /support/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /feedback/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: /virtual assistant/i })
+    ).toBeInTheDocument();
+  });
+
+  it('can switch to MAO tab when enabled', () => {
+    renderWithIntl(<HelpPanelCustomTabs />);
+
+    const maoTab = screen.getByRole('tab', { name: /mao \(preview\)/i });
+    fireEvent.click(maoTab);
+
+    expect(maoTab).toHaveAttribute('aria-selected', 'true');
   });
 });

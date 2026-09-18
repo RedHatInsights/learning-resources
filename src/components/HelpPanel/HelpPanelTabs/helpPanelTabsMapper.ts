@@ -2,6 +2,7 @@ import type { ComponentType, FC } from 'react';
 import APIPanel from './APIPanel';
 import KBPanel from './KBPanel';
 import LearnPanel from './LearnPanel';
+import MAOPanel from './MAOPanel';
 import SearchPanel from './SearchPanel';
 import SupportPanel from './SupportPanel';
 import VAPanel from './VAPanel';
@@ -14,6 +15,7 @@ export enum TabType {
   'api' = 'api',
   'support' = 'support',
   'va' = 'va',
+  'mao' = 'mao',
   'quickstart' = 'quickstart',
   'feedback' = 'feedback',
 }
@@ -34,6 +36,7 @@ const helpPanelTabsMapper: {
   [TabType.api]: APIPanel,
   [TabType.support]: SupportPanel,
   [TabType.va]: VAPanel,
+  [TabType.mao]: MAOPanel,
   [TabType.quickstart]: QuickstartPanelPlaceholder,
   [TabType.feedback]: FeedbackPanel,
 };

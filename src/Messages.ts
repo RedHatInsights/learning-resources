@@ -186,6 +186,17 @@ const messages = defineMessages({
       'Virtual Assistant is temporarily unavailable. Please try again later.',
   },
 
+  // MAO Panel
+  maoTabTitle: {
+    id: 'helpPanel.tab.mao',
+    defaultMessage: 'MAO (preview)',
+  },
+  maoNotAvailable: {
+    id: 'helpPanel.mao.notAvailable',
+    defaultMessage:
+      'Multi-Agent Orchestration assistant is temporarily unavailable. Please try again later.',
+  },
+
   // Content Types
   contentTypeDocumentation: {
     id: 'helpPanel.contentType.documentation',

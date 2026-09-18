@@ -14,8 +14,9 @@ const HelpPanelTabContainer = ({
     return helpPanelTabsMapper[activeTabType];
   }, [activeTabType]);
 
-  // VA tab should fill the entire panel without padding
-  const shouldRemovePadding = activeTabType === TabType.va;
+  // VA and MAO tabs should fill the entire panel without padding
+  const shouldRemovePadding =
+    activeTabType === TabType.va || activeTabType === TabType.mao;
   const containerClassName = shouldRemovePadding ? '' : 'pf-v6-u-p-md';
 
   // If custom content is provided, render it directly
