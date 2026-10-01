@@ -34,10 +34,6 @@
   background-color: var(--pf-t--global--background--color--primary--default);
 }
 
-.lr-c-help-panel-custom-tabs .pf-v6-c-tabs__list {
-  background-color: var(--pf-t--global--background--color--primary--default);
-}
-
 // No sub-tabs in single-tier structure
 
 // Content container (Learn, APIs, Support, etc.) has no background by default; set white
@@ -54,7 +50,7 @@
 
 .lr-c-help-panel-custom-tabs {
   .pf-v6-c-tabs__list {
-    background-color: var(--pf-t--global--background--color--primary--default);
+    background-color: transparent;
   }
 
   // Make tab titles smaller to fit all tabs without scrolling
@@ -68,14 +64,14 @@
     padding-right: 0.5rem !important;
   }
 
-  // Ensure tabs have the same background as the panel
+  // Use transparent backgrounds so PF's ::before bottom-border line shows through the tab items.
+  // The parent .lr-c-help-panel-custom-tabs already provides the white background.
   .pf-v6-c-tabs__item {
-    background-color: var(--pf-t--global--background--color--primary--default);
+    background-color: transparent;
   }
 
-  // Active tab should also use the primary background
   .pf-v6-c-tabs__link {
-    background-color: var(--pf-t--global--background--color--primary--default);
+    background-color: transparent;
   }
 
   // Move the active tab indicator from top to bottom
