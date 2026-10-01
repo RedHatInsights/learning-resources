@@ -2,6 +2,7 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import CreatorWizard, { CreatorWizardProps } from './CreatorWizard';
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
+import { NAME_METADATA_NAME } from './steps/common';
 
 jest.mock('@unleash/proxy-client-react', () => ({
   useFlag: () => false,
@@ -106,6 +107,40 @@ describe('CreatorWizard', () => {
   });
 
   describe('field stability (no spazzing on input)', () => {
+    it('preserves metadata.name when switching back from YAML', async () => {
+      const onChangeMetadataName = jest.fn();
+      const props = makeProps({ onChangeMetadataName });
+      const { rerender } = render(<CreatorWizard {...props} />);
+      act(() => screen.getByRole('tab', { name: /creator/i }).click());
+      rerender(
+        <CreatorWizard
+          {...props}
+          quickStart={{
+            ...makeQS(),
+            metadata: { name: 'renamed-doc', tags: [] },
+          }}
+        />
+      );
+      act(() => screen.getByRole('tab', { name: /wizard/i }).click());
+      await waitFor(() => {
+        expect(capturedInitialValues?.[NAME_METADATA_NAME]).toBe('renamed-doc');
+        expect(onChangeMetadataName).toHaveBeenLastCalledWith('renamed-doc');
+      });
+    });
+
+    it('clears the stored name when the form switches to scratch', () => {
+      const onChangeMetadataName = jest.fn();
+      render(
+        <CreatorWizard
+          {...makeProps({
+            onChangeMetadataName,
+            quickStart: { ...makeQS(), metadata: { name: '', tags: [] } },
+          })}
+        />
+      );
+      expect(onChangeMetadataName).toHaveBeenLastCalledWith('');
+    });
+
     it('does not recompute initialValues when quickStart prop changes', () => {
       const props = makeProps({
         quickStart: makeQS({ displayName: 'Original' }),

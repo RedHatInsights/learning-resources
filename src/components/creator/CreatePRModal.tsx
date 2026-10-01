@@ -20,6 +20,7 @@ type CreatePRModalProps = {
   prLoading: boolean;
   prResult: PRResponse | null;
   prError: string | null;
+  isContinuePR?: boolean;
 };
 
 const CreatePRModal: React.FC<CreatePRModalProps> = ({
@@ -30,6 +31,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({
   prLoading,
   prResult,
   prError,
+  isContinuePR = false,
 }) => {
   const showConfirm = !prLoading && !prResult && !prError;
 
@@ -37,25 +39,31 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={prLoading ? undefined : onClose}
-      aria-label="Create Pull Request"
+      aria-label={isContinuePR ? 'Update Pull Request' : 'Create Pull Request'}
       variant="small"
     >
       <ModalHeader
         title={
           prResult
-            ? 'Pull Request Created'
+            ? isContinuePR
+              ? 'Pull Request Updated'
+              : 'Pull Request Created'
             : prError
             ? 'Pull Request Failed'
+            : isContinuePR
+            ? 'Update Pull Request'
             : 'Create Pull Request'
         }
       />
       <ModalBody>
         {showConfirm && (
           <Content component="p">
-            This will submit a pull request for{' '}
-            <strong>{quickstartName}</strong> to the quickstarts repository. The
-            PR will be checked against existing quickstarts to determine if this
-            is a new submission or an update.
+            This will {isContinuePR ? 'update the existing' : 'submit a'} pull
+            request for <strong>{quickstartName}</strong> to the quickstarts
+            repository.
+            {isContinuePR
+              ? ' Changes are force-pushed to the same branch; a second PR is not opened.'
+              : ' The PR will be checked against existing quickstarts to determine if this is a new submission or an update.'}
           </Content>
         )}
         {prLoading && (
@@ -67,14 +75,26 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({
           </div>
         )}
         {prResult && (
-          <Alert variant="success" title="PR created successfully" isInline>
+          <Alert
+            variant="success"
+            title={
+              isContinuePR
+                ? 'PR updated successfully'
+                : 'PR created successfully'
+            }
+            isInline
+          >
             <a href={prResult.prUrl} target="_blank" rel="noopener noreferrer">
               {prResult.prUrl}
             </a>
           </Alert>
         )}
         {prError && (
-          <Alert variant="danger" title="Failed to create PR" isInline>
+          <Alert
+            variant="danger"
+            title={isContinuePR ? 'Failed to update PR' : 'Failed to create PR'}
+            isInline
+          >
             {prError}
           </Alert>
         )}

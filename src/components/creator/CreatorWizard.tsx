@@ -54,7 +54,8 @@ import {
   NAME_URL,
 } from './steps/common';
 import StringArrayInput from '../StringArrayInput';
-import { CreatorWizardContext } from './context';
+import { CreatorWizardContext, ResumePR } from './context';
+import { NAME_SOURCE } from './steps/source';
 import { CreatorFiles } from './types';
 import { FilterData } from '../../utils/FiltersCategoryInterface';
 import TagsSelector from './TagsSelector';
@@ -136,8 +137,8 @@ const PropUpdater = ({
   }, [tags]);
 
   useEffect(() => {
-    if (metadataName && onChangeMetadataName) {
-      onChangeMetadataName(metadataName);
+    if (onChangeMetadataName) {
+      onChangeMetadataName(metadataName ?? '');
     }
   }, [metadataName]);
 
@@ -255,6 +256,7 @@ const FileDownload = () => {
     handleCreatePR,
     setPrResult,
     setPrError,
+    resumePR,
   } = useCreatePR(quickstartName);
 
   const [prModalOpen, setPrModalOpen] = useState(false);
@@ -332,7 +334,7 @@ const FileDownload = () => {
                   onClick={handleOpenPRModal}
                   isDisabled={!canCreatePR}
                 >
-                  Create PR
+                  {resumePR ? 'Update PR' : 'Create PR'}
                 </Button>
               </FlexItem>
             </Flex>
@@ -356,6 +358,7 @@ const FileDownload = () => {
             prLoading={prLoading}
             prResult={prResult}
             prError={prError}
+            isContinuePR={!!resumePR}
           />
         )}
 
@@ -434,6 +437,7 @@ const CreatorWizard = ({
     'platform.learning-resources.quickstarts.git-service'
   );
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
+  const [resumePR, setResumePR] = useState<ResumePR | null>(null);
   const schema = useMemo(
     () => makeSchema(chrome, filterData, showGitService),
     [chrome, filterData, showGitService]
@@ -446,6 +450,8 @@ const CreatorWizard = ({
   const initialValues = useMemo(() => {
     if (!quickStart) return undefined;
     return {
+      [NAME_SOURCE]: resumePR ? `pr:${resumePR.number}` : undefined,
+      [NAME_METADATA_NAME]: quickStart.metadata.name,
       [NAME_KIND]: currentKind || undefined,
       [NAME_BUNDLES]: currentBundles,
       [NAME_TAGS]: currentTags,
@@ -476,13 +482,20 @@ const CreatorWizard = ({
     }
   };
 
+  const handleResetCreator = () => {
+    setResumePR(null);
+    resetCreator();
+  };
+
   const context = useMemo(
     () => ({
       files,
       onChangeCurrentStage,
-      resetCreator,
+      resetCreator: handleResetCreator,
+      resumePR,
+      setResumePR,
     }),
-    [files, onChangeCurrentStage]
+    [files, onChangeCurrentStage, resumePR, resetCreator]
   );
 
   const componentMapper = {
@@ -563,6 +576,7 @@ const CreatorWizard = ({
           onChangeBundles={onChangeBundles}
           onChangeTags={onChangeTags}
           onChangeMetadataTags={onChangeMetadataTags}
+          onChangeMetadataName={onChangeMetadataName}
           onChangeKind={onChangeKindDirect}
           quickStart={quickStart}
           currentBundles={currentBundles}
