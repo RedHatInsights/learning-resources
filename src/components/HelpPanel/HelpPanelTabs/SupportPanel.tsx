@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Button,
   Content,
   ContentVariants,
@@ -21,17 +22,13 @@ import InProgressIcon from '@patternfly/react-icons/dist/dynamic/icons/in-progre
 import { Table, TableVariant, Tbody, Td, Tr } from '@patternfly/react-table';
 import { useIntl } from 'react-intl';
 import messages from '../../../Messages';
+import {
+  SupportCase,
+  fetchSupportCases,
+} from '../../../utils/fetchSupportCases';
 
 const SUPPORT_CASE_URL =
   'https://access.redhat.com/support/cases/#/case/new/get-support?caseCreate=true';
-
-type Case = {
-  id: string;
-  caseNumber: string;
-  summary: string;
-  lastModifiedDate: string;
-  status: string;
-};
 
 const columnNames = {
   summary: 'Title',
@@ -74,13 +71,14 @@ export const statusIcons = (status: string) => {
       </span>
     ),
   };
-  return statusMapper[status] ?? '';
+  return statusMapper[status] ?? status;
 };
 const SupportPanel: React.FunctionComponent = () => {
   const intl = useIntl();
-  const [cases, setCases] = useState<Case[]>([]);
+  const [cases, setCases] = useState<SupportCase[]>([]);
   const chrome = useChrome();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
@@ -101,59 +99,39 @@ const SupportPanel: React.FunctionComponent = () => {
     setPage(newPage);
   };
 
-  const getUrl = (env: string) =>
-    `https://api.access${
-      env === 'stage' || env === 'frhStage' ? '.stage' : ''
-    }.redhat.com/support/v1/cases/filter`;
-
-  const fetchSupportCases = async () => {
-    const token = await chrome.auth.getToken();
-    const user = await chrome.auth.getUser();
-    const options = {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        createdBySSOName: `${user?.identity.user?.username}`,
-      }),
-    };
-
-    try {
-      const response = await fetch(getUrl(chrome.getEnvironment()), options);
-      const data = await response.json();
-      const { cases } = data;
-
-      if (cases && Array.isArray(cases)) {
-        cases.sort(
-          (a: { lastModifiedDate: number }, b: { lastModifiedDate: number }) =>
-            new Date(b.lastModifiedDate).getTime() -
-            new Date(a.lastModifiedDate).getTime()
-        );
-        setCases(cases);
-      } else {
-        setCases([]);
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Unable to fetch support cases', error);
-      setCases([]);
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
-    fetchSupportCases();
+    setHasError(false);
+    fetchSupportCases(chrome.auth, chrome.getEnvironment(), controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setCases(data);
+          setPage(1);
+        }
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          console.error('Unable to fetch support cases', error);
+          setHasError(true);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+    return () => controller.abort();
   }, []);
 
   return (
     <>
       {isLoading ? (
         <SkeletonTable rows={3} />
+      ) : hasError ? (
+        <Alert
+          variant="danger"
+          isInline
+          title={intl.formatMessage(messages.supportCasesLoadError)}
+        />
       ) : cases.length === 0 ? (
         <EmptyState
           icon={HeadsetIcon}
@@ -203,7 +181,7 @@ const SupportPanel: React.FunctionComponent = () => {
             data-ouia-component-id="help-panel-support-cases-table"
           >
             <Tbody>
-              {cases.map((c) => (
+              {cases.slice((page - 1) * perPage, page * perPage).map((c) => (
                 <Tr key={c.id}>
                   <Td dataLabel={columnNames.summary} modifier="wrap">
                     <a
