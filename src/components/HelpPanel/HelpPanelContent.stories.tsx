@@ -1,3 +1,4 @@
+import { supportCasesResponse } from '../../user-journeys/_shared/supportCasesResponse';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import React, { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -130,11 +131,11 @@ const mockHelpPanelHandlers = [
     return HttpResponse.json({ success: true });
   }),
   // Support cases API (empty state) - prevents "Failed to fetch" errors
-  http.post('https://api.access.redhat.com/support/v1/cases/filter', () =>
-    HttpResponse.json({ cases: [] })
+  http.post('https://graphql.redhat.com', () =>
+    HttpResponse.json(supportCasesResponse([]))
   ),
-  http.post('https://api.access.stage.redhat.com/support/v1/cases/filter', () =>
-    HttpResponse.json({ cases: [] })
+  http.post('https://graphql.stage.redhat.com', () =>
+    HttpResponse.json(supportCasesResponse([]))
   ),
 ];
 

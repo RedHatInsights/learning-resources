@@ -1,3 +1,4 @@
+import { supportCasesResponse } from '../../../user-journeys/_shared/supportCasesResponse';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import React from 'react';
 import { IntlProvider } from 'react-intl';
@@ -9,8 +10,7 @@ import {
   supportPanelMswHandlersWithCases,
 } from '../../../user-journeys/_shared/helpPanelJourneyHelpers';
 
-const supportCasesFilterUrlStage =
-  'https://api.access.stage.redhat.com/support/v1/cases/filter';
+const supportCasesFilterUrlStage = 'https://graphql.stage.redhat.com';
 
 /**
  * Wrapper to provide IntlProvider (component uses useIntl and Messages).
@@ -73,7 +73,7 @@ export const Loading: Story = {
       handlers: [
         http.post(supportCasesFilterUrlStage, async () => {
           await delay(2000);
-          return HttpResponse.json({ cases: [] });
+          return HttpResponse.json(supportCasesResponse([]));
         }),
       ],
     },
@@ -156,7 +156,7 @@ export const WithCasesPagination: Story = {
     msw: {
       handlers: [
         http.post(supportCasesFilterUrlStage, () =>
-          HttpResponse.json({ cases: manyCases })
+          HttpResponse.json(supportCasesResponse(manyCases))
         ),
       ],
     },
@@ -189,34 +189,26 @@ export const WithCasesPagination: Story = {
 };
 
 /**
- * API error: component shows empty state after failed fetch.
+ * API error: component distinguishes a failure from an empty case list.
  */
 export const ApiError: Story = {
   parameters: {
+    testRunner: { ignoreConsoleErrors: true },
     msw: {
       handlers: [
         http.post(supportCasesFilterUrlStage, () =>
-          HttpResponse.json({ error: 'Server error' }, { status: 500 })
+          HttpResponse.json({ errors: [{ message: 'Missing CRM contact' }] })
         ),
       ],
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-
-    await waitFor(
-      () => {
-        const emptyState = document.querySelector(
-          '[data-ouia-component-id="help-panel-support-empty-state"]'
-        );
-        expect(emptyState).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    expect(canvas.getByText('No open support cases')).toBeInTheDocument();
     expect(
-      canvas.getByRole('button', { name: /open a support case/i })
+      await canvas.findByText(
+        'Unable to load support cases. Please try again later.'
+      )
     ).toBeInTheDocument();
+    expect(canvas.queryByText('No open support cases')).not.toBeInTheDocument();
   },
 };

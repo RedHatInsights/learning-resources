@@ -151,6 +151,10 @@ const messages = defineMessages({
     id: 'helpPanel.support.customerPortalLink',
     defaultMessage: 'Customer Portal',
   },
+  supportCasesLoadError: {
+    id: 'supportCasesLoadError',
+    defaultMessage: 'Unable to load support cases. Please try again later.',
+  },
   supportCasesTableTitle: {
     id: 'helpPanel.support.casesTableTitle',
     defaultMessage: 'My open support cases',
