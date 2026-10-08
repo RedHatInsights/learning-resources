@@ -7,6 +7,11 @@ import {
 } from '../../utils/createQuickstartPR';
 import { CreatorWizardContext } from './context';
 
+function prNumberFromUrl(url: string | undefined): number | null {
+  const match = url?.match(/\/pull\/(\d+)\/?$/);
+  return match ? Number(match[1]) : null;
+}
+
 export function useCreatePR(quickstartName: string | null) {
   const { files, resumePR, setResumePR } = useContext(CreatorWizardContext);
   const chrome = useChrome();
@@ -87,6 +92,16 @@ export function useCreatePR(quickstartName: string | null) {
       // the new slug so another edit prunes the directory from the last save.
       if (resumePR && result.status === 'updated') {
         setResumePR({ ...resumePR, slug: safeName });
+      }
+      // Adopt a newly opened PR so the next save in this session updates it
+      // instead of opening another timestamped one.
+      const createdNumber = prNumberFromUrl(result.prUrl);
+      if (!resumePR && result.status === 'created' && createdNumber) {
+        setResumePR({
+          number: createdNumber,
+          branchName: result.branchName,
+          slug: directoryName,
+        });
       }
     } catch (err) {
       setPrError(

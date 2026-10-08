@@ -174,4 +174,31 @@ describe('useCreatePR', () => {
     );
     expect(result.current.resumePR?.slug).toBe('renamed-again');
   });
+
+  it('updates the PR it just opened on the next save instead of opening another', async () => {
+    mockedCreateQuickstartPR.mockResolvedValueOnce({
+      prUrl: 'https://github.com/RedHatInsights/quickstarts/pull/512',
+      branchName: 'qs-create-my-doc-1',
+      commitSha: 'sha',
+      status: 'created',
+    });
+    const { result, setResumePR } = renderCreatePR('my-doc', null);
+    await act(async () => result.current.handleCreatePR());
+
+    expect(setResumePR).toHaveBeenLastCalledWith({
+      number: 512,
+      branchName: 'qs-create-my-doc-1',
+      slug: 'my-doc',
+    });
+
+    await act(async () => result.current.handleCreatePR());
+    expect(mockedCreateQuickstartPR.mock.calls[1][1]).toEqual(
+      expect.objectContaining({
+        isUpdate: true,
+        prNumber: 512,
+        branchName: 'qs-create-my-doc-1',
+        existingPath: 'docs/quickstarts/my-doc/',
+      })
+    );
+  });
 });
