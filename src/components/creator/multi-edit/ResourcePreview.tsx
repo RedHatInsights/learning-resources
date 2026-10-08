@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Alert,
   FormSelect,
@@ -14,21 +14,38 @@ import { WorkspaceResource, previewForResource } from './workspace';
 type ResourcePreviewProps = {
   resource: WorkspaceResource;
   filterMap: FilterMap;
+  /**
+   * What the preview shows: 'card', 'overview', 'task-<n>' or 'summary'. Kept
+   * by the workspace so it survives layout switches and changing resources.
+   */
+  stageKey: string;
+  onStageKeyChange: (key: string) => void;
 };
 
 /** Stable stage objects: CreatorPreview reacts to a stage by identity. */
-function stageFor(key: string): CreatorWizardStage {
+function stageFor(key: string, taskCount: number): CreatorWizardStage {
   if (key === 'overview') return { type: 'panel-overview' };
+  // The panel's closing page sits one past the last task.
+  if (key === 'summary') return { type: 'task', index: taskCount };
   if (key.startsWith('task-'))
     return { type: 'task', index: Number(key.slice(5)) };
   return { type: 'card' };
 }
 
+function keyFor(stage: CreatorWizardStage, taskCount: number): string {
+  if (stage.type === 'panel-overview') return 'overview';
+  if (stage.type === 'task') {
+    return stage.index >= taskCount ? 'summary' : `task-${stage.index}`;
+  }
+  return 'card';
+}
+
 const ResourcePreview: React.FC<ResourcePreviewProps> = ({
   resource,
   filterMap,
+  stageKey,
+  onStageKeyChange,
 }) => {
-  const [stageKey, setStageKey] = useState('card');
   const preview = useMemo(
     () => previewForResource(resource),
     [resource.buffer]
@@ -49,11 +66,15 @@ const ResourcePreview: React.FC<ResourcePreviewProps> = ({
   const effectiveKey =
     !hasPanel && stageKey !== 'card'
       ? 'card'
-      : stageKey.startsWith('task-') &&
-        Number(stageKey.slice(5)) >= tasks.length
+      : (stageKey.startsWith('task-') &&
+          Number(stageKey.slice(5)) >= tasks.length) ||
+        (stageKey === 'summary' && tasks.length === 0)
       ? 'overview'
       : stageKey;
-  const stage = useMemo(() => stageFor(effectiveKey), [effectiveKey]);
+  const stage = useMemo(
+    () => stageFor(effectiveKey, tasks.length),
+    [effectiveKey, tasks.length]
+  );
 
   return (
     <section className="lr-c-multi-edit__preview" aria-label="Preview">
@@ -65,7 +86,7 @@ const ResourcePreview: React.FC<ResourcePreviewProps> = ({
           <FormSelect
             className="lr-c-multi-edit__stage-select"
             value={effectiveKey}
-            onChange={(_e, value) => setStageKey(value)}
+            onChange={(_e, value) => onStageKeyChange(value)}
             aria-label="Preview view"
           >
             <FormSelectOption value="card" label="Catalog card" />
@@ -81,6 +102,9 @@ const ResourcePreview: React.FC<ResourcePreviewProps> = ({
                 }`}
               />
             ))}
+            {tasks.length > 0 && (
+              <FormSelectOption value="summary" label="Summary" />
+            )}
           </FormSelect>
         )}
       </div>
@@ -100,6 +124,9 @@ const ResourcePreview: React.FC<ResourcePreviewProps> = ({
               filterMap={filterMap}
               fullWidth
               showTitle={false}
+              onStageChange={(next) =>
+                onStageKeyChange(keyFor(next, tasks.length))
+              }
             />
           </PreviewBoundary>
         )}

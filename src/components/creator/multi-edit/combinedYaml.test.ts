@@ -1,8 +1,16 @@
-import { combineFiles, splitCombined as splitResult } from './combinedYaml';
+import {
+  combineFiles,
+  splitCombined as splitResult,
+  tagsAlreadyCombined,
+} from './combinedYaml';
 
 /** The successful split, so the assertions can read both files. */
-const splitCombined = (combined: string, metadata: string) =>
-  splitResult(combined, metadata) as {
+const splitCombined = (
+  combined: string,
+  metadata: string,
+  tagsInContent?: boolean
+) =>
+  splitResult(combined, metadata, tagsInContent) as {
     metadata: string;
     content: string;
     error?: string;
@@ -108,9 +116,77 @@ describe('combineFiles / splitCombined', () => {
     expect(combined).toBe(
       'metadata:\n    name: a\n    tags: []\nspec:\n    displayName: A\n'
     );
+    // An empty tag list means the same as none, so metadata is untouched.
     expect(splitCombined(combined, indented)).toEqual({
-      metadata: `${indented}tags: []\n`,
+      metadata: indented,
       content: nested,
+    });
+    const tagged = combined.replace(
+      'tags: []',
+      'tags:\n    - kind: bundle\n      value: rhel'
+    );
+    expect(splitCombined(tagged, indented)).toEqual({
+      metadata: `${indented}tags:\n- kind: bundle\n  value: rhel\n`,
+      content: nested,
+    });
+  });
+
+  describe('content files that already carry the tags', () => {
+    // The shape the single-resource creator writes: tags in both files.
+    const creatorMetadata = `kind: QuickStarts
+name: made-by-creator
+tags:
+  - kind: bundle
+    value: insights
+  - kind: content
+    value: documentation
+`;
+    const creatorContent = `apiVersion: console.openshift.io/v1
+kind: QuickStarts
+metadata:
+  name: made-by-creator
+  tags:
+    - kind: bundle
+      value: insights
+    - kind: content
+      value: documentation
+  externalDocumentation: true
+spec:
+  displayName: Made by the creator
+`;
+
+    it('is detected only when both tag lists match', () => {
+      expect(tagsAlreadyCombined(creatorMetadata, creatorContent)).toBe(true);
+      expect(
+        tagsAlreadyCombined(
+          creatorMetadata,
+          creatorContent.replace('value: insights', 'value: rhel')
+        )
+      ).toBe(false);
+      expect(tagsAlreadyCombined(creatorMetadata, content)).toBe(false);
+    });
+
+    it('keeps both files byte for byte when the tags do not change', () => {
+      const edited = creatorContent.replace(
+        'Made by the creator',
+        'Renamed card'
+      );
+      expect(splitCombined(edited, creatorMetadata, true)).toEqual({
+        metadata: creatorMetadata,
+        content: edited,
+      });
+    });
+
+    it('writes a tag edit to both files', () => {
+      const edited = creatorContent.replace(
+        '    - kind: content\n      value: documentation\n',
+        '    - kind: content\n      value: quickstart\n'
+      );
+      const split = splitCombined(edited, creatorMetadata, true);
+      expect(split.content).toBe(edited);
+      expect(split.metadata).toBe(
+        creatorMetadata.replace('value: documentation', 'value: quickstart')
+      );
     });
   });
 

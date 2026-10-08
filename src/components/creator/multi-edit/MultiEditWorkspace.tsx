@@ -80,6 +80,10 @@ const MultiEditWorkspace = ({
   const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [view, setViewState] = useState<View>(initialView);
+  // Per resource, so the preview reopens where the author left it.
+  const [previewStages, setPreviewStages] = useState<Record<string, string>>(
+    {}
+  );
 
   const setView = (next: View) => {
     setViewState(next);
@@ -356,13 +360,20 @@ const MultiEditWorkspace = ({
                       isInline
                       isPlain
                       title={`Editing ${
-                        (active.content ?? active.metadata)?.name
+                        (active.layout === 'content'
+                          ? active.content
+                          : active.metadata
+                        )?.name
                       } on its own`}
                       className="pf-v6-u-mb-sm"
                     >
-                      {active.layout === 'content' && active.metadata
-                        ? 'Its tags could not be merged into this view, so metadata.yml is left untouched.'
-                        : 'This resource has a single YAML file.'}
+                      {active.metadataSkipped === 'tags-differ'
+                        ? `This file and ${active.metadata?.name} list different tags, so only this file is edited here and ${active.metadata?.name} is left untouched. Make the two tag lists match to edit them together.`
+                        : active.metadataSkipped === 'unmergeable'
+                        ? `${active.metadata?.name} could not be merged into this view, so it is left untouched.`
+                        : active.layout === 'metadata'
+                        ? 'This resource has no content file.'
+                        : 'This resource has no metadata file.'}
                     </Alert>
                   )}
                   {activeError && (
@@ -403,7 +414,17 @@ const MultiEditWorkspace = ({
                   </div>
                 </div>
                 {view !== 'editor' && (
-                  <ResourcePreview resource={active} filterMap={filterMap} />
+                  <ResourcePreview
+                    resource={active}
+                    filterMap={filterMap}
+                    stageKey={previewStages[active.name] ?? 'card'}
+                    onStageKeyChange={(key) =>
+                      setPreviewStages((stages) => ({
+                        ...stages,
+                        [active.name]: key,
+                      }))
+                    }
+                  />
                 )}
               </div>
             </section>

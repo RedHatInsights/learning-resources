@@ -83,6 +83,52 @@ describe('resourceFromSnapshot', () => {
   });
 });
 
+describe('resources whose content file already has the tags', () => {
+  // PR #507's shape: metadata.yaml plus a content file with the same tags.
+  const meta =
+    'kind: QuickStarts\nname: dup\ntags:\n  - kind: bundle\n    value: insights\n';
+  const content =
+    'metadata:\n  name: dup\n  tags:\n    - kind: bundle\n      value: insights\nspec:\n  displayName: Dup\n  link:\n    href: https://old.example.com\n';
+  const files = (c: string) => [
+    { name: 'metadata.yaml', content: meta },
+    { name: 'dup.yaml', content: c },
+  ];
+
+  it('edits them together as the content file itself', () => {
+    const r = resourceFromSnapshot(snapshot('dup', files(content)));
+    expect(r?.layout).toBe('combined');
+    expect(r?.tagsInContent).toBe(true);
+    expect(r?.buffer).toBe(content);
+  });
+
+  it('saves a URL edit to the content file only and a tag edit to both', () => {
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'addResources',
+      resources: [snapshot('dup', files(content))],
+    });
+    state = edit(state, 'dup', 'old.example', 'new.example');
+    expect(snapshotChanges(state).changes.map((c) => c.name)).toEqual([
+      'dup.yaml',
+    ]);
+
+    state = edit(state, 'dup', 'value: insights', 'value: rhel');
+    const { changes } = snapshotChanges(state);
+    expect(changes.map((c) => c.name)).toEqual(['metadata.yaml', 'dup.yaml']);
+    expect(changes[0].after).toContain('value: rhel');
+    expect(changes[1].after).toContain('value: rhel');
+    expect(changes[1].after).toContain('new.example');
+  });
+
+  it('keeps the metadata file and says why when the tag lists differ', () => {
+    const r = resourceFromSnapshot(
+      snapshot('dup', files(content.replace('value: insights', 'value: rhel')))
+    );
+    expect(r?.layout).toBe('content');
+    expect(r?.metadataSkipped).toBe('tags-differ');
+    expect(r?.metadata?.name).toBe('metadata.yaml');
+  });
+});
+
 describe('workspaceReducer', () => {
   it('adds resources once, keeping existing buffers and the first base', () => {
     let state = withResources('alpha');

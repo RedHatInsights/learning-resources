@@ -101,6 +101,29 @@ export function combineFiles(
   return sameValue(actual, expected) ? combined : null;
 }
 
+/**
+ * Whether the content file already carries exactly the metadata file's tags
+ * under `metadata.tags`. The single-resource creator writes resources this
+ * way, so the content file is the combined document as it stands; saving
+ * keeps the tags in it and mirrors them into the metadata file.
+ */
+export function tagsAlreadyCombined(
+  metadataText: string,
+  contentText: string
+): boolean {
+  const metaDoc = YAML.parseDocument(metadataText, TOLERANT);
+  const contentDoc = YAML.parseDocument(contentText, TOLERANT);
+  if (metaDoc.errors.length > 0 || contentDoc.errors.length > 0) return false;
+  const contentMeta = blockMap(contentDoc, 'metadata');
+  if (!blockMap(metaDoc) || !contentMeta || !findPair(contentMeta, 'tags')) {
+    return false;
+  }
+  return sameValue(
+    contentDoc.toJS().metadata.tags ?? [],
+    metaDoc.toJS().tags ?? []
+  );
+}
+
 export type SplitResult =
   | { metadata: string; content: string; error?: undefined }
   | { error: string };
@@ -108,11 +131,14 @@ export type SplitResult =
 /**
  * Splits an edited combined document back into the two files: the
  * `metadata.tags` lines move into the metadata file (replacing its tags), and
- * the rest is the content file, byte for byte.
+ * the rest is the content file, byte for byte. With `tagsInContent` the
+ * content file keeps its tags too (see tagsAlreadyCombined). The metadata
+ * file is returned untouched while its tags mean the same as the buffer's.
  */
 export function splitCombined(
   combined: string,
-  savedMetadata: string
+  savedMetadata: string,
+  tagsInContent = false
 ): SplitResult {
   const doc = YAML.parseDocument(combined, TOLERANT);
   if (doc.errors.length > 0) return { error: doc.errors[0].message };
@@ -132,9 +158,16 @@ export function splitCombined(
     content = [...lines.slice(0, s), ...lines.slice(e + 1)].join('\n');
   }
 
+  if (tagsInContent) content = combined;
+
   const metaDoc = YAML.parseDocument(savedMetadata, TOLERANT);
   const metaRoot = blockMap(metaDoc);
   if (!metaRoot) return { error: 'The metadata file is not a block mapping.' };
+  const tags = (YAML.parse(block.join('\n'), TOLERANT) as { tags?: unknown })
+    ?.tags;
+  if (sameValue(tags ?? [], metaDoc.toJS().tags ?? [])) {
+    return { metadata: savedMetadata, content };
+  }
   const metaLines = savedMetadata.split('\n');
   const existing = findPair(metaRoot, 'tags');
   if (existing) {

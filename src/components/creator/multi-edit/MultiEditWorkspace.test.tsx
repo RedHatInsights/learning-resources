@@ -77,13 +77,27 @@ jest.mock('../CreatorPreview', () => ({
   default: ({
     quickStart,
     currentStage,
+    onStageChange,
   }: {
     quickStart: ExtendedQuickstart;
     currentStage: { type: string; index?: number };
+    onStageChange?: (stage: { type: string; index?: number }) => void;
   }) => (
     <div data-testid="preview">
       {quickStart.spec.displayName} · {currentStage.type}
       {currentStage.index ?? ''}
+      {/* Stands in for the panel's own Next button. */}
+      <button
+        onClick={() =>
+          onStageChange?.({
+            type: 'task',
+            index:
+              currentStage.type === 'task' ? (currentStage.index ?? 0) + 1 : 0,
+          })
+        }
+      >
+        Panel next
+      </button>
     </div>
   ),
 }));
@@ -548,15 +562,26 @@ describe('MultiEditWorkspace', () => {
       'Quick start overview',
       'Task 1: Open it',
       'Task 2: Use it',
+      'Summary',
     ]);
     fireEvent.change(select, { target: { value: 'task-1' } });
     expect(screen.getByTestId('preview')).toHaveTextContent('QS · task1');
+
+    // Moving through the panel moves the picker too, up to the summary.
+    fireEvent.click(screen.getByRole('button', { name: 'Panel next' }));
+    expect(select).toHaveValue('summary');
+    expect(screen.getByTestId('preview')).toHaveTextContent('QS · task2');
+    fireEvent.change(select, { target: { value: 'task-0' } });
 
     // Preview-only view keeps the editor mounted for its undo history.
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
     expect(editor()).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Editor' }));
     expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+
+    // Coming back reopens the preview where it was left.
+    fireEvent.click(screen.getByRole('button', { name: 'Split' }));
+    expect(screen.getByTestId('preview')).toHaveTextContent('QS · task0');
   });
 
   it('resumes a PR and reads added resources from its head', async () => {

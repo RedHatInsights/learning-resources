@@ -6,7 +6,12 @@ import {
   WorkspaceResourceSnapshot,
 } from '../../../utils/createQuickstartPR';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
-import { combineFiles, parseTolerant, splitCombined } from './combinedYaml';
+import {
+  combineFiles,
+  parseTolerant,
+  splitCombined,
+  tagsAlreadyCombined,
+} from './combinedYaml';
 
 export const QUICKSTARTS_DIR = 'docs/quickstarts';
 
@@ -32,6 +37,17 @@ export interface WorkspaceResource {
   layout: ResourceLayout;
   metadata?: RealFile;
   content?: RealFile;
+  /**
+   * `combined` only: the content file itself holds `metadata.tags` (as the
+   * single-resource creator writes it), so saving keeps them there as well
+   * as in the metadata file.
+   */
+  tagsInContent?: boolean;
+  /**
+   * `content` only: why the metadata file is left out of the editor, when
+   * the resource has one.
+   */
+  metadataSkipped?: 'tags-differ' | 'unmergeable';
   /** Not on the branch yet; the next save creates its directory. */
   isNew: boolean;
   /** The buffer text that corresponds to the saved files. */
@@ -150,10 +166,43 @@ export function resourceFromSnapshot(
         buffer: combined,
       };
     }
+    if (tagsAlreadyCombined(meta.content, content.content)) {
+      return {
+        ...base,
+        layout: 'combined',
+        tagsInContent: true,
+        metadata: { name: meta.name, saved: meta.content },
+        content: { name: content.name, saved: content.content },
+        baseline: content.content,
+        buffer: content.content,
+      };
+    }
   }
   const only = content ?? meta;
   if (!only) return null;
   const file = { name: only.name, saved: only.content };
+  if (only === content && meta) {
+    // Only the content file is edited; the metadata file is kept so the
+    // editor can say why it is not part of this view.
+    let contentHasTags = false;
+    try {
+      const parsed = parseTolerant(content.content) as {
+        metadata?: { tags?: unknown };
+      };
+      contentHasTags = parsed?.metadata?.tags !== undefined;
+    } catch {
+      // Unparseable content cannot be merged either way.
+    }
+    return {
+      ...base,
+      layout: 'content',
+      content: file,
+      metadata: { name: meta.name, saved: meta.content },
+      metadataSkipped: contentHasTags ? 'tags-differ' : 'unmergeable',
+      baseline: only.content,
+      buffer: only.content,
+    };
+  }
   return {
     ...base,
     layout: only === content ? 'content' : 'metadata',
@@ -321,10 +370,14 @@ export function filesForResource(
   r: WorkspaceResource
 ): { files: Record<string, string>; error?: undefined } | { error: string } {
   if (r.layout !== 'combined') {
-    const file = (r.content ?? r.metadata) as RealFile;
+    const file = (r.layout === 'content' ? r.content : r.metadata) as RealFile;
     return { files: { [file.name]: r.buffer } };
   }
-  const split = splitCombined(r.buffer, (r.metadata as RealFile).saved);
+  const split = splitCombined(
+    r.buffer,
+    (r.metadata as RealFile).saved,
+    r.tagsInContent
+  );
   if (split.error !== undefined) return { error: split.error };
   return {
     files: {
