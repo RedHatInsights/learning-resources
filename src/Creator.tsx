@@ -6,6 +6,8 @@ import {
   PageGroup,
   PageSection,
   Title,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@patternfly/react-core';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
@@ -15,6 +17,7 @@ import {
   metaForKind,
 } from './components/creator/meta';
 import CreatorPreview from './components/creator/CreatorPreview';
+import MultiEditWorkspace from './components/creator/multi-edit/MultiEditWorkspace';
 import './Creator.scss';
 import useSuspenseLoader, {
   UnwrappedLoader,
@@ -57,6 +60,11 @@ const CreatorInternal = ({
   const showGitService = useFlag(
     'platform.learning-resources.quickstarts.git-service'
   );
+  // Batch editing saves through the git-service batch API, so it needs both.
+  const showMultiEdit =
+    useFlag('platform.learning-resources.quickstarts.multi-edit') &&
+    showGitService;
+  const [mode, setMode] = useState<'single' | 'multi'>('single');
   const [rawKind, setRawKind] = useState<ItemKind | null>(null);
   const filterMap = useFilterMap({ data: filterData });
 
@@ -264,50 +272,73 @@ const CreatorInternal = ({
             Learn more about Hybrid Cloud Console Learning Resources.
           </a>
         </p>
+
+        {showMultiEdit && (
+          <ToggleGroup aria-label="Creator mode" className="pf-v6-u-mt-md">
+            <ToggleGroupItem
+              text="Single resource"
+              buttonId="creator-mode-single"
+              isSelected={mode === 'single'}
+              onChange={() => setMode('single')}
+            />
+            <ToggleGroupItem
+              text="Edit multiple resources"
+              buttonId="creator-mode-multi"
+              isSelected={mode === 'multi'}
+              onChange={() => setMode('multi')}
+            />
+          </ToggleGroup>
+        )}
       </PageSection>
 
-      <PageSection
-        hasBodyWrapper={false}
-        isFilled
-        padding={{ default: 'noPadding' }}
-      >
-        <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
-          <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
-            <CreatorWizard
-              onChangeTags={setTags}
-              onChangeKind={setKind}
-              onChangeQuickStartSpec={(spec) => {
-                updateSpec(() => spec);
-              }}
-              onChangeMetadataTags={updateMetadataTags}
-              onChangeMetadataName={
-                showGitService ? updateMetadataName : undefined
-              }
-              filterData={filterData}
-              onChangeBundles={setBundles}
-              onChangeCurrentStage={setCurrentStage}
-              resetCreator={resetCreator}
-              files={files}
-              quickStart={quickStart}
-              currentBundles={bundles}
-              currentTags={tags}
-              currentKind={rawKind}
-              onChangeKindDirect={setRawKind}
-            />
-          </GridItem>
-
-          {isDownloadStage ? (
-            <GridItem span={12} lg={6} className="pf-v6-u-pt-md-on-lg">
-              <CreatorPreview
-                kindMeta={selectedKind?.meta ?? null}
+      {showMultiEdit && mode === 'multi' ? (
+        <PageSection hasBodyWrapper={false} isFilled>
+          <MultiEditWorkspace filterMap={filterMap} />
+        </PageSection>
+      ) : (
+        <PageSection
+          hasBodyWrapper={false}
+          isFilled
+          padding={{ default: 'noPadding' }}
+        >
+          <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
+            <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
+              <CreatorWizard
+                onChangeTags={setTags}
+                onChangeKind={setKind}
+                onChangeQuickStartSpec={(spec) => {
+                  updateSpec(() => spec);
+                }}
+                onChangeMetadataTags={updateMetadataTags}
+                onChangeMetadataName={
+                  showGitService ? updateMetadataName : undefined
+                }
+                filterData={filterData}
+                onChangeBundles={setBundles}
+                onChangeCurrentStage={setCurrentStage}
+                resetCreator={resetCreator}
+                files={files}
                 quickStart={quickStart}
-                currentStage={currentStage}
-                filterMap={filterMap}
+                currentBundles={bundles}
+                currentTags={tags}
+                currentKind={rawKind}
+                onChangeKindDirect={setRawKind}
               />
             </GridItem>
-          ) : null}
-        </Grid>
-      </PageSection>
+
+            {isDownloadStage ? (
+              <GridItem span={12} lg={6} className="pf-v6-u-pt-md-on-lg">
+                <CreatorPreview
+                  kindMeta={selectedKind?.meta ?? null}
+                  quickStart={quickStart}
+                  currentStage={currentStage}
+                  filterMap={filterMap}
+                />
+              </GridItem>
+            ) : null}
+          </Grid>
+        </PageSection>
+      )}
     </PageGroup>
   );
 };

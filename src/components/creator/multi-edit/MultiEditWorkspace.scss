@@ -1,0 +1,56 @@
+.lr-c-multi-edit {
+  &__header {
+    margin-bottom: var(--pf-t--global--spacer--md);
+  }
+
+  &__status {
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  &__files {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  &__resource-title {
+    word-break: break-all;
+  }
+
+  &__dirty {
+    color: var(--pf-t--global--color--status--warning--default);
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+  }
+
+  &__invalid {
+    color: var(--pf-t--global--color--status--danger--default);
+  }
+
+  &__editor-header {
+    margin-bottom: var(--pf-t--global--spacer--sm);
+    word-break: break-all;
+  }
+
+  &__editor {
+    height: 600px;
+    max-height: 70vh;
+    overflow: hidden;
+  }
+}
+
+.lr-c-multi-edit-review {
+  display: flex;
+  gap: var(--pf-t--global--spacer--md);
+  height: 50vh;
+
+  &__files {
+    flex: 0 0 30%;
+    overflow-y: auto;
+    word-break: break-all;
+  }
+
+  &__diff {
+    flex: 1;
+    min-width: 0;
+  }
+}
