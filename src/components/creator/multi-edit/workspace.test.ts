@@ -1,257 +1,343 @@
 import {
   WorkspaceState,
-  contentFilePath,
-  dirtyFiles,
+  defaultPRBody,
+  dirtyResources,
   emptyWorkspace,
   previewForResource,
+  resourceFromSnapshot,
+  resourceProblem,
+  resourceTitle,
   snapshotChanges,
   workspaceReducer,
-  yamlError,
 } from './workspace';
+import { scaffoldResource } from './scaffold';
 import { WorkspaceResourceSnapshot } from '../../../utils/createQuickstartPR';
 
-const INVENTORY: WorkspaceResourceSnapshot = {
-  name: 'insights-inventory-workspace',
-  path: 'docs/quickstarts/insights-inventory-workspace',
-  files: [
-    {
-      name: 'insights-inventory-workspace.yaml',
-      path: 'docs/quickstarts/insights-inventory-workspace/insights-inventory-workspace.yaml',
-      content:
-        '# keep me\nmetadata:\n  name: insights-inventory-workspace\nspec:\n  displayName: Inventory\n  link:\n    href: https://old.example.com\n',
-    },
-    {
-      name: 'metadata.yml',
-      path: 'docs/quickstarts/insights-inventory-workspace/metadata.yml',
-      content:
-        'kind: QuickStarts\nname: insights-inventory-workspace\ntags:\n  - kind: application\n    value: inventory\n',
-    },
-  ],
+const metadataFor = (name: string) =>
+  `kind: QuickStarts\nname: ${name}\ntags:\n- kind: bundle\n  value: insights\n`;
+const contentFor = (name: string) =>
+  `# keep me\nmetadata:\n  name: ${name}\nspec:\n  displayName: ${name} title\n  link:\n    href: https://old.example.com/${name}\n`;
+
+const snapshot = (
+  name: string,
+  files?: { name: string; content: string }[]
+): WorkspaceResourceSnapshot => {
+  const dir = `docs/quickstarts/${name}`;
+  return {
+    name,
+    path: dir,
+    files: (
+      files ?? [
+        { name: 'metadata.yml', content: metadataFor(name) },
+        { name: `${name}.yaml`, content: contentFor(name) },
+      ]
+    ).map((f) => ({ ...f, path: `${dir}/${f.name}` })),
+  };
 };
 
-const ANSIBLE: WorkspaceResourceSnapshot = {
-  name: 'ansible-related-documentation',
-  path: 'docs/quickstarts/ansible-related-documentation',
-  files: [
-    {
-      name: 'metadata.yml',
-      path: 'docs/quickstarts/ansible-related-documentation/metadata.yml',
-      content: 'kind: QuickStarts\nname: ansible-docs\ntags: []\n',
-    },
-    {
-      // Content file named after metadata.name, not the directory.
-      name: 'ansible-docs.yml',
-      path: 'docs/quickstarts/ansible-related-documentation/ansible-docs.yml',
-      content:
-        'metadata:\n  name: ansible-docs\nspec:\n  displayName: Ansible\n',
-    },
-    {
-      name: 'README.md',
-      path: 'docs/quickstarts/ansible-related-documentation/README.md',
-      content: 'not editable',
-    },
-  ],
-};
-
-const INV_CONTENT = INVENTORY.files[0].path;
-const INV_META = INVENTORY.files[1].path;
-const ANS_CONTENT = ANSIBLE.files[1].path;
-
-const withResources = (): WorkspaceState =>
+const withResources = (...names: string[]): WorkspaceState =>
   workspaceReducer(emptyWorkspace(), {
     type: 'addResources',
-    resources: [INVENTORY, ANSIBLE],
+    resources: names.map((n) => snapshot(n)),
     baseSha: 'base-1',
   });
 
-describe('workspaceReducer', () => {
-  it('adds resources keyed by full path, metadata first, YAML only', () => {
-    const state = withResources();
-    expect(state.resources.map((r) => r.name)).toEqual([
-      'insights-inventory-workspace',
-      'ansible-related-documentation',
-    ]);
-    expect(state.resources[0].filePaths).toEqual([INV_META, INV_CONTENT]);
-    expect(state.resources[1].filePaths).toHaveLength(2);
-    expect(Object.keys(state.files)).toHaveLength(4);
-    expect(state.activePath).toBe(INV_CONTENT);
-    expect(state.baseSha).toBe('base-1');
+const bufferOf = (state: WorkspaceState, name: string) =>
+  state.resources.find((r) => r.name === name)?.buffer as string;
+
+const edit = (state: WorkspaceState, name: string, from: string, to: string) =>
+  workspaceReducer(state, {
+    type: 'edit',
+    name,
+    buffer: bufferOf(state, name).replace(from, to),
   });
 
-  it('keeps edited buffers when the same resource is added again', () => {
-    let state = withResources();
-    state = workspaceReducer(state, {
-      type: 'edit',
-      path: INV_CONTENT,
-      content: 'spec: [unclosed',
-    });
+describe('resourceFromSnapshot', () => {
+  it('merges metadata and content into one buffer', () => {
+    const r = resourceFromSnapshot(snapshot('alpha'));
+    expect(r?.layout).toBe('combined');
+    expect(r?.buffer).toContain('  name: alpha\n  tags:\n  - kind: bundle\n');
+    expect(r?.content?.name).toBe('alpha.yaml');
+  });
+
+  it('finds the content file through metadata.name', () => {
+    const r = resourceFromSnapshot(
+      snapshot('dir-name', [
+        { name: 'metadata.yml', content: metadataFor('real') },
+        { name: 'aaa.yml', content: contentFor('other') },
+        { name: 'real.yml', content: contentFor('real') },
+      ])
+    );
+    expect(r?.content?.name).toBe('real.yml');
+  });
+
+  it('edits a lone file as-is and skips a resource with no YAML', () => {
+    const lone = resourceFromSnapshot(
+      snapshot('gamma', [{ name: 'gamma.yml', content: contentFor('gamma') }])
+    );
+    expect(lone?.layout).toBe('content');
+    expect(lone?.buffer).toBe(contentFor('gamma'));
+    expect(
+      resourceFromSnapshot(snapshot('x', [{ name: 'README.md', content: '' }]))
+    ).toBeNull();
+  });
+});
+
+describe('workspaceReducer', () => {
+  it('adds resources once, keeping existing buffers and the first base', () => {
+    let state = withResources('alpha');
+    state = edit(state, 'alpha', 'old.example', 'new.example');
     state = workspaceReducer(state, {
       type: 'addResources',
-      resources: [INVENTORY],
+      resources: [snapshot('alpha'), snapshot('beta')],
       baseSha: 'base-2',
     });
-    expect(state.files[INV_CONTENT].content).toBe('spec: [unclosed');
+    expect(state.resources.map((r) => r.name)).toEqual(['alpha', 'beta']);
+    expect(bufferOf(state, 'alpha')).toContain('new.example');
     expect(state.baseSha).toBe('base-1');
+    expect(state.activeName).toBe('alpha');
   });
 
-  it('tracks dirty state per file and discards back to the saved text', () => {
-    let state = withResources();
+  it('removes resources and moves the selection off a removed one', () => {
+    let state = withResources('alpha', 'beta', 'gamma');
+    state = workspaceReducer(state, { type: 'setActive', name: 'beta' });
     state = workspaceReducer(state, {
-      type: 'edit',
-      path: INV_CONTENT,
-      content: 'x: 1\n',
+      type: 'removeResources',
+      names: ['beta'],
     });
-    expect(dirtyFiles(state).map((f) => f.path)).toEqual([INV_CONTENT]);
-
-    state = workspaceReducer(state, { type: 'discard', paths: [INV_CONTENT] });
-    expect(dirtyFiles(state)).toEqual([]);
+    expect(state.resources.map((r) => r.name)).toEqual(['alpha', 'gamma']);
+    expect(state.activeName).toBe('alpha');
   });
 
-  it('adopts the PR from the first save and only clears acknowledged text', () => {
-    let state = withResources();
-    state = workspaceReducer(state, {
-      type: 'edit',
-      path: INV_CONTENT,
-      content: 'a: 1\n',
+  it('discards back to the saved text', () => {
+    let state = edit(withResources('alpha'), 'alpha', 'old', 'new');
+    expect(dirtyResources(state)).toHaveLength(1);
+    state = workspaceReducer(state, { type: 'discard', name: 'alpha' });
+    expect(dirtyResources(state)).toHaveLength(0);
+  });
+
+  it('creates a new resource that is unsaved until the server takes it', () => {
+    const buffer = scaffoldResource({
+      kind: 'documentation',
+      name: 'fresh',
+      title: 'Fresh',
+      description: '',
+      url: 'https://docs.example.com',
+      bundles: ['insights'],
     });
-    const sent = { [INV_CONTENT]: 'a: 1\n' };
-    // The author keeps typing while the save is in flight.
-    state = workspaceReducer(state, {
-      type: 'edit',
-      path: INV_CONTENT,
-      content: 'a: 2\n',
+    let state = workspaceReducer(withResources('alpha'), {
+      type: 'createResource',
+      name: 'fresh',
+      buffer,
     });
+    const fresh = state.resources.find((r) => r.name === 'fresh');
+    expect(fresh).toMatchObject({
+      isNew: true,
+      path: 'docs/quickstarts/fresh',
+    });
+    expect(state.activeName).toBe('fresh');
+    expect(dirtyResources(state).map((r) => r.name)).toEqual(['fresh']);
+
+    // A second create with the same name is ignored.
+    state = workspaceReducer(state, {
+      type: 'createResource',
+      name: 'fresh',
+      buffer: 'x',
+    });
+    expect(state.resources).toHaveLength(2);
+  });
+
+  it('marks only what a save sent as saved', () => {
+    let state = edit(withResources('alpha', 'beta'), 'alpha', 'old', 'new');
+    const snap = snapshotChanges(state);
+    // Typed while the request was in flight.
+    state = edit(state, 'beta', 'old', 'later');
     state = workspaceReducer(state, {
       type: 'saved',
-      contents: sent,
       response: {
-        prUrl: 'https://github.com/o/r/pull/7',
-        prNumber: 7,
-        branchName: state.pendingBranchName,
+        prUrl: 'https://github.com/o/r/pull/5',
+        prNumber: 5,
+        branchName: 'qs-update-batch-1',
         headSha: 'head-1',
         status: 'created',
-        paths: [INV_CONTENT],
+        paths: [],
       },
+      sent: snap.sent,
     });
-
+    expect(dirtyResources(state).map((r) => r.name)).toEqual(['beta']);
     expect(state.pr).toEqual({
-      number: 7,
-      url: 'https://github.com/o/r/pull/7',
-      branchName: expect.stringMatching(/^qs-update-batch-/),
+      number: 5,
+      url: 'https://github.com/o/r/pull/5',
+      branchName: 'qs-update-batch-1',
       headSha: 'head-1',
     });
-    expect(state.files[INV_CONTENT].saved).toBe('a: 1\n');
-    expect(dirtyFiles(state).map((f) => f.path)).toEqual([INV_CONTENT]);
+    expect(
+      state.resources.find((r) => r.name === 'alpha')?.content?.saved
+    ).toContain('https://new.example.com/alpha');
   });
 
-  it('loads a PR as the saved baseline', () => {
-    const state = workspaceReducer(withResources(), {
+  it('loads a PR as the whole workspace', () => {
+    const state = workspaceReducer(withResources('beta'), {
       type: 'loadPR',
       workspace: {
         number: 9,
-        title: 'Update docs',
-        htmlUrl: 'u',
-        branchName: 'qs-update-batch-1',
+        title: 'T',
+        htmlUrl: 'https://github.com/o/r/pull/9',
+        branchName: 'qs-update-batch-9',
         headSha: 'head-9',
-        resources: [ANSIBLE],
+        resources: [snapshot('alpha')],
         missing: ['gone'],
       },
     });
-    expect(state.resources.map((r) => r.name)).toEqual([
-      'ansible-related-documentation',
-    ]);
+    expect(state.resources.map((r) => r.name)).toEqual(['alpha']);
     expect(state.pr?.headSha).toBe('head-9');
+    expect(state.pendingBranchName).toBe('qs-update-batch-9');
     expect(state.missing).toEqual(['gone']);
-    expect(dirtyFiles(state)).toEqual([]);
-    expect(state.activePath).toBe(ANS_CONTENT);
-  });
-});
-
-describe('contentFilePath', () => {
-  it('follows metadata.name to the content file', () => {
-    const state = withResources();
-    expect(
-      contentFilePath(
-        'ansible-related-documentation',
-        state.files,
-        state.resources
-      )
-    ).toBe(ANS_CONTENT);
-  });
-});
-
-describe('previewForResource', () => {
-  it('merges metadata tags in memory without touching the buffers', () => {
-    const state = withResources();
-    const before = JSON.stringify(state.files);
-    const preview = previewForResource(state, 'insights-inventory-workspace');
-    expect(preview.error).toBeUndefined();
-    expect(preview.quickStart?.metadata.tags).toEqual([
-      { kind: 'application', value: 'inventory' },
-    ]);
-    expect(JSON.stringify(state.files)).toBe(before);
-  });
-
-  it('reports a parse error instead of previewing stale content', () => {
-    const state = workspaceReducer(withResources(), {
-      type: 'edit',
-      path: INV_CONTENT,
-      content: 'spec: [unclosed',
-    });
-    const preview = previewForResource(state, 'insights-inventory-workspace');
-    expect(preview.quickStart).toBeUndefined();
-    expect(preview.error).toContain('insights-inventory-workspace.yaml');
   });
 });
 
 describe('snapshotChanges', () => {
-  it('sends only changed files, exactly as typed, grouped by resource', () => {
-    let state = withResources();
-    const edited = INVENTORY.files[0].content.replace(
-      'https://old.example.com',
-      'https://new.example.com'
+  it('sends only the real file that changed', () => {
+    const state = edit(
+      withResources('alpha', 'beta'),
+      'alpha',
+      'old.example',
+      'new.example'
+    );
+    const snap = snapshotChanges(state);
+    expect(snap.problems).toEqual([]);
+    expect(snap.resources).toEqual([
+      {
+        name: 'alpha',
+        files: [
+          {
+            name: 'alpha.yaml',
+            content: contentFor('alpha').replace('old.example', 'new.example'),
+          },
+        ],
+      },
+    ]);
+    expect(snap.changes).toEqual([
+      expect.objectContaining({
+        path: 'docs/quickstarts/alpha/alpha.yaml',
+        before: contentFor('alpha'),
+        isNew: false,
+      }),
+    ]);
+  });
+
+  it('sends the metadata file for a tag edit', () => {
+    const state = edit(
+      withResources('alpha'),
+      'alpha',
+      'value: insights',
+      'value: openshift'
+    );
+    const snap = snapshotChanges(state);
+    expect(snap.resources[0].files).toEqual([
+      {
+        name: 'metadata.yml',
+        content: metadataFor('alpha').replace('insights', 'openshift'),
+      },
+    ]);
+  });
+
+  it('sends a new resource complete, marked for creation', () => {
+    const buffer = scaffoldResource({
+      kind: 'quickstart',
+      name: 'fresh',
+      title: 'Fresh',
+      description: 'New',
+      bundles: [],
+    });
+    const state = workspaceReducer(emptyWorkspace(), {
+      type: 'createResource',
+      name: 'fresh',
+      buffer,
+    });
+    const [resource] = snapshotChanges(state).resources;
+    expect(resource.create).toBe(true);
+    expect(resource.files.map((f) => f.name)).toEqual([
+      'metadata.yml',
+      'fresh.yml',
+    ]);
+    expect(resource.files[0].content).toBe(
+      'kind: QuickStarts\nname: fresh\ntags: []\n'
+    );
+    expect(resource.files[1].content).not.toContain('tags');
+    expect(resource.files[1].content).toContain('  name: fresh\n');
+  });
+
+  it('blocks a rename and invalid YAML, naming the resource', () => {
+    let state = edit(
+      withResources('alpha', 'beta'),
+      'alpha',
+      'name: alpha',
+      'name: renamed'
     );
     state = workspaceReducer(state, {
       type: 'edit',
-      path: INV_CONTENT,
-      content: edited,
+      name: 'beta',
+      buffer: 'metadata: [',
     });
-
     const snap = snapshotChanges(state);
-    expect(snap.resources).toEqual([
-      {
-        name: 'insights-inventory-workspace',
-        files: [{ name: 'insights-inventory-workspace.yaml', content: edited }],
-      },
-    ]);
-    expect(snap.contents).toEqual({ [INV_CONTENT]: edited });
-    expect(snap.invalid).toEqual([]);
-    // Comments and extensions survive untouched.
-    expect(snap.resources[0].files[0].content).toContain('# keep me');
+    expect(snap.resources).toEqual([]);
+    expect(snap.problems.map((p) => p.resource)).toEqual(['alpha', 'beta']);
+    expect(snap.problems[0].message).toMatch(/must stay "alpha"/);
   });
 
-  it('collects every invalid file', () => {
-    let state = withResources();
-    state = workspaceReducer(state, {
-      type: 'edit',
-      path: INV_META,
-      content: 'a: [b',
+  it('does not block a save over a quirk in a file it leaves alone', () => {
+    const duplicate = `${metadataFor('alpha')}  kind: use-case\n`;
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'addResources',
+      resources: [
+        snapshot('alpha', [
+          { name: 'metadata.yml', content: duplicate },
+          { name: 'alpha.yml', content: contentFor('alpha') },
+        ]),
+      ],
     });
-    state = workspaceReducer(state, {
-      type: 'edit',
-      path: ANS_CONTENT,
-      content: 'c: : d',
-    });
-    expect(snapshotChanges(state).invalid.map((i) => i.path)).toEqual([
-      INV_META,
-      ANS_CONTENT,
-    ]);
+    state = edit(state, 'alpha', 'old.example', 'new.example');
+    const snap = snapshotChanges(state);
+    expect(snap.problems).toEqual([]);
+    expect(snap.resources[0].files.map((f) => f.name)).toEqual(['alpha.yml']);
+
+    // Touching the broken file itself is caught before the server sees it.
+    state = edit(state, 'alpha', 'value: insights', 'value: other');
+    expect(snapshotChanges(state).problems[0].message).toMatch(
+      /metadata\.yml: .*unique/
+    );
   });
 });
 
-describe('yamlError', () => {
-  it('returns null for valid YAML and a message otherwise', () => {
-    expect(yamlError('a: 1\n')).toBeNull();
-    expect(yamlError('a: [b')).toEqual(expect.any(String));
+describe('helpers', () => {
+  it('previews from the buffer, including tags', () => {
+    const state = withResources('alpha');
+    const preview = previewForResource(state.resources[0]);
+    expect(preview.quickStart?.spec.displayName).toBe('alpha title');
+    expect(preview.quickStart?.metadata.tags).toEqual([
+      { kind: 'bundle', value: 'insights' },
+    ]);
+    expect(
+      previewForResource({ ...state.resources[0], buffer: 'a: [' }).error
+    ).toBeDefined();
+  });
+
+  it('titles resources by display name and flags renames', () => {
+    const [r] = withResources('alpha').resources;
+    expect(resourceTitle(r)).toBe('alpha title');
+    expect(resourceTitle({ ...r, buffer: 'a: [' })).toBe('alpha');
+    expect(resourceProblem(r)).toBeNull();
+  });
+
+  it('marks new directories in the default PR body', () => {
+    const state = workspaceReducer(withResources('alpha'), {
+      type: 'createResource',
+      name: 'fresh',
+      buffer: 'metadata:\n  name: fresh\n',
+    });
+    expect(defaultPRBody(state, ['alpha', 'fresh'])).toContain(
+      '- docs/quickstarts/alpha/\n- docs/quickstarts/fresh/ (new)'
+    );
   });
 });

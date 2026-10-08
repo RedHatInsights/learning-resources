@@ -18,7 +18,6 @@ export interface SaveError {
   message: string;
   /** 409 means the PR moved on; the author has to reload before saving. */
   isConflict: boolean;
-  invalidPaths?: string[];
 }
 
 export function useBatchSave(
@@ -36,13 +35,12 @@ export function useBatchSave(
     // is in flight stay dirty instead of being marked saved.
     const snapshot = snapshotChanges(state);
     if (snapshot.resources.length === 0) return false;
-    if (snapshot.invalid.length > 0) {
+    if (snapshot.problems.length > 0) {
       setError({
-        message: snapshot.invalid
-          .map((i) => `${i.path}: ${i.error}`)
+        message: snapshot.problems
+          .map((p) => `${p.resource}: ${p.message}`)
           .join('\n'),
         isConflict: false,
-        invalidPaths: snapshot.invalid.map((i) => i.path),
       });
       return false;
     }
@@ -77,12 +75,19 @@ export function useBatchSave(
           };
 
       const response = await submitBatchPR(metadata, snapshot.resources);
-      dispatch({ type: 'saved', response, contents: snapshot.contents });
+      dispatch({ type: 'saved', response, sent: snapshot.sent });
       return true;
     } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to save changes.';
       setError({
-        message: err instanceof Error ? err.message : 'Failed to save changes.',
-        isConflict: err instanceof QuickstartsAPIError && err.status === 409,
+        message,
+        // A name collision is also a 409, but reloading the PR will not help;
+        // its message says what to do instead.
+        isConflict:
+          err instanceof QuickstartsAPIError &&
+          err.status === 409 &&
+          !message.includes('already exists'),
       });
       return false;
     } finally {

@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
   Content,
   Form,
   FormGroup,
+  Label,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-  SimpleList,
-  SimpleListItem,
   TextArea,
   TextInput,
 } from '@patternfly/react-core';
 import { DiffEditor } from '@monaco-editor/react';
 import CodeBranchIcon from '@patternfly/react-icons/dist/dynamic/icons/code-branch-icon';
-import { WorkspaceFile, WorkspaceState, defaultPRBody } from './workspace';
+import { WorkspaceState, defaultPRBody, snapshotChanges } from './workspace';
 import { SaveDetails, SaveError } from './useBatchSave';
 import { configureMonacoEnvironment } from './monaco';
 
@@ -25,22 +24,35 @@ type ReviewChangesModalProps = {
   onClose: () => void;
   onSave: (details: SaveDetails) => Promise<boolean>;
   state: WorkspaceState;
-  changed: WorkspaceFile[];
   saving: boolean;
   error: SaveError | null;
 };
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/**
+ * Shows exactly what the save commits: the real files on disk, not the
+ * combined editor buffers, so the author sees both metadata and content diffs.
+ */
 const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
   isOpen,
   onClose,
   onSave,
   state,
-  changed,
   saving,
   error,
 }) => {
   const isUpdate = !!state.pr;
-  const changedResources = [...new Set(changed.map((f) => f.resource))];
+  const snapshot = useMemo(
+    () => (isOpen ? snapshotChanges(state) : null),
+    [isOpen, state]
+  );
+  const changes = snapshot?.changes ?? [];
+  const problems = snapshot?.problems ?? [];
+  const resourceNames = [...new Set(changes.map((c) => c.resource))];
+  const created = state.resources.filter(
+    (r) => r.isNew && resourceNames.includes(r.name)
+  ).length;
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [prTitle, setPrTitle] = useState('');
@@ -49,19 +61,20 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
 
   // Prefill each time the dialog opens so the summary matches what is saved.
   useEffect(() => {
-    if (!isOpen) return;
-    setSelectedPath(changed[0]?.path ?? null);
-    setPrBody(defaultPRBody(state, changedResources));
+    if (!isOpen || !snapshot) return;
+    setSelectedPath(snapshot.changes[0]?.path ?? null);
+    const names = [...new Set(snapshot.changes.map((c) => c.resource))];
+    setPrBody(defaultPRBody(state, names));
     setCommitMessage(
-      `docs(quickstarts): update ${changedResources.length} learning resource${
-        changedResources.length === 1 ? '' : 's'
-      }`
+      `docs(quickstarts): update ${plural(names.length, 'learning resource')}`
     );
   }, [isOpen]);
 
-  const selected = changed.find((f) => f.path === selectedPath) ?? changed[0];
+  const selected =
+    changes.find((c) => c.path === selectedPath) ?? changes[0] ?? null;
   const canSave =
-    changed.length > 0 &&
+    changes.length > 0 &&
+    problems.length === 0 &&
     commitMessage.trim() !== '' &&
     (isUpdate || prTitle.trim() !== '') &&
     !saving;
@@ -71,22 +84,49 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
     if (ok) onClose();
   };
 
+  const summary = [
+    plural(changes.length, 'file'),
+    `in ${plural(resourceNames.length, 'resource')}`,
+    created ? `(${created} new)` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={saving ? undefined : onClose}
       variant="large"
-      aria-label="Review changes"
+      aria-labelledby="mr-review-title"
     >
       <ModalHeader
-        title="Review changes"
-        description={`${changed.length} ${
-          changed.length === 1 ? 'file' : 'files'
-        } in ${changedResources.length} ${
-          changedResources.length === 1 ? 'resource' : 'resources'
-        }`}
+        title={
+          isUpdate ? `Save to PR #${state.pr?.number}` : 'Create pull request'
+        }
+        labelId="mr-review-title"
+        description={
+          isUpdate
+            ? `${summary} will be added to the pull request as one commit.`
+            : `${summary} will be opened as one pull request.`
+        }
       />
       <ModalBody>
+        {problems.length > 0 && (
+          <Alert
+            variant="danger"
+            isInline
+            title="Fix these problems before saving"
+            className="pf-v6-u-mb-md"
+          >
+            <ul>
+              {problems.map((p) => (
+                <li key={`${p.resource}:${p.message}`}>
+                  <strong>{p.resource}</strong>: {p.message}
+                </li>
+              ))}
+            </ul>
+          </Alert>
+        )}
         {error && (
           <Alert
             variant="danger"
@@ -94,13 +134,11 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
             title={
               error.isConflict
                 ? 'The pull request changed since it was loaded'
-                : error.invalidPaths
-                ? 'Fix invalid YAML before saving'
                 : 'Save failed'
             }
             className="pf-v6-u-mb-md"
           >
-            <span style={{ whiteSpace: 'pre-wrap' }}>{error.message}</span>
+            <span className="lr-c-multi-edit__pre-wrap">{error.message}</span>
             {error.isConflict && (
               <Content component="p">
                 Your edits are kept. Copy anything you need, then reopen the PR
@@ -110,43 +148,79 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
           </Alert>
         )}
 
-        <div className="lr-c-multi-edit-review">
-          <SimpleList
-            aria-label="Changed files"
-            className="lr-c-multi-edit-review__files"
-            onSelect={(_ref, props) => setSelectedPath(String(props.itemId))}
-          >
-            {changed.map((f) => (
-              <SimpleListItem
-                key={f.path}
-                itemId={f.path}
-                isActive={f.path === selected?.path}
-              >
-                <code>{f.path}</code>
-              </SimpleListItem>
-            ))}
-          </SimpleList>
-          <div className="lr-c-multi-edit-review__diff">
-            {selected && (
-              <DiffEditor
-                height="100%"
-                language="yaml"
-                original={selected.saved}
-                modified={selected.content}
-                originalModelPath={`review-original://${selected.path}`}
-                modifiedModelPath={`review-modified://${selected.path}`}
-                beforeMount={configureMonacoEnvironment}
-                options={{
-                  readOnly: true,
-                  renderSideBySide: true,
-                  automaticLayout: true,
-                  minimap: { enabled: false },
-                  wordWrap: 'on',
-                }}
-              />
-            )}
+        {changes.length > 0 && (
+          <div className="lr-c-multi-edit-review">
+            <ul
+              className="lr-c-multi-edit-review__files"
+              aria-label="Changed files"
+            >
+              {resourceNames.map((name) => (
+                <li key={name}>
+                  <span className="lr-c-multi-edit-review__resource">
+                    {name}
+                  </span>
+                  <ul>
+                    {changes
+                      .filter((c) => c.resource === name)
+                      .map((c) => (
+                        <li key={c.path}>
+                          <button
+                            type="button"
+                            className={`lr-c-multi-edit-review__file${
+                              c.path === selected?.path ? ' pf-m-current' : ''
+                            }`}
+                            aria-current={
+                              c.path === selected?.path ? 'true' : undefined
+                            }
+                            onClick={() => setSelectedPath(c.path)}
+                          >
+                            {c.name}
+                            {c.isNew && (
+                              <Label
+                                color="blue"
+                                isCompact
+                                className="pf-v6-u-ml-xs"
+                              >
+                                New
+                              </Label>
+                            )}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+            <div className="lr-c-multi-edit-review__diff">
+              {selected && (
+                <>
+                  <code className="lr-c-multi-edit-review__path">
+                    {selected.path}
+                  </code>
+                  <div className="lr-c-multi-edit-review__diff-editor">
+                    <DiffEditor
+                      height="100%"
+                      language="yaml"
+                      original={selected.before}
+                      modified={selected.after}
+                      originalModelPath={`review-original://${selected.path}`}
+                      modifiedModelPath={`review-modified://${selected.path}`}
+                      beforeMount={configureMonacoEnvironment}
+                      options={{
+                        readOnly: true,
+                        renderSideBySide: !selected.isNew,
+                        automaticLayout: true,
+                        minimap: { enabled: false },
+                        wordWrap: 'on',
+                        scrollBeyondLastLine: false,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <Form className="pf-v6-u-mt-md">
           {!isUpdate && (
@@ -168,7 +242,7 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
                 <TextArea
                   id="mr-pr-body"
                   value={prBody}
-                  rows={5}
+                  rows={4}
                   resizeOrientation="vertical"
                   onChange={(_e, value) => setPrBody(value)}
                 />
@@ -197,7 +271,7 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
           isDisabled={!canSave}
           isLoading={saving}
         >
-          {isUpdate ? `Save changes to PR #${state.pr?.number}` : 'Create PR'}
+          {isUpdate ? `Save to PR #${state.pr?.number}` : 'Create pull request'}
         </Button>
         <Button variant="link" onClick={onClose} isDisabled={saving}>
           Cancel

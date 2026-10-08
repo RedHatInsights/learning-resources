@@ -18,11 +18,16 @@ const CreatorPreview = ({
   quickStart,
   currentStage,
   filterMap,
+  fullWidth = false,
+  showTitle = true,
 }: {
   kindMeta: ItemMeta | null;
   quickStart: ExtendedQuickstart;
   currentStage: CreatorWizardStage;
   filterMap: FilterMap;
+  /** Let the quick start panel fill the preview instead of docking beside it. */
+  fullWidth?: boolean;
+  showTitle?: boolean;
 }) => {
   const allQuickStarts = useMemo(() => [quickStart], [quickStart]);
   const [quickStartStates, setQuickStartStates] = useState<AllQuickStartStates>(
@@ -77,15 +82,17 @@ const CreatorPreview = ({
       gap={{ default: 'gapNone' }}
       className="pf-v6-u-h-100"
     >
-      <FlexItem>
-        <Title headingLevel="h2" size="xl" className="pf-v6-u-mb-md">
-          Live {showPanel ? kindMeta.displayName : 'card'} preview
-        </Title>
-      </FlexItem>
+      {showTitle && (
+        <FlexItem>
+          <Title headingLevel="h2" size="xl" className="pf-v6-u-mb-md">
+            Live {showPanel ? kindMeta.displayName : 'card'} preview
+          </Title>
+        </FlexItem>
+      )}
 
       <FlexItem grow={{ default: 'grow' }}>
         <QuickStartContext.Provider value={quickstartValues}>
-          <QuickStartDrawer quickStarts={allQuickStarts}>
+          <QuickStartDrawer quickStarts={allQuickStarts} fullWidth={fullWidth}>
             <section>
               {!showPanel ? (
                 <div className="rc-tile-preview-wrapper">

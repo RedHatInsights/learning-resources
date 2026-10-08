@@ -6,24 +6,38 @@ import {
   WorkspaceResourceSnapshot,
 } from '../../../utils/createQuickstartPR';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
+import { combineFiles, parseTolerant, splitCombined } from './combinedYaml';
+
+export const QUICKSTARTS_DIR = 'docs/quickstarts';
+
+/** A real file in the resource directory, as the branch (or base) has it. */
+export interface RealFile {
+  name: string;
+  saved: string;
+}
 
 /**
- * One real file in the repository. `saved` is what the branch (or base) has;
- * `content` is the author's current text, which may be invalid YAML.
+ * How a resource's files map onto its one editor buffer:
+ * - `combined`: the content file with the metadata tags merged in, split back
+ *   into both files on save (the normal case);
+ * - `content` / `metadata`: only that file is edited, as-is. Used when a
+ *   resource has a single YAML file or one that cannot be merged losslessly.
  */
-export interface WorkspaceFile {
-  path: string;
-  name: string;
-  resource: string;
-  saved: string;
-  content: string;
-}
+export type ResourceLayout = 'combined' | 'content' | 'metadata';
 
 export interface WorkspaceResource {
   /** Directory name under docs/quickstarts/, the resource's identity. */
   name: string;
   path: string;
-  filePaths: string[];
+  layout: ResourceLayout;
+  metadata?: RealFile;
+  content?: RealFile;
+  /** Not on the branch yet; the next save creates its directory. */
+  isNew: boolean;
+  /** The buffer text that corresponds to the saved files. */
+  baseline: string;
+  /** The author's current text, which may be invalid YAML. */
+  buffer: string;
 }
 
 /** The PR a workspace saves to. The PR and its branch are the session. */
@@ -36,8 +50,7 @@ export interface WorkspacePR {
 
 export interface WorkspaceState {
   resources: WorkspaceResource[];
-  files: Record<string, WorkspaceFile>;
-  activePath: string | null;
+  activeName: string | null;
   pr: WorkspacePR | null;
   /**
    * Base-branch commit the first resource was read from. A new PR branches
@@ -53,31 +66,36 @@ export interface WorkspaceState {
   missing: string[];
 }
 
+/** What one save sent for a resource, so only that becomes the baseline. */
+export interface SentResource {
+  buffer: string;
+  files: Record<string, string>;
+}
+
 export type WorkspaceAction =
   | {
       type: 'addResources';
       resources: WorkspaceResourceSnapshot[];
       baseSha?: string;
     }
+  | { type: 'createResource'; name: string; buffer: string }
+  | { type: 'removeResources'; names: string[] }
   | { type: 'loadPR'; workspace: CreatorPRWorkspace }
-  | { type: 'edit'; path: string; content: string }
-  | { type: 'discard'; paths: string[] }
-  | { type: 'setActive'; path: string }
+  | { type: 'edit'; name: string; buffer: string }
+  | { type: 'discard'; name: string }
+  | { type: 'setActive'; name: string }
   | {
       type: 'saved';
       response: BatchPRResponse;
-      /** The exact text each path was saved with. */
-      contents: Record<string, string>;
-    }
-  | { type: 'reset' };
+      sent: Record<string, SentResource>;
+    };
 
 export const newBranchName = () =>
   `qs-update-batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const emptyWorkspace = (): WorkspaceState => ({
   resources: [],
-  files: {},
-  activePath: null,
+  activeName: null,
   pr: null,
   baseSha: null,
   pendingBranchName: newBranchName(),
@@ -87,51 +105,94 @@ export const emptyWorkspace = (): WorkspaceState => ({
 const isYamlName = (name: string) => /\.ya?ml$/i.test(name);
 const isMetadataName = (name: string) => /^metadata\.ya?ml$/i.test(name);
 
+/**
+ * The content file is found through metadata.name the way the backend seeder
+ * does, rather than assuming the directory and file always match.
+ */
+function pickContentFile<T extends { name: string; content: string }>(
+  files: T[],
+  metadata: T | undefined
+): T | undefined {
+  let name: string | undefined;
+  try {
+    const parsed = metadata && parseTolerant(metadata.content);
+    if (typeof (parsed as { name?: unknown })?.name === 'string') {
+      name = (parsed as { name: string }).name;
+    }
+  } catch {
+    // Fall through to the first non-metadata file.
+  }
+  const others = files.filter((f) => !isMetadataName(f.name));
+  return (
+    (name && others.find((f) => f.name === `${name}.yml`)) ||
+    (name && others.find((f) => f.name === `${name}.yaml`)) ||
+    others[0]
+  );
+}
+
+export function resourceFromSnapshot(
+  snapshot: WorkspaceResourceSnapshot
+): WorkspaceResource | null {
+  const files = snapshot.files.filter((f) => isYamlName(f.name));
+  const meta = files.find((f) => isMetadataName(f.name));
+  const content = pickContentFile(files, meta);
+  const base = { name: snapshot.name, path: snapshot.path, isNew: false };
+
+  if (meta && content) {
+    const combined = combineFiles(meta.content, content.content);
+    if (combined !== null) {
+      return {
+        ...base,
+        layout: 'combined',
+        metadata: { name: meta.name, saved: meta.content },
+        content: { name: content.name, saved: content.content },
+        baseline: combined,
+        buffer: combined,
+      };
+    }
+  }
+  const only = content ?? meta;
+  if (!only) return null;
+  const file = { name: only.name, saved: only.content };
+  return {
+    ...base,
+    layout: only === content ? 'content' : 'metadata',
+    ...(only === content ? { content: file } : { metadata: file }),
+    baseline: only.content,
+    buffer: only.content,
+  };
+}
+
+/** The metadata file a brand-new resource is split against. */
+export const newMetadataTemplate = (name: string) =>
+  `kind: QuickStarts\nname: ${name}\ntags: []\n`;
+
 function addSnapshots(
   state: WorkspaceState,
   snapshots: WorkspaceResourceSnapshot[]
 ): WorkspaceState {
   const resources = [...state.resources];
-  const files = { ...state.files };
-  let activePath = state.activePath;
-
   for (const snapshot of snapshots) {
-    // Adding a resource that is already open must never replace its buffers.
+    // Adding a resource that is already open must never replace its buffer.
     if (resources.some((r) => r.name === snapshot.name)) continue;
-
-    const yamlFiles = snapshot.files.filter((f) => isYamlName(f.name));
-    resources.push({
-      name: snapshot.name,
-      path: snapshot.path,
-      filePaths: sortResourceFiles(yamlFiles.map((f) => f.path)),
-    });
-    for (const f of yamlFiles) {
-      files[f.path] = {
-        path: f.path,
-        name: f.name,
-        resource: snapshot.name,
-        saved: f.content,
-        content: f.content,
-      };
-    }
-    if (!activePath) {
-      activePath = contentFilePath(snapshot.name, files, resources) ?? null;
-    }
+    const resource = resourceFromSnapshot(snapshot);
+    if (resource) resources.push(resource);
   }
-
-  return { ...state, resources, files, activePath };
+  return {
+    ...state,
+    resources,
+    activeName: state.activeName ?? resources[0]?.name ?? null,
+  };
 }
 
-/** Metadata first, then the rest by name, so every resource reads the same. */
-function sortResourceFiles(paths: string[]): string[] {
-  const base = (p: string) => p.slice(p.lastIndexOf('/') + 1);
-  return [...paths].sort((a, b) => {
-    const am = isMetadataName(base(a));
-    const bm = isMetadataName(base(b));
-    if (am !== bm) return am ? -1 : 1;
-    return base(a).localeCompare(base(b));
-  });
-}
+const updateResource = (
+  state: WorkspaceState,
+  name: string,
+  update: (r: WorkspaceResource) => WorkspaceResource
+): WorkspaceState => ({
+  ...state,
+  resources: state.resources.map((r) => (r.name === name ? update(r) : r)),
+});
 
 export function workspaceReducer(
   state: WorkspaceState,
@@ -140,9 +201,38 @@ export function workspaceReducer(
   switch (action.type) {
     case 'addResources': {
       const next = addSnapshots(state, action.resources);
+      return { ...next, baseSha: state.baseSha ?? action.baseSha ?? null };
+    }
+    case 'createResource': {
+      if (state.resources.some((r) => r.name === action.name)) return state;
+      const resource: WorkspaceResource = {
+        name: action.name,
+        path: `${QUICKSTARTS_DIR}/${action.name}`,
+        layout: 'combined',
+        metadata: {
+          name: 'metadata.yml',
+          saved: newMetadataTemplate(action.name),
+        },
+        content: { name: `${action.name}.yml`, saved: '' },
+        isNew: true,
+        baseline: action.buffer,
+        buffer: action.buffer,
+      };
       return {
-        ...next,
-        baseSha: state.baseSha ?? action.baseSha ?? null,
+        ...state,
+        resources: [...state.resources, resource],
+        activeName: action.name,
+      };
+    }
+    case 'removeResources': {
+      const resources = state.resources.filter(
+        (r) => !action.names.includes(r.name)
+      );
+      const activeStays = resources.some((r) => r.name === state.activeName);
+      return {
+        ...state,
+        resources,
+        activeName: activeStays ? state.activeName : resources[0]?.name ?? null,
       };
     }
     case 'loadPR': {
@@ -162,40 +252,41 @@ export function workspaceReducer(
         missing: workspace.missing,
       };
     }
-    case 'edit': {
-      const file = state.files[action.path];
-      if (!file || file.content === action.content) return state;
-      return {
-        ...state,
-        files: {
-          ...state.files,
-          [action.path]: { ...file, content: action.content },
-        },
-      };
-    }
-    case 'discard': {
-      const files = { ...state.files };
-      for (const path of action.paths) {
-        if (files[path])
-          files[path] = { ...files[path], content: files[path].saved };
-      }
-      return { ...state, files };
-    }
+    case 'edit':
+      return updateResource(state, action.name, (r) =>
+        r.buffer === action.buffer ? r : { ...r, buffer: action.buffer }
+      );
+    case 'discard':
+      return updateResource(state, action.name, (r) => ({
+        ...r,
+        buffer: r.baseline,
+      }));
     case 'setActive':
-      return state.files[action.path]
-        ? { ...state, activePath: action.path }
+      return state.resources.some((r) => r.name === action.name)
+        ? { ...state, activeName: action.name }
         : state;
     case 'saved': {
-      const { response, contents } = action;
-      const files = { ...state.files };
-      // Only the versions the server acknowledged become the baseline; text
-      // typed while the save was in flight stays dirty.
-      for (const [path, content] of Object.entries(contents)) {
-        if (files[path]) files[path] = { ...files[path], saved: content };
-      }
+      const { response, sent } = action;
+      // Only what the server acknowledged becomes the baseline; text typed
+      // while the save was in flight stays unsaved.
+      const resources = state.resources.map((r) => {
+        const s = sent[r.name];
+        if (!s) return r;
+        const saveFile = (f?: RealFile) =>
+          f && s.files[f.name] !== undefined
+            ? { ...f, saved: s.files[f.name] }
+            : f;
+        return {
+          ...r,
+          isNew: false,
+          metadata: saveFile(r.metadata),
+          content: saveFile(r.content),
+          baseline: s.buffer,
+        };
+      });
       return {
         ...state,
-        files,
+        resources,
         pr: {
           number: response.prNumber,
           url: response.prUrl || state.pr?.url || '',
@@ -204,154 +295,209 @@ export function workspaceReducer(
         },
       };
     }
-    case 'reset':
-      return emptyWorkspace();
     default:
       return state;
   }
 }
 
-export const isDirty = (file: WorkspaceFile) => file.content !== file.saved;
+export const isDirty = (r: WorkspaceResource) =>
+  r.isNew || r.buffer !== r.baseline;
 
-export const dirtyFiles = (state: WorkspaceState) =>
-  Object.values(state.files).filter(isDirty);
+export const dirtyResources = (state: WorkspaceState) =>
+  state.resources.filter(isDirty);
 
-/** Returns the parse error for a file's current text, or null when valid. */
-export function yamlError(content: string): string | null {
-  const doc = YAML.parseDocument(content);
-  if (doc.errors.length > 0) return doc.errors[0].message;
-  return null;
+/** One real file a save would write, with its before/after for review. */
+export interface FileChange {
+  resource: string;
+  path: string;
+  name: string;
+  before: string;
+  after: string;
+  isNew: boolean;
+}
+
+/** Splits a buffer into the real files it stands for, as they would be saved. */
+export function filesForResource(
+  r: WorkspaceResource
+): { files: Record<string, string>; error?: undefined } | { error: string } {
+  if (r.layout !== 'combined') {
+    const file = (r.content ?? r.metadata) as RealFile;
+    return { files: { [file.name]: r.buffer } };
+  }
+  const split = splitCombined(r.buffer, (r.metadata as RealFile).saved);
+  if (split.error !== undefined) return { error: split.error };
+  return {
+    files: {
+      [(r.metadata as RealFile).name]: split.metadata,
+      [(r.content as RealFile).name]: split.content,
+    },
+  };
+}
+
+/** Returns the parse error for a text, or null when it is valid YAML. */
+export function yamlError(text: string): string | null {
+  const doc = YAML.parseDocument(text);
+  return doc.errors.length > 0 ? doc.errors[0].message : null;
 }
 
 /**
- * The resource's content file, found through metadata.name the way the backend
- * seeder does, rather than assuming the directory and file always match.
+ * The name the buffer declares. A changed name would be a rename, which the
+ * batch API deliberately does not support.
  */
-export function contentFilePath(
-  resourceName: string,
-  files: Record<string, WorkspaceFile>,
-  resources: WorkspaceResource[]
-): string | undefined {
-  const resource = resources.find((r) => r.name === resourceName);
-  if (!resource) return undefined;
-  const entries = resource.filePaths.map((p) => files[p]).filter(Boolean);
-  const metadata = entries.find((f) => isMetadataName(f.name));
-  let name: string | undefined;
-  if (metadata) {
-    try {
-      const parsed = YAML.parse(metadata.content);
-      if (typeof parsed?.name === 'string') name = parsed.name;
-    } catch {
-      // Fall through to the first non-metadata file.
-    }
+function declaredName(r: WorkspaceResource, parsed: unknown): unknown {
+  const doc = parsed as {
+    name?: unknown;
+    metadata?: { name?: unknown };
+  } | null;
+  return r.layout === 'metadata' ? doc?.name : doc?.metadata?.name;
+}
+
+/** Problems that would make saving this resource fail or misbehave. */
+export function resourceProblem(r: WorkspaceResource): string | null {
+  let parsed: unknown;
+  try {
+    parsed = parseTolerant(r.buffer);
+  } catch (err) {
+    return (err as Error).message;
   }
-  const byName = name
-    ? entries.find((f) => f.name === `${name}.yml` || f.name === `${name}.yaml`)
-    : undefined;
-  return (byName ?? entries.find((f) => !isMetadataName(f.name)))?.path;
+  const name = declaredName(r, parsed);
+  if (name !== r.name) {
+    return `${r.layout === 'metadata' ? 'name' : 'metadata.name'} must stay "${
+      r.name
+    }". Renaming a resource is not supported here.`;
+  }
+  return null;
+}
+
+export interface BatchSnapshot {
+  resources: BatchPRResource[];
+  sent: Record<string, SentResource>;
+  changes: FileChange[];
+  problems: { resource: string; message: string }[];
+}
+
+/**
+ * Captures exactly what one save will send: every changed file, grouped by
+ * resource, with its text at this moment. Only files that actually change are
+ * validated strictly, so a pre-existing quirk in an untouched file (real
+ * content has duplicate keys) does not block saving the rest.
+ */
+export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
+  const snapshot: BatchSnapshot = {
+    resources: [],
+    sent: {},
+    changes: [],
+    problems: [],
+  };
+
+  for (const r of dirtyResources(state)) {
+    const problem = resourceProblem(r);
+    const split = filesForResource(r);
+    if (problem || split.error !== undefined) {
+      snapshot.problems.push({
+        resource: r.name,
+        message: problem ?? (split.error as string),
+      });
+      continue;
+    }
+
+    const before = (f?: RealFile) => (r.isNew ? '' : f?.saved ?? '');
+    const changed = [r.metadata, r.content]
+      .filter((f): f is RealFile => !!f && split.files[f.name] !== undefined)
+      .filter((f) => r.isNew || split.files[f.name] !== f.saved);
+    if (changed.length === 0) continue;
+
+    for (const f of changed) {
+      const error = yamlError(split.files[f.name]);
+      if (error) {
+        snapshot.problems.push({
+          resource: r.name,
+          message: `${f.name}: ${error}`,
+        });
+      }
+      snapshot.changes.push({
+        resource: r.name,
+        path: `${r.path}/${f.name}`,
+        name: f.name,
+        before: before(f),
+        after: split.files[f.name],
+        isNew: r.isNew,
+      });
+    }
+    snapshot.resources.push({
+      name: r.name,
+      ...(r.isNew ? { create: true } : {}),
+      files: changed.map((f) => ({
+        name: f.name,
+        content: split.files[f.name],
+      })),
+    });
+    snapshot.sent[r.name] = {
+      buffer: r.buffer,
+      files: Object.fromEntries(
+        changed.map((f) => [f.name, split.files[f.name]])
+      ),
+    };
+  }
+  return snapshot;
 }
 
 export type PreviewResult =
   | { quickStart: ExtendedQuickstart; error?: undefined }
   | { quickStart?: undefined; error: string };
 
-/**
- * Builds the preview for one resource from its current buffers without
- * rewriting either of them: metadata tags are merged in memory only.
- */
-export function previewForResource(
-  state: WorkspaceState,
-  resourceName: string
-): PreviewResult {
-  const resource = state.resources.find((r) => r.name === resourceName);
-  if (!resource) return { error: 'Resource is not in the workspace.' };
-
-  const contentPath = contentFilePath(
-    resourceName,
-    state.files,
-    state.resources
-  );
-  if (!contentPath)
-    return { error: `No content file found in ${resource.path}.` };
-
-  const content = state.files[contentPath];
+/** Builds the preview for one resource straight from its buffer. */
+export function previewForResource(r: WorkspaceResource): PreviewResult {
+  if (r.layout === 'metadata') {
+    return { error: `${r.path} has no content file to preview.` };
+  }
   let parsed: ExtendedQuickstart;
   try {
-    parsed = YAML.parse(content.content);
+    parsed = parseTolerant(r.buffer) as ExtendedQuickstart;
   } catch (err) {
-    return { error: `${content.name}: ${(err as Error).message}` };
+    return { error: (err as Error).message };
   }
   if (!parsed || typeof parsed !== 'object' || !parsed.spec) {
-    return { error: `${content.name} has no spec to preview.` };
+    return { error: 'The document has no spec to preview.' };
   }
-
-  const metadataFile = resource.filePaths
-    .map((p) => state.files[p])
-    .find((f) => f && isMetadataName(f.name));
-  let tags = parsed.metadata?.tags;
-  if (metadataFile) {
-    try {
-      const meta = YAML.parse(metadataFile.content);
-      if (Array.isArray(meta?.tags)) tags = meta.tags;
-    } catch (err) {
-      return { error: `${metadataFile.name}: ${(err as Error).message}` };
-    }
-  }
-
   return {
     quickStart: {
       ...parsed,
       metadata: {
         ...parsed.metadata,
-        name: parsed.metadata?.name ?? resourceName,
-        tags,
+        name: parsed.metadata?.name ?? r.name,
+        tags: parsed.metadata?.tags ?? [],
       },
     },
   };
 }
 
-export interface BatchSnapshot {
-  resources: BatchPRResource[];
-  contents: Record<string, string>;
-  invalid: { path: string; error: string }[];
-}
+const titles = new WeakMap<WorkspaceResource, string>();
 
-/**
- * Captures exactly what one save will send: every changed file, grouped by
- * resource, with its text at this moment.
- */
-export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
-  const resources: BatchPRResource[] = [];
-  const contents: Record<string, string> = {};
-  const invalid: { path: string; error: string }[] = [];
-
-  for (const resource of state.resources) {
-    const changed = resource.filePaths
-      .map((p) => state.files[p])
-      .filter((f) => f && isDirty(f));
-    if (changed.length === 0) continue;
-
-    for (const f of changed) {
-      const error = yamlError(f.content);
-      if (error) invalid.push({ path: f.path, error });
-      contents[f.path] = f.content;
+/** The resource's display name, falling back to its directory. */
+export function resourceTitle(r: WorkspaceResource): string {
+  let title = titles.get(r);
+  if (title === undefined) {
+    try {
+      const parsed = parseTolerant(r.buffer) as {
+        spec?: { displayName?: unknown };
+      };
+      title =
+        typeof parsed?.spec?.displayName === 'string' && parsed.spec.displayName
+          ? parsed.spec.displayName
+          : r.name;
+    } catch {
+      title = r.name;
     }
-    resources.push({
-      name: resource.name,
-      files: changed.map((f) => ({ name: f.name, content: f.content })),
-    });
+    titles.set(r, title);
   }
-
-  return { resources, contents, invalid };
+  return title;
 }
 
-export function defaultPRBody(
-  state: WorkspaceState,
-  changedResources: string[]
-) {
+export function defaultPRBody(state: WorkspaceState, names: string[]) {
   const dirs = state.resources
-    .filter((r) => changedResources.includes(r.name))
-    .map((r) => `- ${r.path}/`);
+    .filter((r) => names.includes(r.name))
+    .map((r) => `- ${r.path}/${r.isNew ? ' (new)' : ''}`);
   return `Updating ${dirs.length} learning resource${
     dirs.length === 1 ? '' : 's'
   } via the Quickstarts Creator tool.\n\nDirectories:\n${dirs.join('\n')}`;

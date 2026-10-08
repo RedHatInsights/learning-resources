@@ -156,6 +156,11 @@ export interface BatchPRMetadata {
 
 export interface BatchPRResource {
   name: string;
+  /**
+   * The resource does not exist yet; its directory is created and all of its
+   * files are sent. Without it, the directory must already exist.
+   */
+  create?: boolean;
   /** Changed files only; files that are not sent stay untouched. */
   files: PRFile[];
 }

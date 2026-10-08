@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Content,
+  Label,
   Modal,
   ModalBody,
   ModalFooter,
@@ -18,19 +19,22 @@ import {
   getRepoQuickstartContent,
   listRepoQuickstarts,
 } from '../../../utils/createQuickstartPR';
-import { WorkspacePR } from './workspace';
+import { QUICKSTARTS_DIR, WorkspacePR } from './workspace';
 
-const QUICKSTARTS_DIR = 'docs/quickstarts';
 const READ_CONCURRENCY = 4;
 
 type ResourcePickerModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (resources: WorkspaceResourceSnapshot[], baseSha?: string) => void;
+  /** Called with resources the author unchecked; the caller confirms it. */
+  onRemove: (names: string[]) => void;
   /** When set, resources are read from this PR's head instead of main. */
   pr: WorkspacePR | null;
-  /** Resources already in the workspace; they cannot be added twice. */
+  /** Resources already in the workspace. They start checked. */
   existing: string[];
+  /** Resources with unsaved edits, flagged so unchecking one is deliberate. */
+  edited: string[];
 };
 
 /**
@@ -61,12 +65,22 @@ async function readResource(
   };
 }
 
+const plural = (n: number) => `${n} ${n === 1 ? 'resource' : 'resources'}`;
+
+function applyLabel(add: number, remove: number) {
+  if (add && remove) return `Add ${add}, remove ${remove}`;
+  if (remove) return `Remove ${plural(remove)}`;
+  return add ? `Add ${plural(add)}` : 'Add resources';
+}
+
 const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
   isOpen,
   onClose,
   onAdd,
+  onRemove,
   pr,
   existing,
+  edited,
 }) => {
   const [entries, setEntries] = useState<RepoQuickstartEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,7 +94,10 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
     let stale = false;
     setLoading(true);
     setError(null);
-    setSelected(new Set());
+    setSearch('');
+    // The picker shows the workspace as it is: open resources start checked,
+    // and unchecking one removes it.
+    setSelected(new Set(existing));
     listRepoQuickstarts()
       .then((list) => {
         if (!stale) setEntries(list);
@@ -106,9 +123,15 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
     );
   }, [entries, search]);
 
-  const selectable = filtered.filter((e) => !existing.includes(e.name));
   const allFilteredSelected =
-    selectable.length > 0 && selectable.every((e) => selected.has(e.name));
+    filtered.length > 0 && filtered.every((e) => selected.has(e.name));
+
+  // Resources not in the repository list (new ones, or ones only on the PR
+  // branch) are managed from the sidebar and never removed from here.
+  const listed = new Set(entries.map((e) => e.name));
+  const toAdd = [...selected].filter((n) => !existing.includes(n));
+  const toRemove = existing.filter((n) => listed.has(n) && !selected.has(n));
+  const hasChanges = toAdd.length > 0 || toRemove.length > 0;
 
   const toggle = (name: string, isSelecting: boolean) => {
     setSelected((old) => {
@@ -122,15 +145,24 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
   const toggleAllFiltered = (isSelecting: boolean) => {
     setSelected((old) => {
       const next = new Set(old);
-      selectable.forEach((e) =>
+      filtered.forEach((e) =>
         isSelecting ? next.add(e.name) : next.delete(e.name)
       );
       return next;
     });
   };
 
-  const handleAdd = async () => {
-    const names = [...selected];
+  const handleApply = async () => {
+    // Removal is confirmed by the caller once this dialog is out of the way.
+    const finish = () => {
+      onClose();
+      if (toRemove.length > 0) onRemove(toRemove);
+    };
+    const names = toAdd;
+    if (names.length === 0) {
+      finish();
+      return;
+    }
     setAdding(true);
     setError(null);
     const loaded: WorkspaceResourceSnapshot[] = [];
@@ -153,22 +185,29 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
 
     if (loaded.length > 0) onAdd(loaded, baseSha);
     if (failed.length > 0) {
-      setSelected(new Set(failed));
+      // Keep what loaded and the unchecked rows; retry only the failures.
+      setSelected(
+        new Set([
+          ...existing.filter((n) => !toRemove.includes(n)),
+          ...loaded.map((r) => r.name),
+          ...failed,
+        ])
+      );
       setError(`Could not load: ${failed.join(', ')}`);
       return;
     }
-    onClose();
+    finish();
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={adding ? undefined : onClose}
-      variant="medium"
-      aria-label="Add resources"
+      variant="large"
+      aria-label="Choose resources"
     >
       <ModalHeader
-        title="Add resources"
+        title="Choose resources"
         description={
           pr
             ? `Resources are read from the branch of PR #${pr.number}.`
@@ -186,6 +225,8 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
         <Content component="p" className="pf-v6-u-mt-sm">
           {selected.size} selected
           {search && ` · ${filtered.length} matching`}
+          {toAdd.length > 0 && ` · ${toAdd.length} to add`}
+          {toRemove.length > 0 && ` · ${toRemove.length} to remove`}
         </Content>
         {error && (
           <Alert
@@ -219,7 +260,7 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
             </Thead>
             <Tbody>
               {filtered.map((entry, rowIndex) => {
-                const alreadyOpen = existing.includes(entry.name);
+                const isOpen = existing.includes(entry.name);
                 return (
                   <Tr key={entry.name}>
                     <Td
@@ -227,11 +268,25 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
                         rowIndex,
                         onSelect: (_e, isSelecting) =>
                           toggle(entry.name, isSelecting),
-                        isSelected: alreadyOpen || selected.has(entry.name),
-                        isDisabled: alreadyOpen,
+                        isSelected: selected.has(entry.name),
                       }}
                     />
-                    <Td dataLabel="Title">{entry.displayName}</Td>
+                    <Td dataLabel="Title">
+                      {entry.displayName}
+                      {isOpen && (
+                        <Label
+                          isCompact
+                          color={
+                            edited.includes(entry.name) ? 'orange' : 'grey'
+                          }
+                          className="pf-v6-u-ml-sm"
+                        >
+                          {edited.includes(entry.name)
+                            ? 'Open · unsaved edits'
+                            : 'Open'}
+                        </Label>
+                      )}
+                    </Td>
                     <Td dataLabel="Directory">
                       <code>
                         {QUICKSTARTS_DIR}/{entry.name}
@@ -247,12 +302,11 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
       <ModalFooter>
         <Button
           variant="primary"
-          onClick={handleAdd}
-          isDisabled={selected.size === 0 || adding}
+          onClick={handleApply}
+          isDisabled={!hasChanges || adding}
           isLoading={adding}
         >
-          Add {selected.size || ''}{' '}
-          {selected.size === 1 ? 'resource' : 'resources'}
+          {applyLabel(toAdd.length, toRemove.length)}
         </Button>
         <Button variant="link" onClick={onClose} isDisabled={adding}>
           Cancel
