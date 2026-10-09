@@ -299,6 +299,49 @@ describe('removing resources from a PR', () => {
     expect(pendingCount(state)).toBe(0);
   });
 
+  it('moves a renamed resource once saved, and reverts both folders if removed', () => {
+    let state = edit(loaded(), 'alpha', 'name: alpha', 'name: omega');
+    state = workspaceReducer(state, { type: 'setActive', name: 'alpha' });
+    const snap = snapshotChanges(state);
+    state = workspaceReducer(state, {
+      type: 'saved',
+      response: {
+        prUrl: 'https://github.com/o/r/pull/9',
+        prNumber: 9,
+        branchName: 'qs-update-batch-9',
+        headSha: 'head-10',
+        status: 'updated',
+        paths: [],
+      },
+      sent: snap.sent,
+      reverted: [],
+    });
+    const omega = state.resources.find((r) => r.name === 'omega');
+    expect(omega).toEqual(
+      expect.objectContaining({
+        path: 'docs/quickstarts/omega',
+        renamedFrom: 'alpha',
+        content: expect.objectContaining({ name: 'omega.yaml' }),
+      })
+    );
+    expect(dirtyResources(state)).toEqual([]);
+    expect(state.activeName).toBe('omega');
+    expect(state.prResources).toEqual(['omega', 'beta']);
+
+    // Further edits are plain edits under the new folder.
+    state = edit(state, 'omega', 'old.example', 'new.example');
+    expect(snapshotChanges(state).resources).toEqual([
+      expect.objectContaining({ name: 'omega', files: [expect.anything()] }),
+    ]);
+
+    // Taking it out of the PR restores the folder it came from as well.
+    state = workspaceReducer(state, { type: 'removeFromPR', names: ['omega'] });
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'omega', revert: true, files: [] },
+      { name: 'alpha', revert: true, files: [] },
+    ]);
+  });
+
   it('forgets reverted resources once saved', () => {
     let state = workspaceReducer(loaded(), {
       type: 'removeFromPR',
@@ -395,12 +438,12 @@ describe('snapshotChanges', () => {
     expect(resource.files[1].content).toContain('  name: fresh\n');
   });
 
-  it('blocks a rename and invalid YAML, naming the resource', () => {
+  it('blocks an unusable name and invalid YAML, naming the resource', () => {
     let state = edit(
       withResources('alpha', 'beta'),
       'alpha',
       'name: alpha',
-      'name: renamed'
+      'name: Not A Slug'
     );
     state = workspaceReducer(state, {
       type: 'edit',
@@ -410,7 +453,123 @@ describe('snapshotChanges', () => {
     const snap = snapshotChanges(state);
     expect(snap.resources).toEqual([]);
     expect(snap.problems.map((p) => p.resource)).toEqual(['alpha', 'beta']);
-    expect(snap.problems[0].message).toMatch(/must stay "alpha"/);
+    expect(snap.problems[0].message).toMatch(/can only use lowercase/);
+  });
+
+  it('moves a renamed resource with both files named for the new name', () => {
+    const state = edit(
+      withResources('alpha'),
+      'alpha',
+      'name: alpha',
+      'name: omega'
+    );
+    const snap = snapshotChanges(state);
+    expect(snap.problems).toEqual([]);
+    expect(snap.renamed).toEqual([{ from: 'alpha', to: 'omega' }]);
+    expect(snap.resources).toEqual([
+      {
+        name: 'omega',
+        renameFrom: 'alpha',
+        files: [
+          {
+            name: 'metadata.yml',
+            content: metadataFor('alpha').replace('name: alpha', 'name: omega'),
+          },
+          {
+            // The content file keeps its extension.
+            name: 'omega.yaml',
+            content: contentFor('alpha').replace('name: alpha', 'name: omega'),
+          },
+        ],
+      },
+    ]);
+    expect(snap.changes.map((c) => [c.previousPath, c.path])).toEqual([
+      [
+        'docs/quickstarts/alpha/metadata.yml',
+        'docs/quickstarts/omega/metadata.yml',
+      ],
+      [
+        'docs/quickstarts/alpha/alpha.yaml',
+        'docs/quickstarts/omega/omega.yaml',
+      ],
+    ]);
+    expect(defaultPRBody(state, ['alpha'])).toContain(
+      '- docs/quickstarts/omega/ (renamed from alpha)'
+    );
+  });
+
+  it('keeps a mismatched folder unless the name itself changes', () => {
+    // A few real resources live in a folder that does not match their name.
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'addResources',
+      resources: [
+        snapshot('old-folder', [
+          { name: 'metadata.yml', content: metadataFor('real-name') },
+          { name: 'real-name.yml', content: contentFor('real-name') },
+        ]),
+      ],
+    });
+    state = edit(state, 'old-folder', 'old.example', 'new.example');
+    let snap = snapshotChanges(state);
+    expect(snap.problems).toEqual([]);
+    expect(snap.resources).toEqual([
+      expect.objectContaining({
+        name: 'old-folder',
+        files: [expect.anything()],
+      }),
+    ]);
+    expect(snap.resources[0].renameFrom).toBeUndefined();
+
+    // Naming it after its folder needs no move, only the metadata file.
+    state = edit(state, 'old-folder', 'name: real-name', 'name: old-folder');
+    snap = snapshotChanges(state);
+    expect(snap.renamed).toEqual([]);
+    expect(snap.resources[0].name).toBe('old-folder');
+    expect(snap.resources[0].files.map((f) => f.name)).toEqual([
+      'metadata.yml',
+      'real-name.yml',
+    ]);
+    expect(snap.resources[0].files[0].content).toContain('name: old-folder\n');
+  });
+
+  it('rejects two resources claiming the same name', () => {
+    let state = edit(
+      withResources('alpha', 'beta'),
+      'alpha',
+      'name: alpha',
+      'name: beta'
+    );
+    expect(snapshotChanges(state).problems[0].message).toMatch(
+      /already named "beta"/
+    );
+    state = edit(state, 'alpha', 'name: beta', 'name: gamma');
+    state = edit(state, 'beta', 'name: beta', 'name: gamma');
+    expect(snapshotChanges(state).problems).toHaveLength(2);
+  });
+
+  it('renames a new resource before its first save by creating it under the new name', () => {
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'createResource',
+      name: 'fresh',
+      buffer: scaffoldResource({
+        kind: 'quickstart',
+        name: 'fresh',
+        title: 'Fresh',
+        description: 'd',
+        bundles: [],
+      }),
+    });
+    state = edit(state, 'fresh', 'name: fresh', 'name: fresher');
+    const [resource] = snapshotChanges(state).resources;
+    expect(resource).toEqual(
+      expect.objectContaining({ name: 'fresher', create: true })
+    );
+    expect(resource.renameFrom).toBeUndefined();
+    expect(resource.files.map((f) => f.name)).toEqual([
+      'metadata.yml',
+      'fresher.yml',
+    ]);
+    expect(resource.files[0].content).toContain('name: fresher\n');
   });
 
   it('does not block a save over a quirk in a file it leaves alone', () => {

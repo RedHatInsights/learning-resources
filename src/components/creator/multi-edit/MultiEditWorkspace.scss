@@ -407,6 +407,15 @@
   &__diff-editor {
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
+  }
+
+  &__move {
+    display: block;
+    padding-bottom: var(--pf-t--global--spacer--xs);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+    overflow-wrap: anywhere;
   }
 
   &__removal {
@@ -421,5 +430,83 @@
     &__files {
       max-height: 160px;
     }
+  }
+}
+
+.lr-c-unified-diff {
+  --lr-diff-add: color-mix(
+    in srgb,
+    var(--pf-t--global--color--status--success--default) 18%,
+    transparent
+  );
+  --lr-diff-del: color-mix(
+    in srgb,
+    var(--pf-t--global--color--status--danger--default) 18%,
+    transparent
+  );
+
+  font-family: var(--pf-t--global--font--family--mono);
+  font-size: var(--pf-t--global--font--size--sm);
+  line-height: 1.5;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  &__number {
+    width: 4.5em;
+    padding: 0 var(--pf-t--global--spacer--sm);
+    color: var(--pf-t--global--text--color--subtle);
+    text-align: right;
+    vertical-align: top;
+    user-select: none;
+  }
+
+  &__marker {
+    width: 1.5em;
+    text-align: center;
+    vertical-align: top;
+    user-select: none;
+  }
+
+  &__code {
+    padding-right: var(--pf-t--global--spacer--sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  &__line.pf-m-add {
+    background: var(--lr-diff-add);
+  }
+
+  &__line.pf-m-del {
+    background: var(--lr-diff-del);
+  }
+
+  &__gap td {
+    padding: 0;
+    background: var(--pf-t--global--background--color--secondary--default);
+  }
+
+  &__gap button {
+    width: 100%;
+    padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
+    border: 0;
+    background: none;
+    color: var(--pf-t--global--text--color--link--default);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__empty {
+    padding: var(--pf-t--global--spacer--md);
+    color: var(--pf-t--global--text--color--subtle);
   }
 }

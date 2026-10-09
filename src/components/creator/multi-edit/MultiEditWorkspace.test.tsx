@@ -56,20 +56,7 @@ jest.mock('@monaco-editor/react', () => {
       onChange={(e) => onChange(e.target.value)}
     />
   );
-  const MockDiffEditor = ({
-    original,
-    modified,
-  }: {
-    original: string;
-    modified: string;
-  }) => (
-    <pre data-testid="mock-diff">
-      {original}
-      {'---'}
-      {modified}
-    </pre>
-  );
-  return { __esModule: true, default: MockEditor, DiffEditor: MockDiffEditor };
+  return { __esModule: true, default: MockEditor };
 });
 
 jest.mock('../CreatorPreview', () => ({
@@ -274,9 +261,14 @@ describe('MultiEditWorkspace', () => {
     expect(
       within(dialog).getByText(/2 files in 2 resources/)
     ).toBeInTheDocument();
-    // The diff shows the real file, not the combined buffer.
-    expect(within(dialog).getByTestId('mock-diff')).toHaveTextContent(
-      'https://new.example.com/alpha'
+    // The diff shows the real file, not the combined buffer, as one
+    // numbered row per line with the change marked.
+    const diff = within(dialog).getByRole('table', { name: 'Line changes' });
+    expect(within(diff).getByText('Removed').closest('tr')).toHaveTextContent(
+      '7-Removed href: https://old.example.com/alpha'
+    );
+    expect(within(diff).getByText('Added').closest('tr')).toHaveTextContent(
+      '7+Added href: https://new.example.com/alpha'
     );
     const create = within(dialog).getByRole('button', {
       name: 'Create pull request',
@@ -490,24 +482,103 @@ describe('MultiEditWorkspace', () => {
     ).toBeInTheDocument();
   });
 
-  it('blocks saving invalid YAML or a rename and says where', async () => {
+  it('blocks saving invalid YAML or an unusable name and says where', async () => {
     renderWorkspace();
     await chooseResources('alpha', 'beta');
     typeInto('spec: [unclosed');
     expect(screen.getByText(/^YAML problem:/)).toBeInTheDocument();
     expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
     selectResource('beta title');
-    typeInto(combinedFor('beta').replace('name: beta', 'name: renamed'));
+    typeInto(combinedFor('beta').replace('name: beta', 'name: Beta Two'));
 
     const dialog = await openReview();
     expect(
       within(dialog).getByText('Fix these problems before saving')
     ).toBeInTheDocument();
-    expect(within(dialog).getByText(/must stay "beta"/)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/"Beta Two" can only use lowercase letters/)
+    ).toBeInTheDocument();
     expect(
       within(dialog).getByRole('button', { name: 'Create pull request' })
     ).toBeDisabled();
     expect(mocked.submit).not.toHaveBeenCalled();
+  });
+
+  it('renames a resource by its metadata.name, moving its folder', async () => {
+    mocked.submit.mockResolvedValueOnce(savedResponse('head-1'));
+    renderWorkspace();
+    await chooseResources('alpha', 'beta');
+
+    // A display name change is an ordinary edit; a metadata.name change moves
+    // the folder. Each happens on its own resource without touching the other.
+    typeInto(combinedFor('alpha').replace('name: alpha', 'name: alpha-two'));
+    expect(
+      within(sidebar()).getByText('alpha → alpha-two')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('docs/quickstarts/alpha/ → alpha-two/')
+    ).toBeInTheDocument();
+    selectResource('beta title');
+    typeInto(combinedFor('beta').replace('beta title', 'Beta, retitled'));
+
+    const dialog = await openReview();
+    expect(
+      within(dialog).queryByText('Fix these problems before saving')
+    ).not.toBeInTheDocument();
+    expect(within(dialog).getByText('Renamed')).toBeInTheDocument();
+    expect(within(dialog).getByText('alpha → alpha-two')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('moved from docs/quickstarts/alpha/metadata.yml')
+    ).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/Commit message/)).toHaveValue(
+      'docs(quickstarts): update 1 learning resource, rename alpha to alpha-two'
+    );
+    fireEvent.change(within(dialog).getByLabelText(/Pull request title/), {
+      target: { value: 'Rename alpha' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create pull request' })
+    );
+
+    await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));
+    const [, resources] = mocked.submit.mock.calls[0];
+    expect(resources).toEqual([
+      {
+        name: 'alpha-two',
+        renameFrom: 'alpha',
+        files: [
+          {
+            name: 'metadata.yml',
+            content: metadataFor('alpha').replace(
+              'name: alpha',
+              'name: alpha-two'
+            ),
+          },
+          {
+            name: 'alpha-two.yml',
+            content: contentFor('alpha').replace(
+              'name: alpha',
+              'name: alpha-two'
+            ),
+          },
+        ],
+      },
+      {
+        name: 'beta',
+        files: [
+          {
+            name: 'beta.yml',
+            content: contentFor('beta').replace('beta title', 'Beta, retitled'),
+          },
+        ],
+      },
+    ]);
+
+    // Afterwards the resource lives under its new folder and is clean.
+    expect(await screen.findByText(/All changes saved at/)).toBeInTheDocument();
+    selectResource('alpha title');
+    expect(screen.getByText('docs/quickstarts/alpha-two/')).toBeInTheDocument();
+    expect(within(sidebar()).getByText('alpha-two')).toBeInTheDocument();
   });
 
   it('keeps edits and explains a conflict', async () => {

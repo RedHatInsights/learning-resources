@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -13,10 +13,8 @@ import {
   TextArea,
   TextInput,
 } from '@patternfly/react-core';
-import { DiffEditor, Monaco } from '@monaco-editor/react';
 import CodeBranchIcon from '@patternfly/react-icons/dist/dynamic/icons/code-branch-icon';
 import {
-  FileChange,
   WorkspaceResource,
   WorkspaceState,
   defaultPRBody,
@@ -24,7 +22,7 @@ import {
   snapshotChanges,
 } from './workspace';
 import { SaveDetails, SaveError } from './useBatchSave';
-import { configureMonacoEnvironment } from './monaco';
+import UnifiedDiff from './UnifiedDiff';
 
 type ReviewChangesModalProps = {
   isOpen: boolean;
@@ -36,58 +34,6 @@ type ReviewChangesModalProps = {
 };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
-
-const REVIEW_SCHEMES = ['review-original', 'review-modified'];
-
-/**
- * @monaco-editor/react disposes a diff editor's models before the editor
- * itself, and Monaco throws when that happens ("TextModel got disposed before
- * DiffEditorWidget model got reset"), which surfaced as an uncaught error on
- * every close. The models are kept through unmount and disposed once the
- * editor is gone.
- */
-const ReviewDiff: React.FC<{ change: FileChange }> = ({ change }) => {
-  const monacoRef = useRef<Monaco | null>(null);
-  useEffect(
-    () => () => {
-      const monaco = monacoRef.current;
-      setTimeout(() =>
-        monaco?.editor
-          .getModels()
-          .filter(
-            (m) =>
-              REVIEW_SCHEMES.includes(m.uri.scheme) && !m.isAttachedToEditor()
-          )
-          .forEach((m) => m.dispose())
-      );
-    },
-    []
-  );
-  return (
-    <DiffEditor
-      height="100%"
-      language="yaml"
-      original={change.before}
-      modified={change.after}
-      originalModelPath={`review-original://${change.path}`}
-      modifiedModelPath={`review-modified://${change.path}`}
-      keepCurrentOriginalModel
-      keepCurrentModifiedModel
-      beforeMount={configureMonacoEnvironment}
-      onMount={(_editor, monaco) => {
-        monacoRef.current = monaco;
-      }}
-      options={{
-        readOnly: true,
-        renderSideBySide: !change.isNew,
-        automaticLayout: true,
-        minimap: { enabled: false },
-        wordWrap: 'on',
-        scrollBeyondLastLine: false,
-      }}
-    />
-  );
-};
 
 /** Selection in the file list: a changed file, or a resource being removed. */
 type Selected = { path: string } | { removal: string };
@@ -111,6 +57,7 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
   );
   const changes = snapshot?.changes ?? [];
   const reverted = snapshot?.reverted ?? [];
+  const renamed = snapshot?.renamed ?? [];
   const problems = snapshot?.problems ?? [];
   const resourceNames = [...new Set(changes.map((c) => c.resource))];
   const resourceByName = new Map(state.resources.map((r) => [r.name, r]));
@@ -136,7 +83,9 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
     );
     const names = [...new Set(snapshot.changes.map((c) => c.resource))];
     setPrBody(defaultPRBody(state, names));
-    setCommitMessage(defaultCommitMessage(names.length, snapshot.reverted));
+    setCommitMessage(
+      defaultCommitMessage(names, snapshot.renamed, snapshot.reverted)
+    );
   }, [isOpen]);
 
   const selectedRemoval =
@@ -244,6 +193,7 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
               {resourceNames.map((name) => {
                 const resource = resourceByName.get(name);
                 const title = resource ? resourceTitle(resource) : name;
+                const renamedTo = renamed.find((r) => r.from === name)?.to;
                 return (
                   <li key={name}>
                     <span className="lr-c-multi-edit-review__resource">
@@ -253,7 +203,17 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
                           New
                         </Label>
                       )}
+                      {renamedTo && (
+                        <Label color="purple" isCompact>
+                          Renamed
+                        </Label>
+                      )}
                     </span>
+                    {renamedTo && (
+                      <span className="lr-c-multi-edit-review__subtle lr-c-multi-edit-review__move">
+                        {name} → {renamedTo}
+                      </span>
+                    )}
                     <ul>
                       {changes
                         .filter((c) => c.resource === name)
@@ -302,11 +262,19 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
                   >
                     <strong>{selected.name}</strong>
                     <span className="lr-c-multi-edit-review__subtle">
-                      {selected.isNew ? 'new file' : 'before → after'}
+                      {selected.isNew
+                        ? 'new file'
+                        : selected.previousPath
+                        ? `moved from ${selected.previousPath}`
+                        : 'changes'}
                     </span>
                   </div>
                   <div className="lr-c-multi-edit-review__diff-editor">
-                    <ReviewDiff change={selected} />
+                    <UnifiedDiff
+                      key={selected.path}
+                      before={selected.before}
+                      after={selected.after}
+                    />
                   </div>
                 </>
               )}
@@ -408,9 +376,18 @@ const RemovalSummary: React.FC<{ resource: WorkspaceResource }> = ({
   </div>
 );
 
-function defaultCommitMessage(edited: number, reverted: WorkspaceResource[]) {
+function defaultCommitMessage(
+  names: string[],
+  renamed: { from: string; to: string }[],
+  reverted: WorkspaceResource[]
+) {
+  const edited = names.filter((n) => !renamed.some((r) => r.from === n)).length;
   const parts = [
     edited > 0 && `update ${plural(edited, 'learning resource')}`,
+    renamed.length > 0 &&
+      (renamed.length === 1
+        ? `rename ${renamed[0].from} to ${renamed[0].to}`
+        : `rename ${plural(renamed.length, 'resource')}`),
     reverted.length > 0 &&
       `remove ${
         reverted.length === 1

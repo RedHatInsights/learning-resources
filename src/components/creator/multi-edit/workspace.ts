@@ -9,9 +9,11 @@ import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 import {
   combineFiles,
   parseTolerant,
+  setMetadataName,
   splitCombined,
   tagsAlreadyCombined,
 } from './combinedYaml';
+import { RESOURCE_NAME_PATTERN } from './scaffold';
 
 export const QUICKSTARTS_DIR = 'docs/quickstarts';
 
@@ -50,6 +52,11 @@ export interface WorkspaceResource {
   metadataSkipped?: 'tags-differ' | 'unmergeable';
   /** Not on the branch yet; the next save creates its directory. */
   isNew: boolean;
+  /**
+   * The directory a save in this session renamed the resource from. Taking
+   * the resource out of the PR restores that directory too.
+   */
+  renamedFrom?: string;
   /** The buffer text that corresponds to the saved files. */
   baseline: string;
   /** The author's current text, which may be invalid YAML. */
@@ -92,7 +99,12 @@ export interface WorkspaceState {
 /** What one save sent for a resource, so only that becomes the baseline. */
 export interface SentResource {
   buffer: string;
+  /** Saved text by file name, under the names the files have after the save. */
   files: Record<string, string>;
+  /** The directory the save moved (or created) the resource under. */
+  movedTo?: string;
+  /** The content file's name after the save, when the move renamed it. */
+  contentName?: string;
 }
 
 export type WorkspaceAction =
@@ -358,24 +370,44 @@ export function workspaceReducer(
       const resources = state.resources.map((r) => {
         const s = sent[r.name];
         if (!s) return r;
-        const saveFile = (f?: RealFile) =>
-          f && s.files[f.name] !== undefined
-            ? { ...f, saved: s.files[f.name] }
+        const saveFile = (f: RealFile | undefined, name = f?.name) =>
+          f && name
+            ? {
+                name,
+                saved: s.files[name] !== undefined ? s.files[name] : f.saved,
+              }
             : f;
+        const moved = s.movedTo !== undefined && s.movedTo !== r.name;
         return {
           ...r,
+          ...(moved
+            ? {
+                name: s.movedTo as string,
+                path: `${QUICKSTARTS_DIR}/${s.movedTo}`,
+                // A directory that only ever existed in this session has
+                // nothing to restore.
+                renamedFrom: r.isNew ? undefined : r.renamedFrom ?? r.name,
+              }
+            : {}),
           isNew: false,
           metadata: saveFile(r.metadata),
-          content: saveFile(r.content),
+          content: saveFile(r.content, s.contentName),
           baseline: s.buffer,
         };
       });
+      const savedNames = Object.entries(sent).map(([n, s]) => s.movedTo ?? n);
+      const movedFrom = (name: string) => sent[name]?.movedTo ?? name;
       return {
         ...state,
         resources,
+        activeName: state.activeName && movedFrom(state.activeName),
         prResources: [
-          ...state.prResources.filter((n) => !reverted.includes(n)),
-          ...Object.keys(sent).filter((n) => !state.prResources.includes(n)),
+          ...state.prResources
+            .filter((n) => !reverted.includes(n))
+            .map(movedFrom),
+          ...savedNames.filter(
+            (n) => !state.prResources.map(movedFrom).includes(n)
+          ),
         ],
         removals: state.removals.filter((r) => !reverted.includes(r.name)),
         pr: {
@@ -412,6 +444,8 @@ export interface FileChange {
   before: string;
   after: string;
   isNew: boolean;
+  /** Where the file was before a rename moved it. */
+  previousPath?: string;
 }
 
 /** Splits a buffer into the real files it stands for, as they would be saved. */
@@ -442,10 +476,7 @@ export function yamlError(text: string): string | null {
   return doc.errors.length > 0 ? doc.errors[0].message : null;
 }
 
-/**
- * The name the buffer declares. A changed name would be a rename, which the
- * batch API deliberately does not support.
- */
+/** The name a parsed buffer declares: metadata.name, or a metadata file's name. */
 function declaredName(r: WorkspaceResource, parsed: unknown): unknown {
   const doc = parsed as {
     name?: unknown;
@@ -454,8 +485,42 @@ function declaredName(r: WorkspaceResource, parsed: unknown): unknown {
   return r.layout === 'metadata' ? doc?.name : doc?.metadata?.name;
 }
 
-/** Problems that would make saving this resource fail or misbehave. */
-export function resourceProblem(r: WorkspaceResource): string | null {
+const nameField = (r: WorkspaceResource) =>
+  r.layout === 'metadata' ? 'name' : 'metadata.name';
+
+function declaredIn(r: WorkspaceResource, text: string): unknown {
+  try {
+    return declaredName(r, parseTolerant(text));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The name the resource had when it was loaded or created. */
+const loadedName = (r: WorkspaceResource) =>
+  r.isNew ? r.name : declaredIn(r, r.baseline);
+
+/**
+ * The name the resource is being renamed to, or null while it keeps its
+ * name. A resource's directory is named after its metadata.name, so a new
+ * name means the save moves it. Comparing with the loaded name rather than
+ * the directory keeps the few older resources whose directory never matched
+ * editable without moving them.
+ */
+export function renameTarget(r: WorkspaceResource): string | null {
+  const now = declaredIn(r, r.buffer);
+  if (typeof now !== 'string' || !now) return null;
+  return now === loadedName(r) ? null : now;
+}
+
+/**
+ * Problems that would make saving this resource fail or misbehave. Pass the
+ * other open resources to also catch two of them claiming the same name.
+ */
+export function resourceProblem(
+  r: WorkspaceResource,
+  resources: WorkspaceResource[] = []
+): string | null {
   let parsed: unknown;
   try {
     parsed = parseTolerant(r.buffer);
@@ -463,10 +528,26 @@ export function resourceProblem(r: WorkspaceResource): string | null {
     return (err as Error).message;
   }
   const name = declaredName(r, parsed);
-  if (name !== r.name) {
-    return `${r.layout === 'metadata' ? 'name' : 'metadata.name'} must stay "${
-      r.name
-    }". Renaming a resource is not supported here.`;
+  if (name === loadedName(r)) return null;
+  if (typeof name !== 'string' || !name) {
+    return `${nameField(r)} is required; it names the resource's folder.`;
+  }
+  if (!RESOURCE_NAME_PATTERN.test(name)) {
+    return `${nameField(
+      r
+    )} "${name}" can only use lowercase letters, numbers and single dashes, because it is also the folder name.`;
+  }
+  if (r.layout === 'metadata') {
+    return `${r.path} has no content file, so it cannot be renamed here.`;
+  }
+  if (!r.metadata) {
+    return `${r.path} has no metadata.yml, so it cannot be renamed here.`;
+  }
+  const taken = resources.some(
+    (o) => o !== r && (o.name === name || renameTarget(o) === name)
+  );
+  if (name !== r.name && taken) {
+    return `Another open resource is already named "${name}".`;
   }
   return null;
 }
@@ -477,8 +558,12 @@ export interface BatchSnapshot {
   changes: FileChange[];
   /** Resources the save reverts out of the PR. */
   reverted: WorkspaceResource[];
+  /** Existing resources the save moves to a new directory. */
+  renamed: { from: string; to: string }[];
   problems: { resource: string; message: string }[];
 }
+
+const extensionOf = (name: string) => name.match(/\.ya?ml$/i)?.[0] ?? '.yml';
 
 /**
  * Captures exactly what one save will send: every changed file, grouped by
@@ -492,11 +577,12 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
     sent: {},
     changes: [],
     reverted: [],
+    renamed: [],
     problems: [],
   };
 
   for (const r of dirtyResources(state)) {
-    const problem = resourceProblem(r);
+    const problem = resourceProblem(r, state.resources);
     const split = filesForResource(r);
     if (problem || split.error !== undefined) {
       snapshot.problems.push({
@@ -506,47 +592,100 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
       continue;
     }
 
-    const before = (f?: RealFile) => (r.isNew ? '' : f?.saved ?? '');
-    const changed = [r.metadata, r.content]
-      .filter((f): f is RealFile => !!f && split.files[f.name] !== undefined)
-      .filter((f) => r.isNew || split.files[f.name] !== f.saved);
+    // A new name moves the resource: its metadata file follows the name, and
+    // its content file is renamed after it. resourceProblem has made sure
+    // both files exist.
+    const target = renameTarget(r);
+    const dir = target ?? r.name;
+    const moves = dir !== r.name;
+    const files = { ...split.files };
+    let contentName = r.content?.name;
+    if (target !== null) {
+      const metadata = r.metadata as RealFile;
+      const content = r.content as RealFile;
+      const renamedMetadata = setMetadataName(
+        files[metadata.name] ?? metadata.saved,
+        target
+      );
+      if (renamedMetadata === null) {
+        snapshot.problems.push({
+          resource: r.name,
+          message: `${metadata.name} could not be updated with the new name.`,
+        });
+        continue;
+      }
+      files[metadata.name] = renamedMetadata;
+      if (moves) {
+        contentName = `${target}${extensionOf(content.name)}`;
+        files[contentName] = files[content.name] ?? content.saved;
+        if (contentName !== content.name) delete files[content.name];
+      }
+    }
+
+    const real = [r.metadata, r.content].filter((f): f is RealFile => !!f);
+    const destName = (f: RealFile) =>
+      f === r.content ? (contentName as string) : f.name;
+    // A move or a creation sends the resource complete; an edit sends only
+    // the files that change.
+    const changed = real.filter(
+      (f) =>
+        files[destName(f)] !== undefined &&
+        (r.isNew || moves || files[destName(f)] !== f.saved)
+    );
     if (changed.length === 0) continue;
 
     for (const f of changed) {
-      const error = yamlError(split.files[f.name]);
+      const name = destName(f);
+      const error = yamlError(files[name]);
       if (error) {
         snapshot.problems.push({
           resource: r.name,
-          message: `${f.name}: ${error}`,
+          message: `${name}: ${error}`,
         });
       }
       snapshot.changes.push({
         resource: r.name,
-        path: `${r.path}/${f.name}`,
-        name: f.name,
-        before: before(f),
-        after: split.files[f.name],
+        path: `${QUICKSTARTS_DIR}/${dir}/${name}`,
+        name,
+        before: r.isNew ? '' : f.saved,
+        after: files[name],
         isNew: r.isNew,
+        ...(moves && !r.isNew ? { previousPath: `${r.path}/${f.name}` } : {}),
       });
     }
     snapshot.resources.push({
-      name: r.name,
+      name: dir,
       ...(r.isNew ? { create: true } : {}),
+      ...(moves && !r.isNew ? { renameFrom: r.name } : {}),
       files: changed.map((f) => ({
-        name: f.name,
-        content: split.files[f.name],
+        name: destName(f),
+        content: files[destName(f)],
       })),
     });
+    if (moves && !r.isNew) snapshot.renamed.push({ from: r.name, to: dir });
     snapshot.sent[r.name] = {
       buffer: r.buffer,
       files: Object.fromEntries(
-        changed.map((f) => [f.name, split.files[f.name]])
+        changed.map((f) => [destName(f), files[destName(f)]])
       ),
+      ...(moves ? { movedTo: dir, contentName } : {}),
     };
   }
+  const listed = new Set(
+    snapshot.resources.flatMap((res) => [res.name, res.renameFrom ?? ''])
+  );
   for (const r of state.removals) {
     snapshot.resources.push({ name: r.name, revert: true, files: [] });
     snapshot.reverted.push(r);
+    listed.add(r.name);
+  }
+  // A renamed resource left its old directory deleted in the PR; restore it
+  // as well, unless something else in this save already deals with it.
+  for (const r of state.removals) {
+    if (r.renamedFrom && !listed.has(r.renamedFrom)) {
+      snapshot.resources.push({ name: r.renamedFrom, revert: true, files: [] });
+      listed.add(r.renamedFrom);
+    }
   }
   return snapshot;
 }
@@ -606,7 +745,15 @@ export function resourceTitle(r: WorkspaceResource): string {
 export function defaultPRBody(state: WorkspaceState, names: string[]) {
   const dirs = state.resources
     .filter((r) => names.includes(r.name))
-    .map((r) => `- ${r.path}/${r.isNew ? ' (new)' : ''}`);
+    .map((r) => {
+      const target = renameTarget(r);
+      if (!target || target === r.name) {
+        return `- ${r.path}/${r.isNew ? ' (new)' : ''}`;
+      }
+      return r.isNew
+        ? `- ${QUICKSTARTS_DIR}/${target}/ (new)`
+        : `- ${QUICKSTARTS_DIR}/${target}/ (renamed from ${r.name})`;
+    });
   return `Updating ${dirs.length} learning resource${
     dirs.length === 1 ? '' : 's'
   } via the Quickstarts Creator tool.\n\nDirectories:\n${dirs.join('\n')}`;

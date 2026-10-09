@@ -182,6 +182,37 @@ export function splitCombined(
   return { metadata: metaLines.join('\n'), content };
 }
 
+/**
+ * Sets the top-level `name` of a metadata file, changing only that value so
+ * the rest of the file keeps its bytes. Returns null when the file is not a
+ * block mapping it can safely edit.
+ */
+export function setMetadataName(text: string, name: string): string | null {
+  const doc = YAML.parseDocument(text, TOLERANT);
+  const root = doc.errors.length === 0 ? blockMap(doc) : null;
+  if (!root) return null;
+  const pair = findPair(root, 'name');
+  let next: string;
+  if (pair && isScalar(pair.value) && pair.value.range) {
+    const [start, end] = pair.value.range;
+    next = text.slice(0, start) + name + text.slice(end);
+  } else if (!pair && root.items.length > 0) {
+    const first = root.items[0] as Pair<Node, Node>;
+    const at = first.key.range?.[0] ?? 0;
+    const lines = text.split('\n');
+    lines.splice(
+      lineAt(text, at),
+      0,
+      `${' '.repeat(columnOf(text, at))}name: ${name}`
+    );
+    next = lines.join('\n');
+  } else {
+    return null;
+  }
+  const parsed = YAML.parse(next, TOLERANT) as { name?: unknown } | null;
+  return parsed?.name === name ? next : null;
+}
+
 /** Parses an edited buffer the way the preview and identity checks need it. */
 export function parseTolerant(text: string): unknown {
   return YAML.parse(text, TOLERANT);

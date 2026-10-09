@@ -32,6 +32,7 @@ import {
   isInPR,
   pendingCount,
   previewForResource,
+  renameTarget,
   resourceTitle,
   yamlError,
 } from './workspace';
@@ -100,6 +101,9 @@ const MultiEditWorkspace = ({
   const pending = pendingCount(state);
   const active =
     state.resources.find((r) => r.name === state.activeName) ?? null;
+  const activeTarget = active && renameTarget(active);
+  const activeMovesTo =
+    activeTarget && activeTarget !== active?.name ? activeTarget : null;
   const activeError = useMemo(
     () => (active ? yamlError(active.buffer) : null),
     [active?.buffer]
@@ -335,7 +339,9 @@ const MultiEditWorkspace = ({
                       </Label>
                     )
                   )}
-                  <code className="lr-c-multi-edit__path">{active.path}/</code>
+                  <code className="lr-c-multi-edit__path">
+                    {active.path}/{activeMovesTo && ` → ${activeMovesTo}/`}
+                  </code>
                 </div>
                 <div className="lr-c-multi-edit__stage-actions">
                   <Button
@@ -472,7 +478,10 @@ const MultiEditWorkspace = ({
         onCreate={(name, buffer) =>
           dispatch({ type: 'createResource', name, buffer })
         }
-        taken={state.resources.map((r) => r.name)}
+        taken={state.resources.flatMap((r) => {
+          const target = renameTarget(r);
+          return target ? [r.name, target] : [r.name];
+        })}
       />
       <OpenPRModal
         isOpen={isOpenPROpen}

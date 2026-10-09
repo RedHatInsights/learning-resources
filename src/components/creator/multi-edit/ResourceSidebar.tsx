@@ -12,6 +12,7 @@ import UndoIcon from '@patternfly/react-icons/dist/dynamic/icons/undo-icon';
 import {
   WorkspaceResource,
   isDirty,
+  renameTarget,
   resourceProblem,
   resourceTitle,
 } from './workspace';
@@ -62,7 +63,9 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
         {shown.map((r) => {
           const title = resourceTitle(r);
           const dirty = isDirty(r);
-          const problem = dirty ? resourceProblem(r) : null;
+          const problem = dirty ? resourceProblem(r, resources) : null;
+          const target = dirty ? renameTarget(r) : null;
+          const movesTo = target && target !== r.name ? target : null;
           const isActive = r.name === activeName;
           return (
             <li
@@ -89,9 +92,9 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                     <span className="pf-v6-screen-reader"> (unsaved)</span>
                   )}
                 </span>
-                {title !== r.name && (
+                {(title !== r.name || movesTo) && (
                   <span className="lr-c-multi-edit__resource-dir">
-                    {r.name}
+                    {movesTo ? `${r.name} → ${movesTo}` : r.name}
                   </span>
                 )}
                 {(r.isNew || problem) && (

@@ -167,6 +167,12 @@ export interface BatchPRResource {
    * files.
    */
   revert?: boolean;
+  /**
+   * Move an existing resource from this directory to `name`. Sends both its
+   * metadata file and its content file, named for the new name; the old
+   * directory is deleted.
+   */
+  renameFrom?: string;
   /** Changed files only; files that are not sent stay untouched. */
   files: PRFile[];
 }

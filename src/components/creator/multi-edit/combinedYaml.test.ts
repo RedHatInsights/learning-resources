@@ -1,5 +1,6 @@
 import {
   combineFiles,
+  setMetadataName,
   splitCombined as splitResult,
   tagsAlreadyCombined,
 } from './combinedYaml';
@@ -202,5 +203,26 @@ spec:
   it('reports a buffer that no longer parses', () => {
     expect(splitCombined('metadata: [', metadata).error).toBeDefined();
     expect(splitCombined('spec: {}\n', metadata).error).toMatch(/metadata/);
+  });
+});
+
+describe('setMetadataName', () => {
+  it('changes only the name value', () => {
+    const text =
+      '# header\nkind: QuickStarts\nname: "old-name" # why\ntags: []\n';
+    expect(setMetadataName(text, 'new-name')).toBe(
+      '# header\nkind: QuickStarts\nname: new-name # why\ntags: []\n'
+    );
+  });
+
+  it('adds a missing name at the top of the mapping', () => {
+    expect(setMetadataName('kind: QuickStarts\ntags: []\n', 'fresh')).toBe(
+      'name: fresh\nkind: QuickStarts\ntags: []\n'
+    );
+  });
+
+  it('refuses files it cannot edit safely', () => {
+    expect(setMetadataName('- a\n- b\n', 'x')).toBeNull();
+    expect(setMetadataName('name: [', 'x')).toBeNull();
   });
 });
