@@ -161,6 +161,12 @@ export interface BatchPRResource {
    * files are sent. Without it, the directory must already exist.
    */
   create?: boolean;
+  /**
+   * Take the resource back out of the PR: its directory goes back to how it
+   * was where the branch started, or is deleted if the PR added it. Sends no
+   * files.
+   */
+  revert?: boolean;
   /** Changed files only; files that are not sent stay untouched. */
   files: PRFile[];
 }

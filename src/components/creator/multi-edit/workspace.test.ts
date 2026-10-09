@@ -3,6 +3,7 @@ import {
   defaultPRBody,
   dirtyResources,
   emptyWorkspace,
+  pendingCount,
   previewForResource,
   resourceFromSnapshot,
   resourceProblem,
@@ -209,6 +210,7 @@ describe('workspaceReducer', () => {
         paths: [],
       },
       sent: snap.sent,
+      reverted: [],
     });
     expect(dirtyResources(state).map((r) => r.name)).toEqual(['beta']);
     expect(state.pr).toEqual({
@@ -239,6 +241,85 @@ describe('workspaceReducer', () => {
     expect(state.pr?.headSha).toBe('head-9');
     expect(state.pendingBranchName).toBe('qs-update-batch-9');
     expect(state.missing).toEqual(['gone']);
+  });
+});
+
+describe('removing resources from a PR', () => {
+  const loaded = () =>
+    workspaceReducer(emptyWorkspace(), {
+      type: 'loadPR',
+      workspace: {
+        number: 9,
+        title: 'T',
+        htmlUrl: 'https://github.com/o/r/pull/9',
+        branchName: 'qs-update-batch-9',
+        headSha: 'head-9',
+        resources: [snapshot('alpha'), snapshot('beta')],
+        missing: [],
+      },
+    });
+
+  it('queues a revert that the next save sends and can be undone', () => {
+    let state = workspaceReducer(edit(loaded(), 'alpha', 'old', 'new'), {
+      type: 'removeFromPR',
+      names: ['alpha'],
+    });
+    expect(state.resources.map((r) => r.name)).toEqual(['beta']);
+    expect(pendingCount(state)).toBe(1);
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'alpha', revert: true, files: [] },
+    ]);
+
+    state = workspaceReducer(state, { type: 'undoRemoval', name: 'alpha' });
+    expect(state.removals).toEqual([]);
+    expect(bufferOf(state, 'alpha')).toContain('new.example');
+    expect(state.activeName).toBe('alpha');
+  });
+
+  it('only closes resources the PR does not change', () => {
+    let state = workspaceReducer(loaded(), {
+      type: 'addResources',
+      resources: [snapshot('gamma')],
+    });
+    state = workspaceReducer(state, { type: 'removeFromPR', names: ['gamma'] });
+    expect(state.resources.map((r) => r.name)).toEqual(['alpha', 'beta']);
+    expect(state.removals).toEqual([]);
+  });
+
+  it('drops a pending removal when the resource is added back', () => {
+    let state = workspaceReducer(loaded(), {
+      type: 'removeFromPR',
+      names: ['beta'],
+    });
+    state = workspaceReducer(state, {
+      type: 'addResources',
+      resources: [snapshot('beta')],
+    });
+    expect(state.removals).toEqual([]);
+    expect(pendingCount(state)).toBe(0);
+  });
+
+  it('forgets reverted resources once saved', () => {
+    let state = workspaceReducer(loaded(), {
+      type: 'removeFromPR',
+      names: ['beta'],
+    });
+    state = workspaceReducer(state, {
+      type: 'saved',
+      response: {
+        prUrl: 'https://github.com/o/r/pull/9',
+        prNumber: 9,
+        branchName: 'qs-update-batch-9',
+        headSha: 'head-10',
+        status: 'updated',
+        paths: [],
+      },
+      sent: {},
+      reverted: ['beta'],
+    });
+    expect(state.removals).toEqual([]);
+    expect(state.prResources).toEqual(['alpha']);
+    expect(state.pr?.headSha).toBe('head-10');
   });
 });
 

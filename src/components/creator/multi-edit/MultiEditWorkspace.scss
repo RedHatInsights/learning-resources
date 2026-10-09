@@ -138,6 +138,42 @@
     color: var(--pf-t--global--text--color--subtle);
   }
 
+  &__removals {
+    flex: none;
+    max-height: 40%;
+    display: flex;
+    flex-direction: column;
+    border-top: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+
+    .lr-c-multi-edit__resource-list {
+      flex: initial;
+    }
+  }
+
+  &__removals-title {
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md) 0;
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--xs);
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+    text-transform: uppercase;
+  }
+
+  &__removal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pf-t--global--spacer--sm);
+    padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
+  }
+
+  &__removal-name {
+    min-width: 0;
+    color: var(--pf-t--global--text--color--subtle);
+    text-decoration: line-through;
+    overflow-wrap: anywhere;
+  }
+
   &__dirty-dot {
     flex: none;
     width: 8px;
@@ -286,12 +322,14 @@
 }
 
 .lr-c-multi-edit-review {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(180px, 30%) minmax(0, 1fr);
   gap: var(--pf-t--global--spacer--md);
   height: 50vh;
+  min-height: 320px;
 
   &__files {
-    flex: 0 0 30%;
+    min-height: 0;
     overflow-y: auto;
     list-style: none;
     margin: 0;
@@ -305,13 +343,17 @@
   }
 
   &__resource {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--xs);
     padding: var(--pf-t--global--spacer--xs) 0;
     font-weight: var(--pf-t--global--font--weight--body--bold);
     overflow-wrap: anywhere;
   }
 
   &__file {
+    display: block;
     width: 100%;
     padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--sm);
     border: 0;
@@ -321,6 +363,7 @@
     font-family: var(--pf-t--global--font--family--mono);
     font-size: var(--pf-t--global--font--size--sm);
     text-align: left;
+    overflow-wrap: anywhere;
     cursor: pointer;
 
     &:hover {
@@ -334,20 +377,49 @@
   }
 
   &__diff {
-    flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: var(--pf-t--global--spacer--xs);
+    border: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+    overflow: hidden;
   }
 
-  &__path {
+  &__diff-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--pf-t--global--spacer--sm);
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    border-bottom: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    font-family: var(--pf-t--global--font--family--mono);
     font-size: var(--pf-t--global--font--size--sm);
-    overflow-wrap: anywhere;
+  }
+
+  &__subtle {
+    color: var(--pf-t--global--text--color--subtle);
+    font-family: var(--pf-t--global--font--family--body);
   }
 
   &__diff-editor {
     flex: 1;
     min-height: 0;
+  }
+
+  &__removal {
+    padding: var(--pf-t--global--spacer--md);
+  }
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 70vh;
+
+    &__files {
+      max-height: 160px;
+    }
   }
 }

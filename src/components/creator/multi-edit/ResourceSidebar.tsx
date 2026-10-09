@@ -8,6 +8,7 @@ import {
 } from '@patternfly/react-core';
 import ExclamationCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/exclamation-circle-icon';
 import TimesIcon from '@patternfly/react-icons/dist/dynamic/icons/times-icon';
+import UndoIcon from '@patternfly/react-icons/dist/dynamic/icons/undo-icon';
 import {
   WorkspaceResource,
   isDirty,
@@ -20,6 +21,9 @@ type ResourceSidebarProps = {
   activeName: string | null;
   onSelect: (name: string) => void;
   onRemove: (name: string) => void;
+  /** Resources the next save reverts out of the PR. */
+  removals: WorkspaceResource[];
+  onUndoRemoval: (name: string) => void;
 };
 
 /** Only worth searching once the list stops fitting on screen. */
@@ -30,6 +34,8 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   activeName,
   onSelect,
   onRemove,
+  removals,
+  onUndoRemoval,
 }) => {
   const [search, setSearch] = useState('');
   const term = search.trim().toLowerCase();
@@ -116,12 +122,44 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
             </li>
           );
         })}
-        {shown.length === 0 && (
+        {shown.length === 0 && resources.length > 0 && (
           <li className="lr-c-multi-edit__resource-empty">
             No resources match.
           </li>
         )}
       </ul>
+      {removals.length > 0 && (
+        <section
+          className="lr-c-multi-edit__removals"
+          aria-labelledby="mr-removals-title"
+        >
+          <span
+            id="mr-removals-title"
+            className="lr-c-multi-edit__removals-title"
+          >
+            Removed from PR on next save
+          </span>
+          <ul className="lr-c-multi-edit__resource-list">
+            {removals.map((r) => (
+              <li key={r.name} className="lr-c-multi-edit__removal">
+                <span className="lr-c-multi-edit__removal-name">
+                  {resourceTitle(r)}
+                </span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  isInline
+                  icon={<UndoIcon />}
+                  aria-label={`Keep ${resourceTitle(r)} in the PR`}
+                  onClick={() => onUndoRemoval(r.name)}
+                >
+                  Undo
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </nav>
   );
 };

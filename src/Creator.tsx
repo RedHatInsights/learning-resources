@@ -28,8 +28,8 @@ import MultiEditWorkspace from './components/creator/multi-edit/MultiEditWorkspa
 import {
   WorkspaceAction,
   WorkspaceState,
-  dirtyResources,
   emptyWorkspace,
+  pendingCount,
   workspaceReducer,
 } from './components/creator/multi-edit/workspace';
 import './Creator.scss';
@@ -92,7 +92,7 @@ const CreatorInternal = ({
   const filterMap = useFilterMap({ data: filterData });
   const isMulti = showMultiEdit && mode === 'multi';
   // Shown on the mode switch, so leaving the batch editor never hides work.
-  const unsavedInMulti = dirtyResources(workspace).length;
+  const unsavedInMulti = pendingCount(workspace);
 
   const [rawQuickStart, setRawQuickStart] = useState<ExtendedQuickstart>({
     apiVersion: 'console.openshift.io/v1',

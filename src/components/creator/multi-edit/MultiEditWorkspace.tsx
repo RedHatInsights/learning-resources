@@ -29,6 +29,8 @@ import {
   WorkspaceState,
   dirtyResources,
   isDirty,
+  isInPR,
+  pendingCount,
   previewForResource,
   resourceTitle,
   yamlError,
@@ -95,6 +97,7 @@ const MultiEditWorkspace = ({
   };
 
   const changed = dirtyResources(state);
+  const pending = pendingCount(state);
   const active =
     state.resources.find((r) => r.name === state.activeName) ?? null;
   const activeError = useMemo(
@@ -113,17 +116,17 @@ const MultiEditWorkspace = ({
 
   // Unsaved edits live only in this tab, so leaving would lose them.
   useEffect(() => {
-    if (changed.length === 0) return;
+    if (pending === 0) return;
     const warn = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [changed.length > 0]);
+  }, [pending > 0]);
 
   const openReview = () => {
-    if (changed.length === 0 || saving) return;
+    if (pending === 0 || saving) return;
     clearError();
     setReviewOpen(true);
   };
@@ -142,10 +145,15 @@ const MultiEditWorkspace = ({
     return ok;
   };
 
-  /** Removing a clean resource is free; anything unsaved is confirmed. */
+  /**
+   * Removing a clean resource is free. Unsaved work is confirmed, and so is
+   * anything the PR changes, since the author may mean to take it out.
+   */
   const requestRemove = (names: string[]) => {
     const risky = state.resources.filter(
-      (r) => names.includes(r.name) && isDirty(r)
+      (r) =>
+        names.includes(r.name) &&
+        (isDirty(r) || (state.pr && isInPR(state, r.name)))
     );
     if (risky.length === 0) dispatch({ type: 'removeResources', names });
     else setPendingRemoval(names);
@@ -173,11 +181,11 @@ const MultiEditWorkspace = ({
           <span className="lr-c-multi-edit__status">
             {prStatus}
             <span aria-hidden="true"> · </span>
-            {changed.length === 0
+            {pending === 0
               ? savedAt && state.pr
                 ? `All changes saved at ${savedAt.toLocaleTimeString()}`
                 : 'No unsaved changes'
-              : `${changed.length} unsaved`}
+              : `${pending} unsaved`}
           </span>
         </div>
         <div className="lr-c-multi-edit__actions">
@@ -202,13 +210,13 @@ const MultiEditWorkspace = ({
             <Button
               variant="primary"
               onClick={openReview}
-              isAriaDisabled={changed.length === 0 || saving}
+              isAriaDisabled={pending === 0 || saving}
               isLoading={saving}
             >
               {state.pr ? `Save to PR #${state.pr.number}` : 'Create PR'}
-              {changed.length > 0 && (
+              {pending > 0 && (
                 <Badge isRead className="pf-v6-u-ml-sm">
-                  {changed.length}
+                  {pending}
                 </Badge>
               )}
             </Button>
@@ -249,7 +257,7 @@ const MultiEditWorkspace = ({
         </Alert>
       )}
 
-      {state.resources.length === 0 ? (
+      {state.resources.length === 0 && state.removals.length === 0 ? (
         <EmptyState
           titleText="Edit several learning resources in one pull request"
           headingLevel="h3"
@@ -284,7 +292,22 @@ const MultiEditWorkspace = ({
             activeName={state.activeName}
             onSelect={(name) => dispatch({ type: 'setActive', name })}
             onRemove={(name) => requestRemove([name])}
+            removals={state.removals}
+            onUndoRemoval={(name) => dispatch({ type: 'undoRemoval', name })}
           />
+
+          {!active && (
+            <EmptyState
+              titleText="No resources open"
+              headingLevel="h3"
+              className="lr-c-multi-edit__empty"
+            >
+              <EmptyStateBody>
+                Save to take the removed resources out of the PR, or choose
+                resources to keep editing.
+              </EmptyStateBody>
+            </EmptyState>
+          )}
 
           {active && (
             <section
@@ -459,7 +482,7 @@ const MultiEditWorkspace = ({
           setSavedAt(null);
           dispatch({ type: 'loadPR', workspace });
         }}
-        unsavedCount={changed.length}
+        unsavedCount={pending}
       />
       <ReviewChangesModal
         isOpen={isReviewOpen}
@@ -474,7 +497,12 @@ const MultiEditWorkspace = ({
           pendingRemoval.includes(r.name)
         )}
         pr={state.pr}
-        onConfirm={() => {
+        inPR={state.prResources}
+        onRemoveFromPR={() => {
+          dispatch({ type: 'removeFromPR', names: pendingRemoval });
+          setPendingRemoval([]);
+        }}
+        onClose={() => {
           dispatch({ type: 'removeResources', names: pendingRemoval });
           setPendingRemoval([]);
         }}

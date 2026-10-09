@@ -129,6 +129,8 @@ const NewResourceModal: React.FC<NewResourceModalProps> = ({
       onClose={onClose}
       variant="medium"
       aria-labelledby="mr-new-resource-title"
+      // Modals render outside the app root, where its scoped styles stop.
+      className="learning-resources"
     >
       <ModalHeader
         title="New resource"

@@ -80,6 +80,13 @@ export interface WorkspaceState {
   pendingBranchName: string;
   /** Directories the loaded PR touches that no longer exist at its head. */
   missing: string[];
+  /** Resources the PR changes, as far as this workspace has seen. */
+  prResources: string[];
+  /**
+   * Resources taken out of the workspace that the next save reverts out of
+   * the PR. Kept whole so the removal can be undone before saving.
+   */
+  removals: WorkspaceResource[];
 }
 
 /** What one save sent for a resource, so only that becomes the baseline. */
@@ -96,6 +103,8 @@ export type WorkspaceAction =
     }
   | { type: 'createResource'; name: string; buffer: string }
   | { type: 'removeResources'; names: string[] }
+  | { type: 'removeFromPR'; names: string[] }
+  | { type: 'undoRemoval'; name: string }
   | { type: 'loadPR'; workspace: CreatorPRWorkspace }
   | { type: 'edit'; name: string; buffer: string }
   | { type: 'discard'; name: string }
@@ -104,6 +113,7 @@ export type WorkspaceAction =
       type: 'saved';
       response: BatchPRResponse;
       sent: Record<string, SentResource>;
+      reverted: string[];
     };
 
 export const newBranchName = () =>
@@ -116,6 +126,8 @@ export const emptyWorkspace = (): WorkspaceState => ({
   baseSha: null,
   pendingBranchName: newBranchName(),
   missing: [],
+  prResources: [],
+  removals: [],
 });
 
 const isYamlName = (name: string) => /\.ya?ml$/i.test(name);
@@ -227,9 +239,12 @@ function addSnapshots(
     const resource = resourceFromSnapshot(snapshot);
     if (resource) resources.push(resource);
   }
+  // Adding a resource back replaces a pending removal of it.
+  const added = new Set(resources.map((r) => r.name));
   return {
     ...state,
     resources,
+    removals: state.removals.filter((r) => !added.has(r.name)),
     activeName: state.activeName ?? resources[0]?.name ?? null,
   };
 }
@@ -273,15 +288,36 @@ export function workspaceReducer(
         activeName: action.name,
       };
     }
-    case 'removeResources': {
+    case 'removeResources':
+    case 'removeFromPR': {
       const resources = state.resources.filter(
         (r) => !action.names.includes(r.name)
       );
+      // Only what the PR actually changes can be reverted out of it.
+      const reverted =
+        action.type === 'removeFromPR'
+          ? state.resources.filter(
+              (r) =>
+                action.names.includes(r.name) &&
+                state.prResources.includes(r.name)
+            )
+          : [];
       const activeStays = resources.some((r) => r.name === state.activeName);
       return {
         ...state,
         resources,
+        removals: [...state.removals, ...reverted],
         activeName: activeStays ? state.activeName : resources[0]?.name ?? null,
+      };
+    }
+    case 'undoRemoval': {
+      const restored = state.removals.find((r) => r.name === action.name);
+      if (!restored) return state;
+      return {
+        ...state,
+        resources: [...state.resources, restored],
+        removals: state.removals.filter((r) => r !== restored),
+        activeName: restored.name,
       };
     }
     case 'loadPR': {
@@ -299,6 +335,7 @@ export function workspaceReducer(
           headSha: workspace.headSha,
         },
         missing: workspace.missing,
+        prResources: workspace.resources.map((r) => r.name),
       };
     }
     case 'edit':
@@ -315,7 +352,7 @@ export function workspaceReducer(
         ? { ...state, activeName: action.name }
         : state;
     case 'saved': {
-      const { response, sent } = action;
+      const { response, sent, reverted } = action;
       // Only what the server acknowledged becomes the baseline; text typed
       // while the save was in flight stays unsaved.
       const resources = state.resources.map((r) => {
@@ -336,6 +373,11 @@ export function workspaceReducer(
       return {
         ...state,
         resources,
+        prResources: [
+          ...state.prResources.filter((n) => !reverted.includes(n)),
+          ...Object.keys(sent).filter((n) => !state.prResources.includes(n)),
+        ],
+        removals: state.removals.filter((r) => !reverted.includes(r.name)),
         pr: {
           number: response.prNumber,
           url: response.prUrl || state.pr?.url || '',
@@ -354,6 +396,13 @@ export const isDirty = (r: WorkspaceResource) =>
 
 export const dirtyResources = (state: WorkspaceState) =>
   state.resources.filter(isDirty);
+
+/** Everything the next save would commit: edited resources plus removals. */
+export const pendingCount = (state: WorkspaceState) =>
+  dirtyResources(state).length + state.removals.length;
+
+export const isInPR = (state: WorkspaceState, name: string) =>
+  state.prResources.includes(name);
 
 /** One real file a save would write, with its before/after for review. */
 export interface FileChange {
@@ -426,6 +475,8 @@ export interface BatchSnapshot {
   resources: BatchPRResource[];
   sent: Record<string, SentResource>;
   changes: FileChange[];
+  /** Resources the save reverts out of the PR. */
+  reverted: WorkspaceResource[];
   problems: { resource: string; message: string }[];
 }
 
@@ -440,6 +491,7 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
     resources: [],
     sent: {},
     changes: [],
+    reverted: [],
     problems: [],
   };
 
@@ -491,6 +543,10 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
         changed.map((f) => [f.name, split.files[f.name]])
       ),
     };
+  }
+  for (const r of state.removals) {
+    snapshot.resources.push({ name: r.name, revert: true, files: [] });
+    snapshot.reverted.push(r);
   }
   return snapshot;
 }

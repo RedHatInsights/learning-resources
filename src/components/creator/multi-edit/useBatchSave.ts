@@ -75,7 +75,12 @@ export function useBatchSave(
           };
 
       const response = await submitBatchPR(metadata, snapshot.resources);
-      dispatch({ type: 'saved', response, sent: snapshot.sent });
+      dispatch({
+        type: 'saved',
+        response,
+        sent: snapshot.sent,
+        reverted: snapshot.reverted.map((r) => r.name),
+      });
       return true;
     } catch (err) {
       const message =

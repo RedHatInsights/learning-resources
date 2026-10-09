@@ -639,4 +639,80 @@ describe('MultiEditWorkspace', () => {
       screen.getByRole('heading', { name: '2 resources' })
     ).toBeInTheDocument();
   });
+
+  it('removes a resource from the PR on the next save', async () => {
+    const atHead = (name: string) => ({
+      name,
+      path: `docs/quickstarts/${name}`,
+      files: repoContent(name).files.map((f) => ({
+        ...f,
+        path: `docs/quickstarts/${name}/${f.name}`,
+      })),
+    });
+    mocked.listPRs.mockResolvedValue([
+      {
+        number: 88,
+        title: 'Update Inventory docs',
+        htmlUrl: 'https://github.com/o/r/pull/88',
+        branchName: 'qs-update-batch-9',
+        slug: '',
+      },
+    ]);
+    mocked.getWorkspace.mockResolvedValue({
+      number: 88,
+      title: 'Update Inventory docs',
+      htmlUrl: 'https://github.com/o/r/pull/88',
+      branchName: 'qs-update-batch-9',
+      headSha: 'head-88',
+      missing: [],
+      resources: [atHead('alpha'), atHead('beta')],
+    });
+    mocked.submit.mockResolvedValue(savedResponse('head-89', 'updated'));
+
+    renderWorkspace();
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Continue (an )?open PR/ })[0]
+    );
+    const prDialog = await screen.findByRole('dialog', {
+      name: 'Continue open PR',
+    });
+    fireEvent.click(
+      await within(prDialog).findByRole('button', { name: 'Open PR #88' })
+    );
+    await screen.findByRole('link', { name: 'PR #88' });
+
+    fireEvent.click(
+      within(sidebar()).getByRole('button', { name: 'Remove beta title' })
+    );
+    const confirm = await screen.findByRole('dialog', {
+      name: /Remove resource\?/,
+    });
+    expect(confirm).toHaveTextContent('part of PR #88');
+    fireEvent.click(
+      within(confirm).getByRole('button', { name: 'Remove from PR' })
+    );
+
+    expect(within(sidebar()).getByText('beta title')).toBeInTheDocument();
+    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+
+    const review = await openReview();
+    expect(review).toHaveTextContent('1 resource removed from the PR');
+    expect(within(review).getByLabelText(/Commit message/)).toHaveValue(
+      'docs(quickstarts): remove beta from this PR'
+    );
+    fireEvent.click(
+      within(review).getByRole('button', { name: 'Save to PR #88' })
+    );
+
+    await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));
+    const [meta, resources] = mocked.submit.mock.calls[0];
+    expect(meta).toEqual(
+      expect.objectContaining({ prNumber: 88, expectedHeadSha: 'head-88' })
+    );
+    expect(resources).toEqual([{ name: 'beta', revert: true, files: [] }]);
+    await waitFor(() =>
+      expect(screen.getByText(/All changes saved at/)).toBeInTheDocument()
+    );
+    expect(within(sidebar()).queryByText('beta title')).not.toBeInTheDocument();
+  });
 });
