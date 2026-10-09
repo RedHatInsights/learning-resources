@@ -449,31 +449,20 @@
   font-size: var(--pf-t--global--font--size--sm);
   line-height: 1.5;
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-
-  &__number-col {
-    width: 4.5em;
-  }
-
-  &__marker-col {
-    width: 1.5em;
+  &__line {
+    display: grid;
+    grid-template-columns: 4.5em 1.5em minmax(0, 1fr);
   }
 
   &__number {
     padding: 0 var(--pf-t--global--spacer--sm);
     color: var(--pf-t--global--text--color--subtle);
     text-align: right;
-    vertical-align: top;
     user-select: none;
   }
 
   &__marker {
     text-align: center;
-    vertical-align: top;
     user-select: none;
   }
 
@@ -491,12 +480,13 @@
     background: var(--lr-diff-del);
   }
 
-  &__gap td {
-    padding: 0;
+  &__gap {
     background: var(--pf-t--global--background--color--secondary--default);
   }
 
   &__gap button {
+    display: block;
+    box-sizing: border-box;
     width: 100%;
     padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
     border: 0;

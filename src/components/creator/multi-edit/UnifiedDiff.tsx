@@ -5,21 +5,27 @@ const MARKERS = { context: ' ', add: '+', del: '-' } as const;
 const LABELS = { context: '', add: 'Added', del: 'Removed' } as const;
 
 const Line: React.FC<{ line: DiffLine }> = ({ line }) => (
-  <tr className={`lr-c-unified-diff__line pf-m-${line.type}`}>
-    <td className="lr-c-unified-diff__number">{line.number}</td>
-    <td className="lr-c-unified-diff__marker">
+  <div role="row" className={`lr-c-unified-diff__line pf-m-${line.type}`}>
+    <span role="cell" className="lr-c-unified-diff__number">
+      {line.number}
+    </span>
+    <span role="cell" className="lr-c-unified-diff__marker">
       <span aria-hidden="true">{MARKERS[line.type]}</span>
       {line.type !== 'context' && (
         <span className="pf-v6-screen-reader">{LABELS[line.type]}</span>
       )}
-    </td>
-    <td className="lr-c-unified-diff__code">{line.text || ' '}</td>
-  </tr>
+    </span>
+    <span role="cell" className="lr-c-unified-diff__code">
+      {line.text || ' '}
+    </span>
+  </div>
 );
 
 /**
  * A GitHub-style unified diff: one line-number column, a +/- marker, and
- * wrapped code, so a long line is one numbered row however it wraps.
+ * wrapped code, so a long line is one numbered row however it wraps. Each
+ * row is its own fixed-column grid rather than a table row, so the columns
+ * cannot be resized by whatever row happens to come first.
  * Unchanged stretches away from any change are folded and can be expanded.
  */
 const UnifiedDiff: React.FC<{ before: string; after: string }> = ({
@@ -40,15 +46,8 @@ const UnifiedDiff: React.FC<{ before: string; after: string }> = ({
       {unchanged && (
         <p className="lr-c-unified-diff__empty">No line changes.</p>
       )}
-      <table aria-label="Line changes">
-        {/* A fixed layout takes its widths from the first row, which may be a
-            folded gap spanning every column, so set them here. */}
-        <colgroup>
-          <col className="lr-c-unified-diff__number-col" />
-          <col className="lr-c-unified-diff__marker-col" />
-          <col />
-        </colgroup>
-        <tbody>
+      <div role="table" aria-label="Line changes">
+        <div role="rowgroup">
           {rows.map((row) => {
             if (row.kind === 'line') {
               return (
@@ -64,8 +63,12 @@ const UnifiedDiff: React.FC<{ before: string; after: string }> = ({
               ));
             }
             return (
-              <tr key={`gap-${row.id}`} className="lr-c-unified-diff__gap">
-                <td colSpan={3}>
+              <div
+                key={`gap-${row.id}`}
+                role="row"
+                className="lr-c-unified-diff__gap"
+              >
+                <span role="cell">
                   <button
                     type="button"
                     onClick={() =>
@@ -76,12 +79,12 @@ const UnifiedDiff: React.FC<{ before: string; after: string }> = ({
                     {row.lines[0].number}–
                     {row.lines[row.lines.length - 1].number})
                   </button>
-                </td>
-              </tr>
+                </span>
+              </div>
             );
           })}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
   );
 };

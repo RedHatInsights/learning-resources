@@ -264,12 +264,12 @@ describe('MultiEditWorkspace', () => {
     // The diff shows the real file, not the combined buffer, as one
     // numbered row per line with the change marked.
     const diff = within(dialog).getByRole('table', { name: 'Line changes' });
-    expect(within(diff).getByText('Removed').closest('tr')).toHaveTextContent(
-      '7-Removed href: https://old.example.com/alpha'
-    );
-    expect(within(diff).getByText('Added').closest('tr')).toHaveTextContent(
-      '7+Added href: https://new.example.com/alpha'
-    );
+    expect(
+      within(diff).getByText('Removed').closest('[role="row"]')
+    ).toHaveTextContent('7-Removed href: https://old.example.com/alpha');
+    expect(
+      within(diff).getByText('Added').closest('[role="row"]')
+    ).toHaveTextContent('7+Added href: https://new.example.com/alpha');
     const create = within(dialog).getByRole('button', {
       name: 'Create pull request',
     });
