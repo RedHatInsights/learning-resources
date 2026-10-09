@@ -41,6 +41,13 @@ const UnifiedDiff: React.FC<{ before: string; after: string }> = ({
         <p className="lr-c-unified-diff__empty">No line changes.</p>
       )}
       <table aria-label="Line changes">
+        {/* A fixed layout takes its widths from the first row, which may be a
+            folded gap spanning every column, so set them here. */}
+        <colgroup>
+          <col className="lr-c-unified-diff__number-col" />
+          <col className="lr-c-unified-diff__marker-col" />
+          <col />
+        </colgroup>
         <tbody>
           {rows.map((row) => {
             if (row.kind === 'line') {

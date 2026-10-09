@@ -455,8 +455,15 @@
     table-layout: fixed;
   }
 
-  &__number {
+  &__number-col {
     width: 4.5em;
+  }
+
+  &__marker-col {
+    width: 1.5em;
+  }
+
+  &__number {
     padding: 0 var(--pf-t--global--spacer--sm);
     color: var(--pf-t--global--text--color--subtle);
     text-align: right;
@@ -465,7 +472,6 @@
   }
 
   &__marker {
-    width: 1.5em;
     text-align: center;
     vertical-align: top;
     user-select: none;
