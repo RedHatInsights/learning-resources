@@ -40,6 +40,9 @@ const renderCreatePR = (quickstartName: string, initialPR: ResumePR | null) => {
       initialProps: { name: quickstartName },
       wrapper: ({ children }: { children: React.ReactNode }) => {
         const [resumePR, setPR] = React.useState(initialPR);
+        const [loadedName, setLoadedName] = React.useState<string | null>(
+          initialPR?.slug ?? null
+        );
         return (
           <CreatorWizardContext.Provider
             value={{
@@ -51,6 +54,8 @@ const renderCreatePR = (quickstartName: string, initialPR: ResumePR | null) => {
                 setResumePR(value);
                 setPR(value);
               },
+              loadedName,
+              setLoadedName,
             }}
           >
             {children}
@@ -200,5 +205,14 @@ describe('useCreatePR', () => {
         existingPath: 'docs/quickstarts/my-doc/',
       })
     );
+  });
+
+  it('flags a submit under a different name than the loaded folder', () => {
+    const pr = { number: 7, branchName: 'qs-update-acs-1', slug: 'acs-doc' };
+    expect(renderCreatePR('acs-doc', pr).result.current.renameFrom).toBeNull();
+    expect(
+      renderCreatePR('learn-about-acs', pr).result.current.renameFrom
+    ).toBe('acs-doc');
+    expect(renderCreatePR('my-doc', null).result.current.renameFrom).toBeNull();
   });
 });

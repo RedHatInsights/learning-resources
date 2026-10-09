@@ -143,6 +143,9 @@ const renderWithContext = (
 ) => {
   const ContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [resumePR, setPR] = React.useState(initialPR);
+    const [loadedName, setLoadedName] = React.useState<string | null>(
+      initialPR?.slug ?? null
+    );
     return (
       <CreatorWizardContext.Provider
         value={{
@@ -154,6 +157,8 @@ const renderWithContext = (
             setResumePR(value);
             setPR(value);
           },
+          loadedName,
+          setLoadedName,
         }}
       >
         {children}

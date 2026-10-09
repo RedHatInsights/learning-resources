@@ -21,6 +21,8 @@ type CreatePRModalProps = {
   prResult: PRResponse | null;
   prError: string | null;
   isContinuePR?: boolean;
+  /** The folder the resource was loaded from, when it differs from its name. */
+  renameFrom?: string | null;
 };
 
 const CreatePRModal: React.FC<CreatePRModalProps> = ({
@@ -32,6 +34,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({
   prResult,
   prError,
   isContinuePR = false,
+  renameFrom = null,
 }) => {
   const showConfirm = !prLoading && !prResult && !prError;
 
@@ -65,6 +68,32 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({
               ? ' Changes are force-pushed to the same branch; a second PR is not opened.'
               : ' The PR will be checked against existing quickstarts to determine if this is a new submission or an update.'}
           </Content>
+        )}
+        {showConfirm && renameFrom && (
+          <Alert
+            variant="warning"
+            isInline
+            title={
+              isContinuePR
+                ? 'This renames the resource'
+                : 'This creates a separate resource'
+            }
+            className="pf-v6-u-mt-md"
+          >
+            {isContinuePR ? (
+              <>
+                docs/quickstarts/{renameFrom}/ will be moved to
+                docs/quickstarts/{quickstartName}/.
+              </>
+            ) : (
+              <>
+                docs/quickstarts/{quickstartName}/ is added and{' '}
+                docs/quickstarts/{renameFrom}/ is left as it is.
+              </>
+            )}{' '}
+            To keep the original folder, set the resource ID back to{' '}
+            <strong>{renameFrom}</strong>.
+          </Alert>
         )}
         {prLoading && (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>

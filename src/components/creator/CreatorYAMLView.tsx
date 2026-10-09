@@ -454,7 +454,8 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   filterData,
   bundles: bundleOptions,
 }) => {
-  const { files, setResumePR } = useContext(CreatorWizardContext);
+  const { files, setResumePR, setLoadedName } =
+    useContext(CreatorWizardContext);
 
   const showCreatePR = useFlag(
     'platform.learning-resources.quickstarts.git-service'
@@ -470,6 +471,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     setPrResult,
     setPrError,
     resumePR,
+    renameFrom,
   } = useCreatePR(parsedName);
 
   const [prModalOpen, setPrModalOpen] = useState(false);
@@ -710,6 +712,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       return;
     cancelPendingParse();
     setResumePR(null);
+    setLoadedName(null);
     setYamlContent(DEFAULT_QUICKSTART_YAML);
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
   };
@@ -732,6 +735,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
 
     cancelPendingParse();
     setResumePR(null);
+    setLoadedName(null);
     setSourceLoading(true);
     const request = ++sourceRequest.current;
     const reader = new FileReader();
@@ -817,6 +821,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     cancelPendingParse();
     setRepoModalOpen(false);
     setResumePR(null);
+    setLoadedName(null);
     setSourceLoading(true);
     try {
       const content =
@@ -826,12 +831,17 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       if (request !== sourceRequest.current) return;
       const finalContent = quickstartYamlFromFiles(content.files);
       setYamlContent(finalContent);
-      if (parseAndUpdateQuickstart(finalContent) && 'number' in content) {
-        setResumePR({
-          number: content.number,
-          branchName: content.branchName,
-          slug: content.slug,
-        });
+      if (parseAndUpdateQuickstart(finalContent)) {
+        setLoadedName(
+          'number' in content ? content.slug || null : content.name || null
+        );
+        if ('number' in content) {
+          setResumePR({
+            number: content.number,
+            branchName: content.branchName,
+            slug: content.slug,
+          });
+        }
       }
     } catch (err) {
       if (request === sourceRequest.current) {
@@ -1103,6 +1113,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           prResult={prResult}
           prError={prError}
           isContinuePR={!!resumePR}
+          renameFrom={renameFrom}
         />
       )}
       {showCreatePR && (

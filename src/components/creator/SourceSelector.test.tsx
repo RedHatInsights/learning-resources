@@ -49,6 +49,8 @@ const renderSelector = (
         resetCreator: jest.fn(),
         resumePR,
         setResumePR,
+        loadedName: resumePR?.slug ?? null,
+        setLoadedName: jest.fn(),
       }}
     >
       <FormRenderer

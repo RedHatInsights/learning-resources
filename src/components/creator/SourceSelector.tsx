@@ -35,7 +35,8 @@ const SOURCE_MODE_PR = 'pr';
 const SourceSelector = (props: UseFieldApiConfig) => {
   const { input } = useFieldApi(props);
   const formApi = useFormApi();
-  const { resumePR, setResumePR } = useContext(CreatorWizardContext);
+  const { resumePR, setResumePR, setLoadedName } =
+    useContext(CreatorWizardContext);
 
   const [mode, setMode] = useState<
     typeof SOURCE_MODE_REPO | typeof SOURCE_MODE_PR
@@ -108,6 +109,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     input.onChange(SOURCE_SCRATCH);
     clearQuickstartFields(formApi);
     setResumePR(null);
+    setLoadedName(null);
   };
 
   const handleSelectRepo = async (name: string) => {
@@ -117,6 +119,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     setError(null);
     clearQuickstartFields(formApi);
     setResumePR(null);
+    setLoadedName(null);
     try {
       const content = await getRepoQuickstartContent(name);
       if (request !== selectionRequest.current) return;
@@ -124,6 +127,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
       if (hydrateError) {
         setError(hydrateError);
       } else {
+        setLoadedName(content.name || name);
         input.onChange(name);
       }
     } catch (err) {
@@ -145,6 +149,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     setError(null);
     clearQuickstartFields(formApi);
     setResumePR(null);
+    setLoadedName(null);
     try {
       const content = await getCreatorPR(pr.number);
       if (request !== selectionRequest.current) return;
@@ -159,6 +164,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
         branchName: content.branchName,
         slug: content.slug,
       });
+      setLoadedName(content.slug || null);
       input.onChange(key);
     } catch (err) {
       if (request === selectionRequest.current) {
@@ -183,6 +189,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     input.onChange('');
     clearQuickstartFields(formApi);
     setResumePR(null);
+    setLoadedName(null);
   };
 
   const selected = input.value;
