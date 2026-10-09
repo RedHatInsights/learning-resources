@@ -126,6 +126,8 @@ export interface WorkspaceResourceSnapshot {
   /** Repository-relative directory path. */
   path: string;
   files: ResourceFile[];
+  /** The directory the PR moved this resource from, if it renamed it. */
+  renamedFrom?: string;
 }
 
 export interface CreatorPRWorkspace {
@@ -135,7 +137,10 @@ export interface CreatorPRWorkspace {
   branchName: string;
   headSha: string;
   resources: WorkspaceResourceSnapshot[];
-  /** Directories the PR touches that no longer exist at its head. */
+  /**
+   * Directories the PR touches that no longer exist at its head, other than
+   * the old directories of renamed resources: in practice, deleted ones.
+   */
   missing: string[];
 }
 

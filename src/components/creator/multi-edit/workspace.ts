@@ -53,8 +53,9 @@ export interface WorkspaceResource {
   /** Not on the branch yet; the next save creates its directory. */
   isNew: boolean;
   /**
-   * The directory a save in this session renamed the resource from. Taking
-   * the resource out of the PR restores that directory too.
+   * The directory the PR renamed the resource from, whether by a save in
+   * this session or an earlier one. Taking the resource out of the PR
+   * restores that directory too.
    */
   renamedFrom?: string;
   /** The buffer text that corresponds to the saved files. */
@@ -85,7 +86,7 @@ export interface WorkspaceState {
    * failed PR creation reuses it instead of opening a second PR.
    */
   pendingBranchName: string;
-  /** Directories the loaded PR touches that no longer exist at its head. */
+  /** Directories the loaded PR deletes, which cannot be edited here. */
   missing: string[];
   /** Resources the PR changes, as far as this workspace has seen. */
   prResources: string[];
@@ -176,7 +177,12 @@ export function resourceFromSnapshot(
   const files = snapshot.files.filter((f) => isYamlName(f.name));
   const meta = files.find((f) => isMetadataName(f.name));
   const content = pickContentFile(files, meta);
-  const base = { name: snapshot.name, path: snapshot.path, isNew: false };
+  const base = {
+    name: snapshot.name,
+    path: snapshot.path,
+    isNew: false,
+    ...(snapshot.renamedFrom ? { renamedFrom: snapshot.renamedFrom } : {}),
+  };
 
   if (meta && content) {
     const combined = combineFiles(meta.content, content.content);

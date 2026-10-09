@@ -342,6 +342,28 @@ describe('removing resources from a PR', () => {
     ]);
   });
 
+  it('remembers a rename from an earlier session when the PR is reloaded', () => {
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'loadPR',
+      workspace: {
+        number: 9,
+        title: 'T',
+        htmlUrl: 'https://github.com/o/r/pull/9',
+        branchName: 'qs-update-batch-9',
+        headSha: 'head-9',
+        resources: [{ ...snapshot('omega'), renamedFrom: 'alpha' }],
+        missing: [],
+      },
+    });
+    expect(state.resources[0].renamedFrom).toBe('alpha');
+
+    state = workspaceReducer(state, { type: 'removeFromPR', names: ['omega'] });
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'omega', revert: true, files: [] },
+      { name: 'alpha', revert: true, files: [] },
+    ]);
+  });
+
   it('forgets reverted resources once saved', () => {
     let state = workspaceReducer(loaded(), {
       type: 'removeFromPR',

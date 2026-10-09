@@ -97,12 +97,23 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                     {movesTo ? `${r.name} → ${movesTo}` : r.name}
                   </span>
                 )}
-                {(r.isNew || problem) && (
+                {(r.isNew || r.renamedFrom || problem) && (
                   <span className="lr-c-multi-edit__resource-badges">
                     {r.isNew && (
                       <Label color="blue" isCompact>
                         New
                       </Label>
+                    )}
+                    {r.renamedFrom && (
+                      <Tooltip content={`Renamed from ${r.renamedFrom}`}>
+                        <Label color="purple" isCompact>
+                          Renamed
+                          <span className="pf-v6-screen-reader">
+                            {' '}
+                            from {r.renamedFrom}
+                          </span>
+                        </Label>
+                      </Tooltip>
                     )}
                     {problem && (
                       <Tooltip content={problem}>

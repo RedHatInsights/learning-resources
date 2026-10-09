@@ -233,11 +233,15 @@ const MultiEditWorkspace = ({
           variant="info"
           isInline
           isPlain
-          title="Some directories in this PR no longer exist on its branch"
+          title={
+            state.missing.length === 1
+              ? 'This PR deletes a resource'
+              : `This PR deletes ${state.missing.length} resources`
+          }
           className="pf-v6-u-mb-sm"
         >
-          {state.missing.join(', ')}. They were renamed or removed in the PR and
-          are not editable here.
+          {state.missing.join(', ')}. Deleted resources are not on the PR&apos;s
+          branch, so they cannot be edited here.
         </Alert>
       )}
 

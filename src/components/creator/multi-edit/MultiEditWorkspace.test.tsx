@@ -679,8 +679,8 @@ describe('MultiEditWorkspace', () => {
       htmlUrl: 'https://github.com/o/r/pull/88',
       branchName: 'qs-update-batch-9',
       headSha: 'head-88',
-      missing: [],
-      resources: [atHead('alpha')],
+      missing: ['delta'],
+      resources: [{ ...atHead('alpha'), renamedFrom: 'alpha-old' }],
     });
     mocked.getResource.mockResolvedValue({
       headSha: 'head-88',
@@ -702,6 +702,10 @@ describe('MultiEditWorkspace', () => {
       await screen.findByRole('link', { name: 'PR #88' })
     ).toBeInTheDocument();
     expect(screen.getByText(/No unsaved changes/)).toBeInTheDocument();
+    // A rename made by an earlier save is shown on the resource; only a
+    // deleted directory is called out.
+    expect(screen.getByText('from alpha-old')).toBeInTheDocument();
+    expect(screen.getByText('This PR deletes a resource')).toBeInTheDocument();
 
     await chooseResources('gamma');
     expect(mocked.getResource).toHaveBeenCalledWith(88, 'gamma', 'head-88');
