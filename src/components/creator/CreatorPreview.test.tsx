@@ -13,7 +13,12 @@ const CreatorPreview = require('./CreatorPreview').default;
 
 jest.mock(
   '../GlobalLearningResourcesPage/GlobalLearningResourcesQuickstartItem',
-  () => ({ __esModule: true, default: () => <div>Catalog card</div> })
+  () => ({
+    __esModule: true,
+    default: ({ onOpenQuickStart }: { onOpenQuickStart?: () => void }) => (
+      <button onClick={onOpenQuickStart}>Catalog card</button>
+    ),
+  })
 );
 
 const quickStart = {
@@ -58,6 +63,12 @@ const Harness = ({ initial }: { initial: CreatorWizardStage }) => {
 };
 
 describe('CreatorPreview', () => {
+  it('opens its own panel from the catalog card', () => {
+    render(<Harness initial={{ type: 'card' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog card' }));
+    expect(screen.getByTestId('stage')).toHaveTextContent('panel-overview');
+  });
+
   it('opens straight on a task without visiting the overview first', () => {
     render(<Harness initial={{ type: 'card' }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Jump to task 3' }));

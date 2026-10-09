@@ -28,11 +28,16 @@ interface GlobalLearningResourcesQuickstartItemProps {
     [TagsEnum.ProductFamilies]: Filter[];
     [TagsEnum.UseCase]: Filter[];
   };
+  /**
+   * Replaces opening the quick start in the help panel. The creator preview
+   * uses it: an unpublished quick start does not exist there yet.
+   */
+  onOpenQuickStart?: () => void;
 }
 
 const GlobalLearningResourcesQuickstartItem: React.FC<
   GlobalLearningResourcesQuickstartItemProps
-> = ({ quickStart, purgeCache, quickStartTags }) => {
+> = ({ quickStart, purgeCache, quickStartTags, onOpenQuickStart }) => {
   const chrome = useChrome();
   const openQuickStartInHelpPanel = useOpenQuickStartInHelpPanel();
   const [isBookmarked, setIsBookmarked] = useState(
@@ -81,6 +86,10 @@ const GlobalLearningResourcesQuickstartItem: React.FC<
           className="lr-c-global-learning-resources-quickstart__card--title"
           onClick={() => {
             if (isQuickstartType(quickStart.spec.type?.text)) {
+              if (onOpenQuickStart) {
+                onOpenQuickStart();
+                return;
+              }
               openQuickStartInHelpPanel(
                 quickStart.metadata.name,
                 quickStart.spec.displayName

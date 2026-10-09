@@ -152,6 +152,10 @@ const CreatorPreview = ({
                     // we do not reload any data in creator
                     purgeCache={() => {}}
                     quickStartTags={quickStartTags}
+                    // Open the preview's own panel, never the live help panel.
+                    onOpenQuickStart={() =>
+                      onStageChange?.({ type: 'panel-overview' })
+                    }
                   />
                 </div>
               ) : null}
