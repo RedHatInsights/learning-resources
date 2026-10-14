@@ -238,7 +238,7 @@ export const helpPanelMswHandlers = [
               description: 'Complete documentation for Red Hat Insights',
               type: { text: 'Documentation' },
               link: {
-                href: 'https://access.redhat.com/documentation/en-us/red_hat_insights',
+                href: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/',
               },
             },
           },
@@ -364,7 +364,7 @@ export const searchPanelJourneyMswHandlers = [
             description: 'Complete documentation for Red Hat Insights',
             type: { text: 'Documentation' },
             link: {
-              href: 'https://access.redhat.com/documentation/en-us/red_hat_insights',
+              href: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/',
             },
           },
         },

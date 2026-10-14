@@ -64,7 +64,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
       title: 'Assess security vulnerabilities',
       description: '',
       type: 'documentation',
-      url: 'https://access.redhat.com/documentation/en-us/red_hat_insights/1-latest/html/assessing_and_monitoring_security_vulnerabilities_on_rhel_systems/index',
+      url: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/1-latest/html/assessing_and_monitoring_security_vulnerabilities_on_rhel_systems',
       bundleTags: ['rhel'],
     },
     {
@@ -76,7 +76,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
       title: 'Related documentation for Insights',
       description: '',
       type: 'documentation',
-      url: 'https://access.redhat.com/documentation/en-us/red_hat_insights/',
+      url: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/',
       bundleTags: ['rhel'],
     },
     {
@@ -103,7 +103,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
       title: 'Assess security vulnerabilities',
       description: '',
       type: 'documentation',
-      url: 'https://access.redhat.com/documentation/en-us/red_hat_insights/1-latest/html/assessing_and_monitoring_security_vulnerabilities_on_rhel_systems/index',
+      url: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/1-latest/html/assessing_and_monitoring_security_vulnerabilities_on_rhel_systems',
       bundleTags: ['rhel'],
     },
     {
@@ -115,7 +115,7 @@ export const bundleRecommendedContent: Record<string, RecommendedItem[]> = {
       title: 'Related documentation for Insights',
       description: '',
       type: 'documentation',
-      url: 'https://access.redhat.com/documentation/en-us/red_hat_insights/',
+      url: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/',
       bundleTags: ['rhel'],
     },
     {
@@ -355,7 +355,7 @@ export const defaultRecommendedContent: RecommendedItem[] = [
     title: 'Related documentation for Insights',
     description: '',
     type: 'documentation',
-    url: 'https://access.redhat.com/documentation/en-us/red_hat_insights/',
+    url: 'https://docs.redhat.com/en/documentation/red_hat_lightspeed/',
     bundleTags: ['rhel'],
   },
 ];
