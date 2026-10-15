@@ -1,14 +1,26 @@
-import React, { Dispatch, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   AlertActionLink,
   Badge,
   Button,
+  Divider,
+  Dropdown,
+  DropdownItem,
+  DropdownList,
   EmptyState,
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
   Label,
+  MenuToggle,
   Title,
   ToggleGroup,
   ToggleGroupItem,
@@ -21,13 +33,18 @@ import EyeIcon from '@patternfly/react-icons/dist/dynamic/icons/eye-icon';
 import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circle-icon';
 import ListIcon from '@patternfly/react-icons/dist/dynamic/icons/list-icon';
 import CubesIcon from '@patternfly/react-icons/dist/dynamic/icons/cubes-icon';
+import EllipsisVIcon from '@patternfly/react-icons/dist/dynamic/icons/ellipsis-v-icon';
 import { detectKindFromSpec } from '../hydrateFromFiles';
 import { metaForKind } from '../meta';
 import { FilterMap } from '../../../utils/filtersInterface';
 import {
+  RepoQuickstartEntry,
+  listRepoQuickstarts,
+} from '../../../utils/createQuickstartPR';
+import {
   WorkspaceAction,
+  WorkspaceResource,
   WorkspaceState,
-  dirtyResources,
   isDirty,
   isInPR,
   pendingCount,
@@ -44,6 +61,7 @@ import NewResourceModal from './NewResourceModal';
 import OpenPRModal from './OpenPRModal';
 import ReviewChangesModal from './ReviewChangesModal';
 import RemoveResourcesModal from './RemoveResourcesModal';
+import DeleteResourceModal, { DeleteTarget } from './DeleteResourceModal';
 import { configureMonacoEnvironment } from './monaco';
 import './MultiEditWorkspace.scss';
 
@@ -81,6 +99,14 @@ const MultiEditWorkspace = ({
   const [isOpenPROpen, setOpenPROpen] = useState(false);
   const [isReviewOpen, setReviewOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [isActionsOpen, setActionsOpen] = useState(false);
+  // The resources on main, which tells a published resource from one only
+  // this PR added. Reloaded whenever the picker opens.
+  const [catalog, setCatalog] = useState<RepoQuickstartEntry[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const catalogRequest = useRef(0);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [view, setViewState] = useState<View>(initialView);
   // Per resource, so the preview reopens where the author left it.
@@ -97,7 +123,39 @@ const MultiEditWorkspace = ({
     }
   };
 
-  const changed = dirtyResources(state);
+  const loadCatalog = useCallback(() => {
+    const request = ++catalogRequest.current;
+    setCatalogLoading(true);
+    setCatalogError(false);
+    listRepoQuickstarts()
+      .then((list) => {
+        if (request === catalogRequest.current) setCatalog(list);
+      })
+      .catch(() => {
+        if (request === catalogRequest.current) setCatalogError(true);
+      })
+      .finally(() => {
+        if (request === catalogRequest.current) setCatalogLoading(false);
+      });
+  }, []);
+
+  // Only needed once there is something to act on.
+  const hasResources = state.resources.length > 0;
+  useEffect(() => {
+    if (hasResources && catalog === null && !catalogLoading) loadCatalog();
+  }, [hasResources]);
+
+  /**
+   * A resource that is only on the branch because this PR created it. Taking
+   * it out of the PR undoes the addition, so it is never "deleted".
+   */
+  const isAddedByPR = (r: WorkspaceResource) =>
+    !r.isNew &&
+    !r.renamedFrom &&
+    isInPR(state, r.name) &&
+    catalog !== null &&
+    !catalog.some((e) => e.name === r.name);
+
   const pending = pendingCount(state);
   const active =
     state.resources.find((r) => r.name === state.activeName) ?? null;
@@ -162,6 +220,25 @@ const MultiEditWorkspace = ({
     if (risky.length === 0) dispatch({ type: 'removeResources', names });
     else setPendingRemoval(names);
   };
+
+  const requestDelete = (name: string, title: string) => {
+    const open = state.resources.find((r) => r.name === name);
+    setDeleteTarget({
+      name,
+      title,
+      isOpen: !!open,
+      hasUnsavedEdits: !!open && isDirty(open),
+    });
+  };
+
+  const hasPendingWork =
+    state.removals.length > 0 ||
+    state.deletions.length > 0 ||
+    state.restorations.length > 0;
+  const isEmpty =
+    state.resources.length === 0 &&
+    !hasPendingWork &&
+    state.deleted.length === 0;
 
   const prStatus = state.pr ? (
     <a href={state.pr.url} target="_blank" rel="noopener noreferrer">
@@ -235,13 +312,14 @@ const MultiEditWorkspace = ({
           isPlain
           title={
             state.missing.length === 1
-              ? 'This PR deletes a resource'
-              : `This PR deletes ${state.missing.length} resources`
+              ? 'This PR changes a folder that cannot be loaded'
+              : `This PR changes ${state.missing.length} folders that cannot be loaded`
           }
           className="pf-v6-u-mb-sm"
         >
-          {state.missing.join(', ')}. Deleted resources are not on the PR&apos;s
-          branch, so they cannot be edited here.
+          {state.missing.join(', ')}. They are gone from the PR&apos;s branch
+          but are not resources this PR deletes, so they cannot be edited or
+          restored here.
         </Alert>
       )}
 
@@ -265,7 +343,7 @@ const MultiEditWorkspace = ({
         </Alert>
       )}
 
-      {state.resources.length === 0 && state.removals.length === 0 ? (
+      {isEmpty ? (
         <EmptyState
           titleText="Edit several learning resources in one pull request"
           headingLevel="h3"
@@ -302,6 +380,12 @@ const MultiEditWorkspace = ({
             onRemove={(name) => requestRemove([name])}
             removals={state.removals}
             onUndoRemoval={(name) => dispatch({ type: 'undoRemoval', name })}
+            deletions={state.deletions}
+            onUndoDeletion={(name) => dispatch({ type: 'undoDeletion', name })}
+            deleted={state.deleted}
+            restorations={state.restorations}
+            onRestore={(name) => dispatch({ type: 'restoreDeleted', name })}
+            onUndoRestore={(name) => dispatch({ type: 'undoRestore', name })}
           />
 
           {!active && (
@@ -311,8 +395,9 @@ const MultiEditWorkspace = ({
               className="lr-c-multi-edit__empty"
             >
               <EmptyStateBody>
-                Save to take the removed resources out of the PR, or choose
-                resources to keep editing.
+                {hasPendingWork
+                  ? 'Save to apply the pending changes, or choose resources to keep editing.'
+                  : 'This PR deletes the resources listed. Restore one, or choose resources to edit.'}
               </EmptyStateBody>
             </EmptyState>
           )}
@@ -358,6 +443,42 @@ const MultiEditWorkspace = ({
                   >
                     Discard changes
                   </Button>
+                  <ResourceActions
+                    isOpen={isActionsOpen}
+                    onOpenChange={setActionsOpen}
+                    title={resourceTitle(active)}
+                    items={[
+                      {
+                        label: active.isNew
+                          ? 'Discard new resource'
+                          : 'Close resource',
+                        onClick: () => requestRemove([active.name]),
+                      },
+                      ...(state.pr && isInPR(state, active.name)
+                        ? [
+                            {
+                              label: isAddedByPR(active)
+                                ? 'Remove from PR (undo addition)…'
+                                : 'Remove changes from PR…',
+                              onClick: () => setPendingRemoval([active.name]),
+                            },
+                          ]
+                        : []),
+                      ...(!active.isNew && !isAddedByPR(active)
+                        ? [
+                            {
+                              label: 'Delete resource…',
+                              isDanger: true,
+                              onClick: () =>
+                                requestDelete(
+                                  active.name,
+                                  resourceTitle(active)
+                                ),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                   <ToggleGroup aria-label="Layout" isCompact>
                     <ToggleGroupItem
                       icon={<CodeIcon />}
@@ -471,10 +592,18 @@ const MultiEditWorkspace = ({
         onAdd={(resources, baseSha) =>
           dispatch({ type: 'addResources', resources, baseSha })
         }
-        onRemove={requestRemove}
-        pr={state.pr}
-        existing={state.resources.map((r) => r.name)}
-        edited={changed.map((r) => r.name)}
+        onCloseResources={requestRemove}
+        state={state}
+        catalog={catalog ?? []}
+        catalogLoading={catalogLoading}
+        catalogError={catalogError}
+        onReloadCatalog={loadCatalog}
+        onDelete={(name, snapshot, baseSha) =>
+          dispatch({ type: 'deleteResource', name, snapshot, baseSha })
+        }
+        onUndoDeletion={(name) => dispatch({ type: 'undoDeletion', name })}
+        onRestore={(name) => dispatch({ type: 'restoreDeleted', name })}
+        onUndoRestore={(name) => dispatch({ type: 'undoRestore', name })}
       />
       <NewResourceModal
         isOpen={isNewOpen}
@@ -511,6 +640,7 @@ const MultiEditWorkspace = ({
         )}
         pr={state.pr}
         inPR={state.prResources}
+        addedByPR={state.resources.filter(isAddedByPR).map((r) => r.name)}
         onRemoveFromPR={() => {
           dispatch({ type: 'removeFromPR', names: pendingRemoval });
           setPendingRemoval([]);
@@ -521,11 +651,69 @@ const MultiEditWorkspace = ({
         }}
         onCancel={() => setPendingRemoval([])}
       />
+      <DeleteResourceModal
+        target={deleteTarget}
+        pr={state.pr}
+        onConfirm={(snapshot, baseSha) => {
+          if (deleteTarget) {
+            dispatch({
+              type: 'deleteResource',
+              name: deleteTarget.name,
+              snapshot,
+              baseSha,
+            });
+          }
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
       <span className="pf-v6-screen-reader" aria-live="polite">
         {saving ? 'Saving changes' : ''}
       </span>
     </div>
   );
 };
+
+type ResourceAction = {
+  label: string;
+  onClick: () => void;
+  isDanger?: boolean;
+};
+
+/** The active resource's actions: close it, take it out of the PR, delete it. */
+const ResourceActions: React.FC<{
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  title: string;
+  items: ResourceAction[];
+}> = ({ isOpen, onOpenChange, title, items }) => (
+  <Dropdown
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    onSelect={() => onOpenChange(false)}
+    popperProps={{ position: 'right' }}
+    toggle={(ref) => (
+      <MenuToggle
+        ref={ref}
+        variant="plain"
+        isExpanded={isOpen}
+        onClick={() => onOpenChange(!isOpen)}
+        aria-label={`Actions for ${title}`}
+        icon={<EllipsisVIcon />}
+      />
+    )}
+  >
+    <DropdownList>
+      {items.map((item) => (
+        <React.Fragment key={item.label}>
+          {item.isDanger && <Divider component="li" />}
+          <DropdownItem isDanger={item.isDanger} onClick={item.onClick}>
+            {item.label}
+          </DropdownItem>
+        </React.Fragment>
+      ))}
+    </DropdownList>
+  </Dropdown>
+);
 
 export default MultiEditWorkspace;

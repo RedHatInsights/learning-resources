@@ -64,6 +64,25 @@ export interface WorkspaceResource {
   buffer: string;
 }
 
+/**
+ * A resource being deleted from the repository, or already deleted by the PR.
+ * Its files are kept as they were before, for review and so undoing is free.
+ */
+export interface DeletedResource {
+  /** The directory the deletion removes. */
+  name: string;
+  path: string;
+  title: string;
+  files: RealFile[];
+  /**
+   * The directory the PR renamed the resource from. It already has no files
+   * on the branch, so restoring the resource restores that one instead.
+   */
+  renamedFrom?: string;
+  /** The open resource the deletion closed, so Undo brings its buffer back. */
+  closed?: WorkspaceResource;
+}
+
 /** The PR a workspace saves to. The PR and its branch are the session. */
 export interface WorkspacePR {
   number: number;
@@ -86,7 +105,7 @@ export interface WorkspaceState {
    * failed PR creation reuses it instead of opening a second PR.
    */
   pendingBranchName: string;
-  /** Directories the loaded PR deletes, which cannot be edited here. */
+  /** Directories the loaded PR touches that could not be read. */
   missing: string[];
   /** Resources the PR changes, as far as this workspace has seen. */
   prResources: string[];
@@ -95,6 +114,12 @@ export interface WorkspaceState {
    * the PR. Kept whole so the removal can be undone before saving.
    */
   removals: WorkspaceResource[];
+  /** Existing resources the next save deletes from the repository. */
+  deletions: DeletedResource[];
+  /** Resources the PR already deletes, as saved to its branch. */
+  deleted: DeletedResource[];
+  /** Saved deletions the next save undoes, bringing the resource back. */
+  restorations: DeletedResource[];
 }
 
 /** What one save sent for a resource, so only that becomes the baseline. */
@@ -118,6 +143,16 @@ export type WorkspaceAction =
   | { type: 'removeResources'; names: string[] }
   | { type: 'removeFromPR'; names: string[] }
   | { type: 'undoRemoval'; name: string }
+  | {
+      type: 'deleteResource';
+      name: string;
+      /** Its files, when it is not open in the workspace. */
+      snapshot?: WorkspaceResourceSnapshot;
+      baseSha?: string;
+    }
+  | { type: 'undoDeletion'; name: string }
+  | { type: 'restoreDeleted'; name: string }
+  | { type: 'undoRestore'; name: string }
   | { type: 'loadPR'; workspace: CreatorPRWorkspace }
   | { type: 'edit'; name: string; buffer: string }
   | { type: 'discard'; name: string }
@@ -127,6 +162,8 @@ export type WorkspaceAction =
       response: BatchPRResponse;
       sent: Record<string, SentResource>;
       reverted: string[];
+      deleted?: string[];
+      restored?: string[];
     };
 
 export const newBranchName = () =>
@@ -141,6 +178,9 @@ export const emptyWorkspace = (): WorkspaceState => ({
   missing: [],
   prResources: [],
   removals: [],
+  deletions: [],
+  deleted: [],
+  restorations: [],
 });
 
 const isYamlName = (name: string) => /\.ya?ml$/i.test(name);
@@ -242,6 +282,30 @@ export function resourceFromSnapshot(
   };
 }
 
+/** A deleted resource as the workspace keeps it, from its last known files. */
+export function deletedFromSnapshot(
+  snapshot: WorkspaceResourceSnapshot
+): DeletedResource {
+  const resource = resourceFromSnapshot(snapshot);
+  return {
+    name: snapshot.name,
+    path: snapshot.path,
+    title: resource ? resourceTitle(resource) : snapshot.name,
+    files: snapshot.files.map((f) => ({ name: f.name, saved: f.content })),
+  };
+}
+
+function deletedFromResource(r: WorkspaceResource): DeletedResource {
+  return {
+    name: r.name,
+    path: r.path,
+    title: resourceTitle(r),
+    files: [r.metadata, r.content].filter((f): f is RealFile => !!f),
+    ...(r.renamedFrom ? { renamedFrom: r.renamedFrom } : {}),
+    closed: r,
+  };
+}
+
 /** The metadata file a brand-new resource is split against. */
 export const newMetadataTemplate = (name: string) =>
   `kind: QuickStarts\nname: ${name}\ntags: []\n`;
@@ -338,6 +402,57 @@ export function workspaceReducer(
         activeName: restored.name,
       };
     }
+    case 'deleteResource': {
+      const open = state.resources.find((r) => r.name === action.name);
+      if (open?.isNew) return state;
+      const already = [...state.deletions, ...state.deleted];
+      if (already.some((d) => d.name === action.name)) return state;
+      const deletion = open
+        ? deletedFromResource(open)
+        : action.snapshot && deletedFromSnapshot(action.snapshot);
+      if (!deletion) return state;
+      const resources = state.resources.filter((r) => r !== open);
+      const activeStays = resources.some((r) => r.name === state.activeName);
+      return {
+        ...state,
+        resources,
+        // Deleting supersedes taking its changes out of the PR.
+        removals: state.removals.filter((r) => r.name !== action.name),
+        deletions: [...state.deletions, deletion],
+        activeName: activeStays ? state.activeName : resources[0]?.name ?? null,
+        baseSha: state.baseSha ?? action.baseSha ?? null,
+      };
+    }
+    case 'undoDeletion': {
+      const deletion = state.deletions.find((d) => d.name === action.name);
+      if (!deletion) return state;
+      const { closed } = deletion;
+      return {
+        ...state,
+        deletions: state.deletions.filter((d) => d !== deletion),
+        ...(closed
+          ? {
+              resources: [...state.resources, closed],
+              activeName: closed.name,
+            }
+          : {}),
+      };
+    }
+    case 'restoreDeleted':
+    case 'undoRestore': {
+      const restoring = action.type === 'restoreDeleted';
+      const from = restoring ? state.deleted : state.restorations;
+      const moved = from.find((d) => d.name === action.name);
+      if (!moved) return state;
+      const rest = from.filter((d) => d !== moved);
+      return restoring
+        ? {
+            ...state,
+            deleted: rest,
+            restorations: [...state.restorations, moved],
+          }
+        : { ...state, restorations: rest, deleted: [...state.deleted, moved] };
+    }
     case 'loadPR': {
       const { workspace } = action;
       const loaded = addSnapshots(
@@ -353,7 +468,11 @@ export function workspaceReducer(
           headSha: workspace.headSha,
         },
         missing: workspace.missing,
-        prResources: workspace.resources.map((r) => r.name),
+        deleted: workspace.deleted.map(deletedFromSnapshot),
+        prResources: [
+          ...workspace.resources.map((r) => r.name),
+          ...workspace.deleted.map((r) => r.name),
+        ],
       };
     }
     case 'edit':
@@ -371,6 +490,8 @@ export function workspaceReducer(
         : state;
     case 'saved': {
       const { response, sent, reverted } = action;
+      const deleted = action.deleted ?? [];
+      const restored = action.restored ?? [];
       // Only what the server acknowledged becomes the baseline; text typed
       // while the save was in flight stays unsaved.
       const resources = state.resources.map((r) => {
@@ -403,19 +524,43 @@ export function workspaceReducer(
       });
       const savedNames = Object.entries(sent).map(([n, s]) => s.movedTo ?? n);
       const movedFrom = (name: string) => sent[name]?.movedTo ?? name;
+      // A saved deletion is known by the directory the base branch has, which
+      // for a renamed resource is its old one, as a reloaded PR reports it.
+      const nowDeleted = state.deletions
+        .filter((d) => deleted.includes(d.name))
+        .map(
+          ({ closed: _closed, renamedFrom, ...d }): DeletedResource =>
+            renamedFrom
+              ? {
+                  ...d,
+                  name: renamedFrom,
+                  path: `${QUICKSTARTS_DIR}/${renamedFrom}`,
+                }
+              : d
+        );
+      const gone = new Set([...reverted, ...deleted, ...restored]);
+      const prResources = [
+        ...state.prResources.filter((n) => !gone.has(n)).map(movedFrom),
+        ...savedNames.filter(
+          (n) => !state.prResources.map(movedFrom).includes(n)
+        ),
+      ];
       return {
         ...state,
         resources,
         activeName: state.activeName && movedFrom(state.activeName),
         prResources: [
-          ...state.prResources
-            .filter((n) => !reverted.includes(n))
-            .map(movedFrom),
-          ...savedNames.filter(
-            (n) => !state.prResources.map(movedFrom).includes(n)
-          ),
+          ...prResources,
+          ...nowDeleted
+            .map((d) => d.name)
+            .filter((n) => !prResources.includes(n)),
         ],
         removals: state.removals.filter((r) => !reverted.includes(r.name)),
+        deletions: state.deletions.filter((d) => !deleted.includes(d.name)),
+        deleted: [...state.deleted, ...nowDeleted],
+        restorations: state.restorations.filter(
+          (d) => !restored.includes(d.name)
+        ),
         pr: {
           number: response.prNumber,
           url: response.prUrl || state.pr?.url || '',
@@ -435,9 +580,15 @@ export const isDirty = (r: WorkspaceResource) =>
 export const dirtyResources = (state: WorkspaceState) =>
   state.resources.filter(isDirty);
 
-/** Everything the next save would commit: edited resources plus removals. */
+/**
+ * Everything the next save would commit: edited resources, removals from the
+ * PR, deletions and restorations.
+ */
 export const pendingCount = (state: WorkspaceState) =>
-  dirtyResources(state).length + state.removals.length;
+  dirtyResources(state).length +
+  state.removals.length +
+  state.deletions.length +
+  state.restorations.length;
 
 export const isInPR = (state: WorkspaceState, name: string) =>
   state.prResources.includes(name);
@@ -566,6 +717,10 @@ export interface BatchSnapshot {
   reverted: WorkspaceResource[];
   /** Existing resources the save moves to a new directory. */
   renamed: { from: string; to: string }[];
+  /** Resources the save deletes from the repository. */
+  deleted: DeletedResource[];
+  /** Saved deletions the save undoes. */
+  restored: DeletedResource[];
   problems: { resource: string; message: string }[];
 }
 
@@ -584,6 +739,8 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
     changes: [],
     reverted: [],
     renamed: [],
+    deleted: [],
+    restored: [],
     problems: [],
   };
 
@@ -693,6 +850,32 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
       listed.add(r.renamedFrom);
     }
   }
+  for (const d of state.deletions) {
+    if (listed.has(d.name)) {
+      snapshot.problems.push({
+        resource: d.name,
+        message: 'Another change in this save also uses this folder.',
+      });
+      continue;
+    }
+    snapshot.resources.push({ name: d.name, delete: true, files: [] });
+    snapshot.deleted.push(d);
+    listed.add(d.name);
+  }
+  // Restoring a saved deletion takes it back out of the PR, which brings its
+  // directory back as it was where the branch started.
+  for (const d of state.restorations) {
+    if (listed.has(d.name)) {
+      snapshot.problems.push({
+        resource: d.name,
+        message: 'Another change in this save also uses this folder.',
+      });
+      continue;
+    }
+    snapshot.resources.push({ name: d.name, revert: true, files: [] });
+    snapshot.restored.push(d);
+    listed.add(d.name);
+  }
   return snapshot;
 }
 
@@ -760,6 +943,10 @@ export function defaultPRBody(state: WorkspaceState, names: string[]) {
         ? `- ${QUICKSTARTS_DIR}/${target}/ (new)`
         : `- ${QUICKSTARTS_DIR}/${target}/ (renamed from ${r.name})`;
     });
+  dirs.push(
+    ...state.deletions.map((d) => `- ${d.path}/ (deleted)`),
+    ...state.restorations.map((d) => `- ${d.path}/ (restored)`)
+  );
   return `Updating ${dirs.length} learning resource${
     dirs.length === 1 ? '' : 's'
   } via the Quickstarts Creator tool.\n\nDirectories:\n${dirs.join('\n')}`;

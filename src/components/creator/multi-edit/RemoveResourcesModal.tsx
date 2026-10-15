@@ -20,6 +20,8 @@ type RemoveResourcesModalProps = {
   pr: WorkspacePR | null;
   /** Names of the resources the PR changes. */
   inPR: string[];
+  /** Names of the resources the PR itself added. */
+  addedByPR: string[];
   /** Close the resources and revert the ones in the PR on the next save. */
   onRemoveFromPR: () => void;
   /** Only close the resources here; the PR keeps whatever it has. */
@@ -31,14 +33,16 @@ const names = (resources: WorkspaceResource[]) =>
   resources.map(resourceTitle).join(', ');
 
 /**
- * Confirms removing resources that have unsaved work or that the PR changes.
- * For the latter the author chooses: take them out of the PR (applied on the
- * next save, so it can still be undone), or only stop editing them here.
+ * Confirms closing resources that have unsaved work or that the PR changes.
+ * For the latter the author chooses: remove their changes from the PR
+ * (applied on the next save, so it can still be undone), or only close them
+ * here. Neither deletes a published resource; that is Delete resource.
  */
 const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
   resources,
   pr,
   inPR,
+  addedByPR,
   onRemoveFromPR,
   onClose,
   onCancel,
@@ -48,6 +52,9 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
   const created = lost.filter((r) => r.isNew);
   const edited = lost.filter((r) => !r.isNew);
   const count = resources.length;
+  const fromPRAdded = fromPR.filter((r) => addedByPR.includes(r.name));
+  const fromPREdited = fromPR.filter((r) => !addedByPR.includes(r.name));
+  const onlyNew = created.length === count;
 
   return (
     <Modal
@@ -57,18 +64,31 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
       aria-labelledby="mr-remove-title"
     >
       <ModalHeader
-        title={`Remove ${count === 1 ? 'resource' : `${count} resources`}?`}
+        title={
+          onlyNew
+            ? `Discard new ${count === 1 ? 'resource' : `${count} resources`}?`
+            : `Close ${count === 1 ? 'resource' : `${count} resources`}?`
+        }
         labelId="mr-remove-title"
         titleIconVariant="warning"
       />
       <ModalBody>
-        {fromPR.length > 0 && (
+        {fromPREdited.length > 0 && (
           <Content component="p">
-            <strong>{names(fromPR)}</strong>{' '}
-            {fromPR.length === 1 ? 'is' : 'are'} part of PR #{pr?.number}.
-            Remove from PR takes {fromPR.length === 1 ? 'it' : 'them'} out of
-            the pull request on your next save: changes go back to how they are
-            on the base branch, and resources the PR added are deleted.
+            <strong>{names(fromPREdited)}</strong>{' '}
+            {fromPREdited.length === 1 ? 'is' : 'are'} changed by PR #
+            {pr?.number}. Remove changes from PR restores{' '}
+            {fromPREdited.length === 1 ? 'it' : 'them'} to how{' '}
+            {fromPREdited.length === 1 ? 'it was' : 'they were'} before this PR
+            on your next save.
+          </Content>
+        )}
+        {fromPRAdded.length > 0 && (
+          <Content component="p">
+            <strong>{names(fromPRAdded)}</strong>{' '}
+            {fromPRAdded.length === 1 ? 'was' : 'were'} added by PR #
+            {pr?.number}. Remove changes from PR undoes the addition on your
+            next save.
           </Content>
         )}
         {fromPR.some(isDirty) && (
@@ -89,13 +109,16 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
             be discarded.
           </Content>
         )}
-        {fromPR.length === 0 && (
+        {!onlyNew && (
           <Content component="small">
-            Nothing is deleted from the repository
-            {pr
+            {fromPR.length > 0
+              ? 'Close only keeps everything already saved to the PR. '
+              : ''}
+            Closing never deletes a published resource
+            {fromPR.length === 0 && pr
               ? `, and changes already saved to PR #${pr.number} stay in it`
               : ''}
-            .
+            . To delete one, use Delete resource.
           </Content>
         )}
       </ModalBody>
@@ -103,15 +126,19 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
         {fromPR.length > 0 ? (
           <>
             <Button variant="danger" onClick={onRemoveFromPR}>
-              Remove from PR
+              Remove changes from PR
             </Button>
             <Button variant="secondary" onClick={onClose}>
-              Only close here
+              Close only
             </Button>
           </>
         ) : (
           <Button variant="danger" onClick={onClose}>
-            Remove
+            {onlyNew
+              ? 'Discard'
+              : count === 1
+              ? 'Close resource'
+              : 'Close resources'}
           </Button>
         )}
         <Button variant="link" onClick={onCancel}>

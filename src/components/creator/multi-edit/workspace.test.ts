@@ -234,6 +234,7 @@ describe('workspaceReducer', () => {
         branchName: 'qs-update-batch-9',
         headSha: 'head-9',
         resources: [snapshot('alpha')],
+        deleted: [],
         missing: ['gone'],
       },
     });
@@ -255,6 +256,7 @@ describe('removing resources from a PR', () => {
         branchName: 'qs-update-batch-9',
         headSha: 'head-9',
         resources: [snapshot('alpha'), snapshot('beta')],
+        deleted: [],
         missing: [],
       },
     });
@@ -352,6 +354,7 @@ describe('removing resources from a PR', () => {
         branchName: 'qs-update-batch-9',
         headSha: 'head-9',
         resources: [{ ...snapshot('omega'), renamedFrom: 'alpha' }],
+        deleted: [],
         missing: [],
       },
     });
@@ -385,6 +388,172 @@ describe('removing resources from a PR', () => {
     expect(state.removals).toEqual([]);
     expect(state.prResources).toEqual(['alpha']);
     expect(state.pr?.headSha).toBe('head-10');
+  });
+});
+
+describe('deleting resources', () => {
+  const saved = (headSha: string) => ({
+    prUrl: 'https://github.com/o/r/pull/9',
+    prNumber: 9,
+    branchName: 'qs-update-batch-9',
+    headSha,
+    status: 'updated' as const,
+    paths: [],
+  });
+  const loadedPR = (
+    resources: WorkspaceResourceSnapshot[],
+    deleted: WorkspaceResourceSnapshot[]
+  ) =>
+    workspaceReducer(emptyWorkspace(), {
+      type: 'loadPR',
+      workspace: {
+        number: 9,
+        title: 'T',
+        htmlUrl: 'https://github.com/o/r/pull/9',
+        branchName: 'qs-update-batch-9',
+        headSha: 'head-9',
+        resources,
+        deleted,
+        missing: [],
+      },
+    });
+
+  it('stages an open resource for deletion and undo brings its edits back', () => {
+    let state = edit(
+      withResources('alpha', 'beta'),
+      'alpha',
+      'old.example',
+      'new.example'
+    );
+    const edited = bufferOf(state, 'alpha');
+    state = workspaceReducer(state, { type: 'deleteResource', name: 'alpha' });
+
+    expect(state.resources.map((r) => r.name)).toEqual(['beta']);
+    expect(state.activeName).toBe('beta');
+    expect(state.deletions[0]).toEqual(
+      expect.objectContaining({
+        name: 'alpha',
+        path: 'docs/quickstarts/alpha',
+        title: 'alpha title',
+      })
+    );
+    // A deletion-only workspace still has something to save.
+    expect(pendingCount(state)).toBe(1);
+    const snap = snapshotChanges(state);
+    expect(snap.resources).toEqual([
+      { name: 'alpha', delete: true, files: [] },
+    ]);
+    expect(snap.deleted.map((d) => d.files.map((f) => f.name))).toEqual([
+      ['metadata.yml', 'alpha.yaml'],
+    ]);
+    expect(defaultPRBody(state, [])).toContain(
+      '- docs/quickstarts/alpha/ (deleted)'
+    );
+
+    state = workspaceReducer(state, { type: 'undoDeletion', name: 'alpha' });
+    expect(state.deletions).toEqual([]);
+    expect(bufferOf(state, 'alpha')).toBe(edited);
+    expect(state.activeName).toBe('alpha');
+  });
+
+  it('deletes a resource that is not open from its snapshot, keeping its base', () => {
+    const state = workspaceReducer(emptyWorkspace(), {
+      type: 'deleteResource',
+      name: 'gamma',
+      snapshot: snapshot('gamma'),
+      baseSha: 'base-7',
+    });
+    expect(state.resources).toEqual([]);
+    expect(state.baseSha).toBe('base-7');
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'gamma', delete: true, files: [] },
+    ]);
+  });
+
+  it('never deletes an unsaved new resource and supersedes a removal', () => {
+    let state = workspaceReducer(emptyWorkspace(), {
+      type: 'createResource',
+      name: 'fresh',
+      buffer: scaffoldResource({
+        kind: 'documentation',
+        name: 'fresh',
+        title: 'Fresh',
+        description: '',
+        url: 'https://example.com',
+        bundles: [],
+      }),
+    });
+    expect(
+      workspaceReducer(state, { type: 'deleteResource', name: 'fresh' })
+    ).toBe(state);
+
+    state = loadedPR([snapshot('alpha')], []);
+    state = workspaceReducer(state, { type: 'removeFromPR', names: ['alpha'] });
+    state = workspaceReducer(state, {
+      type: 'deleteResource',
+      name: 'alpha',
+      snapshot: snapshot('alpha'),
+    });
+    expect(state.removals).toEqual([]);
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'alpha', delete: true, files: [] },
+    ]);
+  });
+
+  it('keeps a saved deletion under the folder the base branch has', () => {
+    let state = loadedPR([{ ...snapshot('omega'), renamedFrom: 'alpha' }], []);
+    state = workspaceReducer(state, { type: 'deleteResource', name: 'omega' });
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'omega', delete: true, files: [] },
+    ]);
+    state = workspaceReducer(state, {
+      type: 'saved',
+      response: saved('head-10'),
+      sent: {},
+      reverted: [],
+      deleted: ['omega'],
+    });
+    expect(state.deletions).toEqual([]);
+    expect(state.deleted).toEqual([
+      expect.objectContaining({
+        name: 'alpha',
+        path: 'docs/quickstarts/alpha',
+      }),
+    ]);
+    expect(state.deleted[0].closed).toBeUndefined();
+    expect(state.prResources).toEqual(['alpha']);
+    expect(pendingCount(state)).toBe(0);
+  });
+
+  it('reopens a deletion-only PR and restores a saved deletion', () => {
+    let state = loadedPR([], [snapshot('gamma')]);
+    expect(state.resources).toEqual([]);
+    expect(state.deleted).toEqual([
+      expect.objectContaining({ name: 'gamma', title: 'gamma title' }),
+    ]);
+    expect(pendingCount(state)).toBe(0);
+
+    state = workspaceReducer(state, { type: 'restoreDeleted', name: 'gamma' });
+    expect(state.deleted).toEqual([]);
+    expect(pendingCount(state)).toBe(1);
+    expect(snapshotChanges(state).resources).toEqual([
+      { name: 'gamma', revert: true, files: [] },
+    ]);
+
+    // Undo keeps it deleted; restoring again and saving forgets it.
+    state = workspaceReducer(state, { type: 'undoRestore', name: 'gamma' });
+    expect(state.deleted.map((d) => d.name)).toEqual(['gamma']);
+    state = workspaceReducer(state, { type: 'restoreDeleted', name: 'gamma' });
+    state = workspaceReducer(state, {
+      type: 'saved',
+      response: saved('head-10'),
+      sent: {},
+      reverted: [],
+      restored: ['gamma'],
+    });
+    expect(state.restorations).toEqual([]);
+    expect(state.deleted).toEqual([]);
+    expect(state.prResources).toEqual([]);
   });
 });
 

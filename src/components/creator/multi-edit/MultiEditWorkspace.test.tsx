@@ -168,16 +168,28 @@ const openPicker = async () => {
   );
   return screen.findByRole('dialog', { name: 'Choose resources' });
 };
-const toggleRow = async (dialog: HTMLElement, name: string) => {
-  const row = (
-    await within(dialog).findByText(`docs/quickstarts/${name}`)
+/** A picker row, found by the resource ID it shows under its title. */
+const findRow = async (dialog: HTMLElement, name: string) =>
+  (
+    await within(dialog).findByText(
+      (_text, el) =>
+        !!el?.classList.contains('lr-c-multi-edit-picker__id') &&
+        el.textContent === `docs/quickstarts/${name}`
+    )
   ).closest('tr') as HTMLElement;
+const toggleRow = async (dialog: HTMLElement, name: string) => {
+  const row = await findRow(dialog, name);
   fireEvent.click(within(row).getByRole('checkbox'));
 };
+const updateWorkspace = (dialog: HTMLElement) =>
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Update workspace' })
+  );
 const chooseResources = async (...names: string[]) => {
   const dialog = await openPicker();
   for (const name of names) await toggleRow(dialog, name);
-  fireEvent.click(within(dialog).getByRole('button', { name: /^Add \d+/ }));
+  expect(dialog).toHaveTextContent(`${names.length} to add`);
+  updateWorkspace(dialog);
   await waitFor(() =>
     expect(
       screen.queryByRole('dialog', { name: 'Choose resources' })
@@ -343,9 +355,8 @@ describe('MultiEditWorkspace', () => {
 
     const dialog = await openPicker();
     await toggleRow(dialog, 'beta');
-    fireEvent.click(
-      within(dialog).getByRole('button', { name: 'Remove 1 resource' })
-    );
+    expect(dialog).toHaveTextContent('1 to close');
+    updateWorkspace(dialog);
 
     await waitFor(() =>
       expect(within(sidebar()).getAllByRole('listitem')).toHaveLength(2)
@@ -358,9 +369,9 @@ describe('MultiEditWorkspace', () => {
     await chooseResources('alpha', 'beta');
     typeInto(combinedFor('alpha').replace('old', 'new'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove alpha title' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close alpha title' }));
     let confirm = await screen.findByRole('dialog', {
-      name: /Remove resource\?/,
+      name: /Close resource\?/,
     });
     expect(within(confirm).getByText(/will be lost/)).toBeInTheDocument();
     fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }));
@@ -368,15 +379,13 @@ describe('MultiEditWorkspace', () => {
 
     // Unchecking it in the picker goes through the same confirmation.
     const picker = await openPicker();
-    expect(
-      await within(picker).findByText(/unsaved edits/)
-    ).toBeInTheDocument();
+    expect(await findRow(picker, 'alpha')).toHaveTextContent('Unsaved');
     await toggleRow(picker, 'alpha');
+    updateWorkspace(picker);
+    confirm = await screen.findByRole('dialog', { name: /Close resource\?/ });
     fireEvent.click(
-      within(picker).getByRole('button', { name: 'Remove 1 resource' })
+      within(confirm).getByRole('button', { name: 'Close resource' })
     );
-    confirm = await screen.findByRole('dialog', { name: /Remove resource\?/ });
-    fireEvent.click(within(confirm).getByRole('button', { name: 'Remove' }));
 
     await waitFor(() =>
       expect(within(sidebar()).getAllByRole('listitem')).toHaveLength(1)
@@ -387,7 +396,7 @@ describe('MultiEditWorkspace', () => {
   it('removes a clean resource without asking', async () => {
     renderWorkspace();
     await chooseResources('alpha', 'beta');
-    fireEvent.click(screen.getByRole('button', { name: 'Remove beta title' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close beta title' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(within(sidebar()).getAllByRole('listitem')).toHaveLength(1);
   });
@@ -400,21 +409,69 @@ describe('MultiEditWorkspace', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'New resource' }));
     const dialog = await screen.findByRole('dialog', { name: 'New resource' });
-    fireEvent.change(within(dialog).getByLabelText(/Title/), {
+    const next = () =>
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+
+    // Step 1: a type has to be chosen before moving on.
+    next();
+    expect(
+      within(dialog).getByText('Select a content type.')
+    ).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByLabelText('Documentation'));
+    next();
+
+    // Step 2: the ID follows the title until edited; Back keeps the values.
+    fireEvent.change(within(dialog).getByLabelText(/Resource title/), {
       target: { value: 'Inventory API guide' },
     });
-    expect(within(dialog).getByLabelText(/Directory name/)).toHaveValue(
-      'inventory-api-guide'
-    );
-    const createButton = within(dialog).getByRole('button', {
-      name: 'Create resource',
+    expect(within(dialog).getByText('inventory-api-guide')).toBeInTheDocument();
+    next();
+    expect(
+      within(dialog).getByText('A description is required.')
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText('A URL is required.')).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Resource description/), {
+      target: { value: 'How to call the Inventory API.' },
     });
-    expect(createButton).toBeDisabled();
-    fireEvent.change(within(dialog).getByLabelText(/Link URL/), {
+    fireEvent.change(within(dialog).getByLabelText(/Endpoint URL/), {
+      target: { value: 'not a url' },
+    });
+    next();
+    expect(
+      within(dialog).getByText('Enter an http(s) URL.')
+    ).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Endpoint URL/), {
       target: { value: 'https://docs.example.com/api' },
     });
-    fireEvent.click(within(dialog).getByLabelText('RHEL'));
-    fireEvent.click(createButton);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
+    fireEvent.click(within(dialog).getByLabelText('Quick start'));
+    next();
+    // The URL is kept but not asked for by a quick start; switch back.
+    expect(within(dialog).queryByLabelText(/Endpoint URL/)).toBeNull();
+    expect(within(dialog).getByLabelText(/Resource title/)).toHaveValue(
+      'Inventory API guide'
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
+    fireEvent.click(within(dialog).getByLabelText('Documentation'));
+    next();
+    expect(within(dialog).getByLabelText(/Endpoint URL/)).toHaveValue(
+      'https://docs.example.com/api'
+    );
+    next();
+
+    // Step 3: bundles, then the resource joins the workspace.
+    const add = within(dialog).getByRole('button', {
+      name: 'Add to workspace',
+    });
+    fireEvent.click(add);
+    expect(
+      within(dialog).getByText('Select at least one bundle.')
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: /Associated bundle/ })
+    );
+    fireEvent.click(await screen.findByText('RHEL (insights)'));
+    fireEvent.click(add);
 
     expect(
       await within(sidebar()).findByText('Inventory API guide')
@@ -464,22 +521,35 @@ describe('MultiEditWorkspace', () => {
     await chooseResources('alpha');
     fireEvent.click(screen.getByRole('button', { name: 'New resource' }));
     const dialog = await screen.findByRole('dialog', { name: 'New resource' });
-    fireEvent.change(within(dialog).getByLabelText(/Directory name/), {
-      target: { value: 'alpha' },
+    fireEvent.click(within(dialog).getByLabelText('Quick start'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    // A title that generates a taken ID is caught while typing.
+    fireEvent.change(within(dialog).getByLabelText(/Resource title/), {
+      target: { value: 'Alpha' },
     });
     expect(
       within(dialog).getByText(
-        'A resource with this name is already in the workspace.'
+        'A resource with this ID is already in the workspace.'
       )
     ).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText(/Directory name/), {
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Edit resource ID' })
+    );
+    fireEvent.change(within(dialog).getByLabelText(/Resource ID/), {
       target: { value: 'gamma' },
     });
     expect(
       await within(dialog).findByText(
-        'A resource with this name already exists in the repository.'
+        'A resource with this ID already exists in the repository.'
       )
     ).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Resource description/), {
+      target: { value: 'Something' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    expect(
+      within(dialog).queryByRole('button', { name: 'Add to workspace' })
+    ).not.toBeInTheDocument();
   });
 
   it('blocks saving invalid YAML or an unusable name and says where', async () => {
@@ -680,6 +750,7 @@ describe('MultiEditWorkspace', () => {
       branchName: 'qs-update-batch-9',
       headSha: 'head-88',
       missing: ['delta'],
+      deleted: [],
       resources: [{ ...atHead('alpha'), renamedFrom: 'alpha-old' }],
     });
     mocked.getResource.mockResolvedValue({
@@ -703,9 +774,11 @@ describe('MultiEditWorkspace', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/No unsaved changes/)).toBeInTheDocument();
     // A rename made by an earlier save is shown on the resource; only a
-    // deleted directory is called out.
+    // folder that is neither renamed nor a deleted resource is called out.
     expect(screen.getByText('from alpha-old')).toBeInTheDocument();
-    expect(screen.getByText('This PR deletes a resource')).toBeInTheDocument();
+    expect(
+      screen.getByText('This PR changes a folder that cannot be loaded')
+    ).toBeInTheDocument();
 
     await chooseResources('gamma');
     expect(mocked.getResource).toHaveBeenCalledWith(88, 'gamma', 'head-88');
@@ -740,6 +813,7 @@ describe('MultiEditWorkspace', () => {
       branchName: 'qs-update-batch-9',
       headSha: 'head-88',
       missing: [],
+      deleted: [],
       resources: [atHead('alpha'), atHead('beta')],
     });
     mocked.submit.mockResolvedValue(savedResponse('head-89', 'updated'));
@@ -757,14 +831,14 @@ describe('MultiEditWorkspace', () => {
     await screen.findByRole('link', { name: 'PR #88' });
 
     fireEvent.click(
-      within(sidebar()).getByRole('button', { name: 'Remove beta title' })
+      within(sidebar()).getByRole('button', { name: 'Close beta title' })
     );
     const confirm = await screen.findByRole('dialog', {
-      name: /Remove resource\?/,
+      name: /Close resource\?/,
     });
-    expect(confirm).toHaveTextContent('part of PR #88');
+    expect(confirm).toHaveTextContent('changed by PR #88');
     fireEvent.click(
-      within(confirm).getByRole('button', { name: 'Remove from PR' })
+      within(confirm).getByRole('button', { name: 'Remove changes from PR' })
     );
 
     expect(within(sidebar()).getByText('beta title')).toBeInTheDocument();
@@ -789,5 +863,191 @@ describe('MultiEditWorkspace', () => {
       expect(screen.getByText(/All changes saved at/)).toBeInTheDocument()
     );
     expect(within(sidebar()).queryByText('beta title')).not.toBeInTheDocument();
+  });
+
+  const openPR = async (workspace: Record<string, unknown>) => {
+    mocked.listPRs.mockResolvedValue([
+      {
+        number: 88,
+        title: 'Update Inventory docs',
+        htmlUrl: 'https://github.com/o/r/pull/88',
+        branchName: 'qs-update-batch-9',
+        slug: '',
+      },
+    ]);
+    mocked.getWorkspace.mockResolvedValue({
+      number: 88,
+      title: 'Update Inventory docs',
+      htmlUrl: 'https://github.com/o/r/pull/88',
+      branchName: 'qs-update-batch-9',
+      headSha: 'head-88',
+      missing: [],
+      deleted: [],
+      resources: [],
+      ...workspace,
+    });
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Continue (an )?open PR/ })[0]
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Continue open PR',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('button', { name: 'Open PR #88' })
+    );
+    await screen.findByRole('link', { name: 'PR #88' });
+  };
+  const atHead = (name: string) => ({
+    name,
+    path: `docs/quickstarts/${name}`,
+    files: repoContent(name).files.map((f) => ({
+      ...f,
+      path: `docs/quickstarts/${name}/${f.name}`,
+    })),
+  });
+
+  it('deletes an untouched resource from the picker in a new PR', async () => {
+    mocked.submit.mockResolvedValueOnce(savedResponse('head-1'));
+    renderWorkspace();
+    await chooseResources('alpha');
+
+    // Deleting is a row action; it never comes from unchecking a row.
+    let picker = await openPicker();
+    fireEvent.click(
+      within(await findRow(picker, 'beta')).getByRole('button', {
+        name: 'Actions for Beta',
+      })
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Delete resource…' })
+    );
+    const confirm = await screen.findByRole('dialog', {
+      name: /Delete resource\?/,
+    });
+    expect(confirm).toHaveTextContent('docs/quickstarts/beta/');
+    fireEvent.click(
+      within(confirm).getByRole('button', { name: 'Delete resource' })
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: /Delete resource\?/ })
+      ).not.toBeInTheDocument()
+    );
+    expect(mocked.getRepo).toHaveBeenCalledWith('beta');
+    const betaRow = await findRow(picker, 'beta');
+    expect(betaRow).toHaveTextContent('To delete');
+    expect(within(betaRow).getByRole('checkbox')).toBeDisabled();
+    fireEvent.click(within(picker).getByRole('button', { name: 'Cancel' }));
+
+    expect(
+      screen.getByRole('region', { name: 'To delete on next save' })
+    ).toHaveTextContent('beta title');
+    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+
+    const review = await openReview();
+    expect(review).toHaveTextContent('1 resource deleted');
+    expect(review).toHaveTextContent('deleted when the PR merges');
+    expect(within(review).getByLabelText(/Commit message/)).toHaveValue(
+      'docs(quickstarts): delete beta'
+    );
+    fireEvent.change(within(review).getByLabelText(/Pull request title/), {
+      target: { value: 'Delete beta' },
+    });
+    fireEvent.click(
+      within(review).getByRole('button', { name: 'Create pull request' })
+    );
+
+    await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));
+    const [meta, resources] = mocked.submit.mock.calls[0];
+    expect(meta).toEqual(expect.objectContaining({ baseSha: 'base-sha' }));
+    expect(resources).toEqual([{ name: 'beta', delete: true, files: [] }]);
+
+    // Once saved it is a deletion the PR makes, which can be restored.
+    expect(
+      await screen.findByRole('region', { name: 'Deleted in this PR' })
+    ).toHaveTextContent('beta title');
+    picker = await openPicker();
+    expect(await findRow(picker, 'beta')).toHaveTextContent('Deleted in PR');
+  });
+
+  it('brings back unsaved edits when a deletion is undone', async () => {
+    renderWorkspace();
+    await chooseResources('alpha', 'beta');
+    const edited = combinedFor('alpha').replace('old', 'new');
+    typeInto(edited);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for alpha title' })
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Delete resource…' })
+    );
+    const confirm = await screen.findByRole('dialog', {
+      name: /Delete resource\?/,
+    });
+    expect(confirm).toHaveTextContent('unsaved edits are kept');
+    fireEvent.click(
+      within(confirm).getByRole('button', { name: 'Delete resource' })
+    );
+    expect(mocked.getRepo).toHaveBeenCalledTimes(2);
+    expect(
+      within(sidebar()).queryByRole('button', { name: /^alpha title/ })
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep alpha title' }));
+    expect(within(sidebar()).getByText('alpha title')).toBeInTheDocument();
+    expect(editor()).toHaveValue(edited);
+  });
+
+  it('offers undoing the addition rather than deleting a resource the PR added', async () => {
+    renderWorkspace();
+    await openPR({ resources: [atHead('alpha'), atHead('fresh')] });
+    selectResource('fresh title');
+    // The catalog loads once there are resources; fresh is not on main.
+    await waitFor(() => expect(mocked.listRepo).toHaveBeenCalled());
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for fresh title' })
+    );
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Remove from PR (undo addition)…',
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Delete resource…' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('reopens a PR that only deletes and restores a resource', async () => {
+    mocked.submit.mockResolvedValue(savedResponse('head-89', 'updated'));
+    renderWorkspace();
+    await openPR({ deleted: [atHead('gamma')] });
+
+    const deleted = screen.getByRole('region', { name: 'Deleted in this PR' });
+    expect(deleted).toHaveTextContent('gamma title');
+    expect(screen.getByText(/No unsaved changes/)).toBeInTheDocument();
+
+    fireEvent.click(
+      within(deleted).getByRole('button', { name: 'Restore gamma title' })
+    );
+    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+
+    const review = await openReview();
+    expect(review).toHaveTextContent('1 resource restored');
+    expect(within(review).getByLabelText(/Commit message/)).toHaveValue(
+      'docs(quickstarts): restore gamma'
+    );
+    fireEvent.click(
+      within(review).getByRole('button', { name: 'Save to PR #88' })
+    );
+    await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));
+    expect(mocked.submit.mock.calls[0][1]).toEqual([
+      { name: 'gamma', revert: true, files: [] },
+    ]);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: 'Deleted in this PR' })
+      ).not.toBeInTheDocument()
+    );
   });
 });

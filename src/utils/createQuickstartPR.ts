@@ -138,8 +138,13 @@ export interface CreatorPRWorkspace {
   headSha: string;
   resources: WorkspaceResourceSnapshot[];
   /**
-   * Directories the PR touches that no longer exist at its head, other than
-   * the old directories of renamed resources: in practice, deleted ones.
+   * Resources the PR deletes, read where its branch started, so they can be
+   * reviewed and restored.
+   */
+  deleted: WorkspaceResourceSnapshot[];
+  /**
+   * Directories the PR touches that no longer exist at its head and could
+   * not be read as deleted resources or as the old side of a rename.
    */
   missing: string[];
 }
@@ -172,6 +177,11 @@ export interface BatchPRResource {
    * files.
    */
   revert?: boolean;
+  /**
+   * Delete an existing resource: every file in its directory is removed by
+   * this save. Works on a new PR too. Sends no files.
+   */
+  delete?: boolean;
   /**
    * Move an existing resource from this directory to `name`. Sends both its
    * metadata file and its content file, named for the new name; the old
@@ -219,6 +229,7 @@ export const getCreatorPRWorkspace = async (
     return {
       ...data.data,
       resources: data.data.resources ?? [],
+      deleted: data.data.deleted ?? [],
       missing: data.data.missing ?? [],
     };
   } catch (err) {

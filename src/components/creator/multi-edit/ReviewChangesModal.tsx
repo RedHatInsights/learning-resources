@@ -15,6 +15,8 @@ import {
 } from '@patternfly/react-core';
 import CodeBranchIcon from '@patternfly/react-icons/dist/dynamic/icons/code-branch-icon';
 import {
+  DeletedResource,
+  FileChange,
   WorkspaceResource,
   WorkspaceState,
   defaultPRBody,
@@ -38,6 +40,26 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** Selection in the file list: a changed file, or a resource being removed. */
 type Selected = { path: string } | { removal: string };
 
+/** A file the save writes, deletes or brings back, with its diff. */
+type ReviewFile = FileChange & { status?: 'deleted' | 'restored' };
+
+/** Every file of a deleted or restored resource, as the diff shows it. */
+const filesOf = (
+  resources: DeletedResource[],
+  status: 'deleted' | 'restored'
+): ReviewFile[] =>
+  resources.flatMap((d) =>
+    d.files.map((f) => ({
+      resource: d.name,
+      path: `${d.path}/${f.name}`,
+      name: f.name,
+      before: status === 'deleted' ? f.saved : '',
+      after: status === 'deleted' ? '' : f.saved,
+      isNew: false,
+      status,
+    }))
+  );
+
 /**
  * Shows exactly what the save commits: the real files on disk, not the
  * combined editor buffers, so the author sees both metadata and content diffs.
@@ -58,7 +80,14 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
   const changes = snapshot?.changes ?? [];
   const reverted = snapshot?.reverted ?? [];
   const renamed = snapshot?.renamed ?? [];
+  const deleted = snapshot?.deleted ?? [];
+  const restored = snapshot?.restored ?? [];
   const problems = snapshot?.problems ?? [];
+  const files: ReviewFile[] = [
+    ...changes,
+    ...filesOf(deleted, 'deleted'),
+    ...filesOf(restored, 'restored'),
+  ];
   const resourceNames = [...new Set(changes.map((c) => c.resource))];
   const resourceByName = new Map(state.resources.map((r) => [r.name, r]));
   const created = state.resources.filter(
@@ -73,7 +102,10 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
   // Prefill each time the dialog opens so the summary matches what is saved.
   useEffect(() => {
     if (!isOpen || !snapshot) return;
-    const first = snapshot.changes[0];
+    const first =
+      snapshot.changes[0] ??
+      filesOf(snapshot.deleted, 'deleted')[0] ??
+      filesOf(snapshot.restored, 'restored')[0];
     setSelection(
       first
         ? { path: first.path }
@@ -84,7 +116,13 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
     const names = [...new Set(snapshot.changes.map((c) => c.resource))];
     setPrBody(defaultPRBody(state, names));
     setCommitMessage(
-      defaultCommitMessage(names, snapshot.renamed, snapshot.reverted)
+      defaultCommitMessage(
+        names,
+        snapshot.renamed,
+        snapshot.reverted,
+        snapshot.deleted,
+        snapshot.restored
+      )
     );
   }, [isOpen]);
 
@@ -94,13 +132,18 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
       : null;
   const selected = selectedRemoval
     ? null
-    : changes.find(
+    : files.find(
         (c) => selection && 'path' in selection && c.path === selection.path
       ) ??
-      changes[0] ??
+      files[0] ??
       null;
+  const hasWork =
+    changes.length > 0 ||
+    reverted.length > 0 ||
+    deleted.length > 0 ||
+    restored.length > 0;
   const canSave =
-    (changes.length > 0 || reverted.length > 0) &&
+    hasWork &&
     problems.length === 0 &&
     commitMessage.trim() !== '' &&
     (isUpdate || prTitle.trim() !== '') &&
@@ -122,6 +165,8 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
         .join(' '),
     reverted.length > 0 &&
       `${plural(reverted.length, 'resource')} removed from the PR`,
+    deleted.length > 0 && `${plural(deleted.length, 'resource')} deleted`,
+    restored.length > 0 && `${plural(restored.length, 'resource')} restored`,
   ]
     .filter(Boolean)
     .join(' and ');
@@ -184,7 +229,7 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
           </Alert>
         )}
 
-        {(changes.length > 0 || reverted.length > 0) && (
+        {hasWork && (
           <div className="lr-c-multi-edit-review">
             <ul
               className="lr-c-multi-edit-review__files"
@@ -232,10 +277,45 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
                   </li>
                 );
               })}
+              {(
+                [
+                  ['Deleted', deleted, 'deleted'],
+                  ['Restored', restored, 'restored'],
+                ] as const
+              ).map(
+                ([heading, list, status]) =>
+                  list.length > 0 && (
+                    <li key={status}>
+                      <span className="lr-c-multi-edit-review__resource">
+                        {heading}
+                      </span>
+                      {list.map((d) => (
+                        <React.Fragment key={d.name}>
+                          <span className="lr-c-multi-edit-review__subtle lr-c-multi-edit-review__move">
+                            {d.title} · {d.name}
+                          </span>
+                          <ul>
+                            {filesOf([d], status).map((f) => (
+                              <li key={f.path}>
+                                <FileButton
+                                  isCurrent={f.path === selected?.path}
+                                  title={f.path}
+                                  onClick={() => setSelection({ path: f.path })}
+                                >
+                                  {f.name}
+                                </FileButton>
+                              </li>
+                            ))}
+                          </ul>
+                        </React.Fragment>
+                      ))}
+                    </li>
+                  )
+              )}
               {reverted.length > 0 && (
                 <li>
                   <span className="lr-c-multi-edit-review__resource">
-                    Removed from PR
+                    Changes removed from PR
                   </span>
                   <ul>
                     {reverted.map((r) => (
@@ -262,7 +342,11 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
                   >
                     <strong>{selected.name}</strong>
                     <span className="lr-c-multi-edit-review__subtle">
-                      {selected.isNew
+                      {selected.status === 'deleted'
+                        ? 'deleted when the PR merges'
+                        : selected.status === 'restored'
+                        ? 'restored as it was before this PR'
+                        : selected.isNew
                         ? 'new file'
                         : selected.previousPath
                         ? `moved from ${selected.previousPath}`
@@ -366,20 +450,27 @@ const RemovalSummary: React.FC<{ resource: WorkspaceResource }> = ({
 }) => (
   <div className="lr-c-multi-edit-review__removal">
     <Content component="p">
-      <strong>{resourceTitle(resource)}</strong> is taken out of this pull
-      request. Its files in <code>{resource.path}/</code> go back to how they
-      are on the base branch, or the directory is deleted if this PR added it.
+      This pull request&apos;s changes to{' '}
+      <strong>{resourceTitle(resource)}</strong> are removed. Its files in{' '}
+      <code>{resource.path}/</code> go back to how they were before this PR, or
+      the directory goes away if this PR added it.
     </Content>
     <Content component="small">
-      Nothing outside this pull request changes.
+      This is not a deletion of a published resource; nothing outside this pull
+      request changes.
     </Content>
   </div>
 );
 
+const nameOrCount = (list: { name: string }[]) =>
+  list.length === 1 ? list[0].name : plural(list.length, 'resource');
+
 function defaultCommitMessage(
   names: string[],
   renamed: { from: string; to: string }[],
-  reverted: WorkspaceResource[]
+  reverted: WorkspaceResource[],
+  deleted: DeletedResource[],
+  restored: DeletedResource[]
 ) {
   const edited = names.filter((n) => !renamed.some((r) => r.from === n)).length;
   const parts = [
@@ -394,6 +485,8 @@ function defaultCommitMessage(
           ? reverted[0].name
           : plural(reverted.length, 'resource')
       } from this PR`,
+    deleted.length > 0 && `delete ${nameOrCount(deleted)}`,
+    restored.length > 0 && `restore ${nameOrCount(restored)}`,
   ].filter(Boolean);
   return `docs(quickstarts): ${parts.join(', ')}`;
 }

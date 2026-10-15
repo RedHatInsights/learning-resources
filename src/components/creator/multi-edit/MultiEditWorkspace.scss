@@ -288,12 +288,6 @@
     }
   }
 
-  &__bundle-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--pf-t--global--spacer--sm);
-  }
-
   &__pre-wrap {
     white-space: pre-wrap;
   }
@@ -318,6 +312,90 @@
       grid-template-columns: minmax(0, 1fr);
       min-height: 600px;
     }
+  }
+}
+
+// Choose resources: a bounded, scrollable list so the dialog stays compact
+// and its search and footer stay reachable on short screens.
+.lr-c-multi-edit-picker {
+  max-height: 75vh;
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    margin-bottom: var(--pf-t--global--spacer--sm);
+  }
+
+  &__search {
+    flex: 1 1 280px;
+  }
+
+  &__count {
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  &__list {
+    max-height: min(440px, 45vh);
+    overflow-y: auto;
+    border: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+  }
+
+  &__title {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  &__id {
+    display: block;
+    color: var(--pf-t--global--text--color--subtle);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+    overflow-wrap: anywhere;
+  }
+
+  &__status {
+    white-space: nowrap;
+
+    .pf-v6-c-label + .pf-v6-c-label {
+      margin-left: var(--pf-t--global--spacer--xs);
+    }
+  }
+
+  &__footer {
+    flex-wrap: wrap;
+  }
+
+  &__summary {
+    margin-right: auto;
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  @media (max-width: 575px) {
+    &__status {
+      white-space: normal;
+    }
+  }
+}
+
+.lr-c-multi-edit-new {
+  &__id {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--pf-t--global--spacer--sm);
+    overflow-wrap: anywhere;
   }
 }
 

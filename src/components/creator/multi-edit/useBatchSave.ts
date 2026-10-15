@@ -80,6 +80,8 @@ export function useBatchSave(
         response,
         sent: snapshot.sent,
         reverted: snapshot.reverted.map((r) => r.name),
+        deleted: snapshot.deleted.map((d) => d.name),
+        restored: snapshot.restored.map((d) => d.name),
       });
       return true;
     } catch (err) {

@@ -10,6 +10,7 @@ import ExclamationCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/ex
 import TimesIcon from '@patternfly/react-icons/dist/dynamic/icons/times-icon';
 import UndoIcon from '@patternfly/react-icons/dist/dynamic/icons/undo-icon';
 import {
+  DeletedResource,
   WorkspaceResource,
   isDirty,
   renameTarget,
@@ -25,7 +26,61 @@ type ResourceSidebarProps = {
   /** Resources the next save reverts out of the PR. */
   removals: WorkspaceResource[];
   onUndoRemoval: (name: string) => void;
+  /** Resources the next save deletes. */
+  deletions: DeletedResource[];
+  onUndoDeletion: (name: string) => void;
+  /** Resources the PR already deletes, and those the next save restores. */
+  deleted: DeletedResource[];
+  restorations: DeletedResource[];
+  onRestore: (name: string) => void;
+  onUndoRestore: (name: string) => void;
 };
+
+type PendingItem = {
+  name: string;
+  title: string;
+  path: string;
+  action: string;
+  actionLabel: string;
+  onAction: () => void;
+  icon?: React.ReactNode;
+};
+
+/** A titled list of resources that are not open, each with one action. */
+const PendingSection: React.FC<{
+  id: string;
+  title: string;
+  items: PendingItem[];
+}> = ({ id, title, items }) =>
+  items.length === 0 ? null : (
+    <section className="lr-c-multi-edit__removals" aria-labelledby={id}>
+      <span id={id} className="lr-c-multi-edit__removals-title">
+        {title}
+      </span>
+      <ul className="lr-c-multi-edit__resource-list">
+        {items.map((item) => (
+          <li key={item.name} className="lr-c-multi-edit__removal">
+            <span
+              className="lr-c-multi-edit__removal-name"
+              title={`${item.path}/`}
+            >
+              {item.title}
+            </span>
+            <Button
+              variant="link"
+              size="sm"
+              isInline
+              icon={item.icon}
+              aria-label={item.actionLabel}
+              onClick={item.onAction}
+            >
+              {item.action}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 
 /** Only worth searching once the list stops fitting on screen. */
 const SEARCH_THRESHOLD = 8;
@@ -37,6 +92,12 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   onRemove,
   removals,
   onUndoRemoval,
+  deletions,
+  onUndoDeletion,
+  deleted,
+  restorations,
+  onRestore,
+  onUndoRestore,
 }) => {
   const [search, setSearch] = useState('');
   const term = search.trim().toLowerCase();
@@ -129,7 +190,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                 variant="plain"
                 size="sm"
                 className="lr-c-multi-edit__resource-remove"
-                aria-label={`Remove ${title}`}
+                aria-label={`Close ${title}`}
                 icon={<TimesIcon />}
                 onClick={() => onRemove(r.name)}
               />
@@ -142,38 +203,55 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
           </li>
         )}
       </ul>
-      {removals.length > 0 && (
-        <section
-          className="lr-c-multi-edit__removals"
-          aria-labelledby="mr-removals-title"
-        >
-          <span
-            id="mr-removals-title"
-            className="lr-c-multi-edit__removals-title"
-          >
-            Removed from PR on next save
-          </span>
-          <ul className="lr-c-multi-edit__resource-list">
-            {removals.map((r) => (
-              <li key={r.name} className="lr-c-multi-edit__removal">
-                <span className="lr-c-multi-edit__removal-name">
-                  {resourceTitle(r)}
-                </span>
-                <Button
-                  variant="link"
-                  size="sm"
-                  isInline
-                  icon={<UndoIcon />}
-                  aria-label={`Keep ${resourceTitle(r)} in the PR`}
-                  onClick={() => onUndoRemoval(r.name)}
-                >
-                  Undo
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <PendingSection
+        id="mr-removals-title"
+        title="Changes removed from PR on next save"
+        items={removals.map((r) => ({
+          name: r.name,
+          title: resourceTitle(r),
+          path: r.path,
+          action: 'Undo',
+          actionLabel: `Keep ${resourceTitle(r)} in the PR`,
+          icon: <UndoIcon />,
+          onAction: () => onUndoRemoval(r.name),
+        }))}
+      />
+      <PendingSection
+        id="mr-deletions-title"
+        title="To delete on next save"
+        items={deletions.map((d) => ({
+          name: d.name,
+          title: d.title,
+          path: d.path,
+          action: 'Undo',
+          actionLabel: `Keep ${d.title}`,
+          icon: <UndoIcon />,
+          onAction: () => onUndoDeletion(d.name),
+        }))}
+      />
+      <PendingSection
+        id="mr-deleted-title"
+        title="Deleted in this PR"
+        items={[
+          ...deleted.map((d) => ({
+            name: d.name,
+            title: d.title,
+            path: d.path,
+            action: 'Restore',
+            actionLabel: `Restore ${d.title}`,
+            onAction: () => onRestore(d.name),
+          })),
+          ...restorations.map((d) => ({
+            name: d.name,
+            title: `${d.title} (restored on save)`,
+            path: d.path,
+            action: 'Undo',
+            actionLabel: `Keep ${d.title} deleted`,
+            icon: <UndoIcon />,
+            onAction: () => onUndoRestore(d.name),
+          })),
+        ]}
+      />
     </nav>
   );
 };
