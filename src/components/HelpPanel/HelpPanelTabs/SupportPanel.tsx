@@ -104,7 +104,7 @@ const SupportPanel: React.FunctionComponent = () => {
   const getUrl = (env: string) =>
     `https://api.access${
       env === 'stage' || env === 'frhStage' ? '.stage' : ''
-    }.redhat.com/support/v1/cases/filter`;
+    }.redhat.com/support/v3/cases/filter`;
 
   const fetchSupportCases = async () => {
     const token = await chrome.auth.getToken();

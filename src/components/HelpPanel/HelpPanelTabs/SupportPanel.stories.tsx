@@ -10,7 +10,7 @@ import {
 } from '../../../user-journeys/_shared/helpPanelJourneyHelpers';
 
 const supportCasesFilterUrlStage =
-  'https://api.access.stage.redhat.com/support/v1/cases/filter';
+  'https://api.access.stage.redhat.com/support/v3/cases/filter';
 
 /**
  * Wrapper to provide IntlProvider (component uses useIntl and Messages).
