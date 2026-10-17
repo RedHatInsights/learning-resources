@@ -68,7 +68,7 @@ jobs:
         run: |
           rm -rf node_modules/@swc
           npm install @swc/core
-      - uses: cypress-io/github-action@v5
+      - uses: cypress-io/github-action@v7.4.0
         with:
             component: true
             install: false
