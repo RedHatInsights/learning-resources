@@ -30,6 +30,7 @@ import {
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import { suspenseLoader as useSuspenseLoader } from '@redhat-cloud-services/frontend-components-utilities/useSuspenseLoader';
 import fetchAllData from '../../../utils/fetchAllData';
+import useNavigateKeepPanel from '../../../hooks/useNavigateKeepPanel';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
 import {
   BookmarkedIcon,
@@ -176,6 +177,7 @@ const LearnPanelContent: React.FC<{
 }) => {
   const intl = useIntl();
   const chrome = useChrome();
+  const navigateKeepPanel = useNavigateKeepPanel();
   const { loader, purgeCache } = useSuspenseLoader(fetchAllData);
 
   const CONTENT_TYPE_OPTIONS = [
@@ -655,6 +657,19 @@ const LearnPanelContent: React.FC<{
                 variant="link"
                 component="a"
                 href="/learning-resources?tab=all"
+                onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
+                  if (
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  navigateKeepPanel('/learning-resources?tab=all');
+                }}
                 isInline
                 iconPosition="end"
               >
