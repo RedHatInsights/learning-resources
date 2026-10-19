@@ -2,6 +2,9 @@ import axios from 'axios';
 
 export const API_BASE = '/api/quickstarts/v1';
 
+/** Branches Edit multiple resources creates; one PR can change many resources. */
+export const BATCH_BRANCH_PREFIX = 'qs-update-batch-';
+
 export interface PRFile {
   name: string;
   content: string;

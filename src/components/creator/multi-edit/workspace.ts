@@ -1,5 +1,6 @@
 import YAML from 'yaml';
 import {
+  BATCH_BRANCH_PREFIX,
   BatchPRResource,
   BatchPRResponse,
   CreatorPRWorkspace,
@@ -167,7 +168,9 @@ export type WorkspaceAction =
     };
 
 export const newBranchName = () =>
-  `qs-update-batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  `${BATCH_BRANCH_PREFIX}${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 7)}`;
 
 export const emptyWorkspace = (): WorkspaceState => ({
   resources: [],
@@ -505,6 +508,7 @@ export function workspaceReducer(
               }
             : f;
         const moved = s.movedTo !== undefined && s.movedTo !== r.name;
+        const originalDir = r.renamedFrom ?? r.name;
         return {
           ...r,
           ...(moved
@@ -512,8 +516,12 @@ export function workspaceReducer(
                 name: s.movedTo as string,
                 path: `${QUICKSTARTS_DIR}/${s.movedTo}`,
                 // A directory that only ever existed in this session has
-                // nothing to restore.
-                renamedFrom: r.isNew ? undefined : r.renamedFrom ?? r.name,
+                // nothing to restore, and moving back to the original one
+                // undoes the rename.
+                renamedFrom:
+                  r.isNew || originalDir === s.movedTo
+                    ? undefined
+                    : originalDir,
               }
             : {}),
           isNew: false,

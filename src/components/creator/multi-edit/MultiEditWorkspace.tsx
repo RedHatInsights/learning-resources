@@ -330,7 +330,7 @@ const MultiEditWorkspace = ({
               Review changes
             </AlertActionLink>
           }
-          className="pf-v6-u-mb-sm"
+          className="pf-v6-u-mb-sm lr-c-multi-edit__pre-wrap"
         >
           {error.message}
         </Alert>

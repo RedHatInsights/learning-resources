@@ -62,6 +62,8 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
       onClose={onCancel}
       variant="small"
       aria-labelledby="mr-remove-title"
+      // Modals render outside the app root, where its scoped styles stop.
+      className="learning-resources"
     >
       <ModalHeader
         title={

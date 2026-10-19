@@ -18,6 +18,7 @@ import {
   useFormApi,
 } from '@data-driven-forms/react-form-renderer';
 import {
+  BATCH_BRANCH_PREFIX,
   CreatorPREntry,
   RepoQuickstartEntry,
   getCreatorPR,
@@ -66,7 +67,12 @@ const SourceSelector = (props: UseFieldApiConfig) => {
           const entries = await listRepoQuickstarts();
           if (!cancelled) setQuickstarts(entries);
         } else {
-          const prs = await listCreatorPRs();
+          // A batch PR belongs to Edit multiple resources: saving it from
+          // this form would rewrite its files and drop anything the form
+          // does not hold.
+          const prs = (await listCreatorPRs()).filter(
+            (pr) => !pr.branchName.startsWith(BATCH_BRANCH_PREFIX)
+          );
           if (!cancelled) setCreatorPRs(prs);
         }
       } catch (err) {

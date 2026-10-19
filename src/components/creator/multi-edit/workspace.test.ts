@@ -344,6 +344,32 @@ describe('removing resources from a PR', () => {
     ]);
   });
 
+  it('forgets a rename once the resource moves back to its original folder', () => {
+    const save = (state: WorkspaceState) =>
+      workspaceReducer(state, {
+        type: 'saved',
+        response: {
+          prUrl: 'https://github.com/o/r/pull/9',
+          prNumber: 9,
+          branchName: 'qs-update-batch-9',
+          headSha: 'head-10',
+          status: 'updated',
+          paths: [],
+        },
+        sent: snapshotChanges(state).sent,
+        reverted: [],
+      });
+    let state = save(edit(loaded(), 'alpha', 'name: alpha', 'name: omega'));
+    expect(state.resources.find((r) => r.name === 'omega')?.renamedFrom).toBe(
+      'alpha'
+    );
+
+    state = save(edit(state, 'omega', 'name: omega', 'name: alpha'));
+    const alpha = state.resources.find((r) => r.name === 'alpha');
+    expect(alpha).toBeDefined();
+    expect(alpha?.renamedFrom).toBeUndefined();
+  });
+
   it('remembers a rename from an earlier session when the PR is reloaded', () => {
     let state = workspaceReducer(emptyWorkspace(), {
       type: 'loadPR',
