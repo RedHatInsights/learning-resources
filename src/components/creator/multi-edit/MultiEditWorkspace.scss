@@ -226,42 +226,75 @@
     background: var(--pf-t--global--color--status--warning--default);
   }
 
+  // Sized as a container so the header can fit its actions to the stage's
+  // width, not the window's.
   &__stage {
     display: flex;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
+    container-type: inline-size;
   }
 
+  // One row whatever the resource: the title and path cut off with an
+  // ellipsis instead of wrapping, so switching resources, editing or renaming
+  // never moves the actions or the editor below.
   &__stage-header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--pf-t--global--spacer--sm);
+    gap: var(--pf-t--global--spacer--md);
     padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
     border-bottom: var(--pf-t--global--border--width--regular) solid
       var(--pf-t--global--border--color--default);
   }
 
+  &__stage-heading {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-t--global--spacer--xs);
+  }
+
   &__stage-title {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: var(--pf-t--global--spacer--sm);
     min-width: 0;
+    white-space: nowrap;
+
+    > .pf-v6-c-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    > .pf-v6-c-label {
+      flex: none;
+    }
   }
 
   &__path {
+    overflow: hidden;
     color: var(--pf-t--global--text--color--subtle);
     font-size: var(--pf-t--global--font--size--sm);
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__stage-actions {
+    flex: none;
     display: flex;
     align-items: center;
     gap: var(--pf-t--global--spacer--md);
+  }
+
+  // On a narrow stage the layout toggle keeps its icons and drops its words,
+  // leaving the title room; each button keeps its name for screen readers.
+  @container (max-width: 760px) {
+    &__stage-actions .pf-v6-c-toggle-group__text {
+      display: none;
+    }
   }
 
   &__panes {

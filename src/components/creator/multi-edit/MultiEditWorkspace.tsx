@@ -432,27 +432,34 @@ const MultiEditWorkspace = ({
               aria-label={resourceTitle(active)}
             >
               <div className="lr-c-multi-edit__stage-header">
-                <div className="lr-c-multi-edit__stage-title">
-                  <Title headingLevel="h3" size="lg">
-                    {resourceTitle(active)}
-                  </Title>
-                  {activeKind && (
-                    <Label color={activeKind.tagColor} isCompact>
-                      {activeKind.displayName}
-                    </Label>
-                  )}
-                  {active.isNew ? (
-                    <Label color="blue" isCompact>
-                      New
-                    </Label>
-                  ) : (
-                    isDirty(active) && (
-                      <Label color="orange" isCompact>
-                        Unsaved
+                <div className="lr-c-multi-edit__stage-heading">
+                  <div className="lr-c-multi-edit__stage-title">
+                    <Title headingLevel="h3" size="lg">
+                      {resourceTitle(active)}
+                    </Title>
+                    {activeKind && (
+                      <Label color={activeKind.tagColor} isCompact>
+                        {activeKind.displayName}
                       </Label>
-                    )
-                  )}
-                  <code className="lr-c-multi-edit__path">
+                    )}
+                    {active.isNew ? (
+                      <Label color="blue" isCompact>
+                        New
+                      </Label>
+                    ) : (
+                      isDirty(active) && (
+                        <Label color="orange" isCompact>
+                          Unsaved
+                        </Label>
+                      )
+                    )}
+                  </div>
+                  <code
+                    className="lr-c-multi-edit__path"
+                    title={`${active.path}/${
+                      activeMovesTo ? ` → ${activeMovesTo}/` : ''
+                    }`}
+                  >
                     {active.path}/{activeMovesTo && ` → ${activeMovesTo}/`}
                   </code>
                 </div>
@@ -509,6 +516,7 @@ const MultiEditWorkspace = ({
                     <ToggleGroupItem
                       icon={<CodeIcon />}
                       text="Editor"
+                      aria-label="Editor"
                       buttonId="mr-view-editor"
                       isSelected={view === 'editor'}
                       onChange={() => setView('editor')}
@@ -516,6 +524,7 @@ const MultiEditWorkspace = ({
                     <ToggleGroupItem
                       icon={<ColumnsIcon />}
                       text="Split"
+                      aria-label="Split"
                       buttonId="mr-view-split"
                       isSelected={view === 'split'}
                       onChange={() => setView('split')}
@@ -523,6 +532,7 @@ const MultiEditWorkspace = ({
                     <ToggleGroupItem
                       icon={<EyeIcon />}
                       text="Preview"
+                      aria-label="Preview"
                       buttonId="mr-view-preview"
                       isSelected={view === 'preview'}
                       onChange={() => setView('preview')}
