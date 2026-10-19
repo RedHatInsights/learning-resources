@@ -835,6 +835,66 @@ describe('MultiEditWorkspace', () => {
     ).toBeInTheDocument();
   });
 
+  it('confirms before opening a PR discards unsaved work', async () => {
+    mocked.listPRs.mockResolvedValue([
+      {
+        number: 88,
+        title: 'Update Inventory docs',
+        htmlUrl: 'https://github.com/o/r/pull/88',
+        branchName: 'qs-update-batch-9',
+        slug: '',
+      },
+    ]);
+    mocked.getWorkspace.mockResolvedValue({
+      number: 88,
+      title: 'Update Inventory docs',
+      htmlUrl: 'https://github.com/o/r/pull/88',
+      branchName: 'qs-update-batch-9',
+      headSha: 'head-88',
+      missing: [],
+      deleted: [],
+      resources: [],
+    });
+    renderWorkspace();
+    await chooseResources('alpha');
+    typeInto(`${combinedFor('alpha')}# edited\n`);
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Continue (an )?open PR/ })[0]
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Continue open PR',
+    });
+    fireEvent.click(
+      await within(dialog).findByRole('button', { name: 'Open PR #88' })
+    );
+    expect(
+      within(dialog).getByText('Discard 1 unsaved change and open PR #88?')
+    ).toBeInTheDocument();
+    expect(mocked.getWorkspace).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Keep my changes' })
+    );
+    expect(mocked.getWorkspace).not.toHaveBeenCalled();
+    expect(
+      within(dialog).getByText(
+        'Opening a PR discards 1 unsaved change in this workspace.'
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Open PR #88' })
+    );
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Discard and open' })
+    );
+    expect(
+      await screen.findByRole('link', { name: 'PR #88' })
+    ).toBeInTheDocument();
+    expect(mocked.getWorkspace).toHaveBeenCalledWith(88);
+  });
+
   it('removes a resource from the PR on the next save', async () => {
     const atHead = (name: string) => ({
       name,

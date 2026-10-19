@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  AlertActionLink,
   Button,
   Modal,
   ModalBody,
@@ -36,9 +37,12 @@ const OpenPRModal: React.FC<OpenPRModalProps> = ({
   const [loadingNumber, setLoadingNumber] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  /** The PR waiting on the author to confirm discarding unsaved work. */
+  const [confirming, setConfirming] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+    setConfirming(null);
     let stale = false;
     setLoading(true);
     setError(null);
@@ -69,6 +73,7 @@ const OpenPRModal: React.FC<OpenPRModalProps> = ({
   }, [prs, search]);
 
   const handleOpen = async (number: number) => {
+    setConfirming(null);
     setLoadingNumber(number);
     setError(null);
     try {
@@ -96,16 +101,36 @@ const OpenPRModal: React.FC<OpenPRModalProps> = ({
         description="Loads every resource the pull request changes, as it is on its branch."
       />
       <ModalBody>
-        {unsavedCount > 0 && (
-          <Alert
-            variant="warning"
-            isInline
-            title={`Opening a PR discards ${unsavedCount} unsaved ${
-              unsavedCount === 1 ? 'change' : 'changes'
-            } in this workspace.`}
-            className="pf-v6-u-mb-sm"
-          />
-        )}
+        {unsavedCount > 0 &&
+          (confirming === null ? (
+            <Alert
+              variant="warning"
+              isInline
+              title={`Opening a PR discards ${unsavedCount} unsaved ${
+                unsavedCount === 1 ? 'change' : 'changes'
+              } in this workspace.`}
+              className="pf-v6-u-mb-sm"
+            />
+          ) : (
+            <Alert
+              variant="danger"
+              isInline
+              title={`Discard ${unsavedCount} unsaved ${
+                unsavedCount === 1 ? 'change' : 'changes'
+              } and open PR #${confirming}?`}
+              actionLinks={
+                <>
+                  <AlertActionLink onClick={() => handleOpen(confirming)}>
+                    Discard and open
+                  </AlertActionLink>
+                  <AlertActionLink onClick={() => setConfirming(null)}>
+                    Keep my changes
+                  </AlertActionLink>
+                </>
+              }
+              className="pf-v6-u-mb-sm"
+            />
+          ))}
         <SearchInput
           placeholder="Search by title, number, or branch"
           value={search}
@@ -155,7 +180,12 @@ const OpenPRModal: React.FC<OpenPRModalProps> = ({
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleOpen(pr.number)}
+                      // Unsaved work is only discarded once confirmed.
+                      onClick={() =>
+                        unsavedCount > 0
+                          ? setConfirming(pr.number)
+                          : handleOpen(pr.number)
+                      }
                       isLoading={loadingNumber === pr.number}
                       isDisabled={loadingNumber !== null}
                       aria-label={`Open PR #${pr.number}`}
