@@ -63,39 +63,52 @@
   &__resource-list {
     flex: 1;
     overflow-y: auto;
+    // A thin scrollbar with its own space, so it never sits on the actions.
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
     list-style: none;
     margin: 0;
     padding: var(--pf-t--global--spacer--xs) 0;
   }
 
+  // Rows that open a resource show it on hover; the open one is marked more
+  // strongly, so hovering and current never look alike.
   &__resource {
-    position: relative;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     border-left: 3px solid transparent;
 
-    &:hover {
-      background: var(--pf-t--global--background--color--primary--hover);
+    &:not(.pf-m-pending):hover {
+      border-left-color: var(--pf-t--global--border--color--hover);
+      background: var(--pf-t--global--background--color--action--plain--hover);
     }
 
-    &.pf-m-current {
+    &.pf-m-current,
+    &.pf-m-current:hover {
       border-left-color: var(--pf-t--global--border--color--clicked);
       background: var(--pf-t--global--background--color--primary--default);
     }
 
-    // The remove button only competes for attention where it applies.
-    .lr-c-multi-edit__resource-remove {
+    &.pf-m-group-start {
+      margin-top: var(--pf-t--global--spacer--xs);
+      padding-top: var(--pf-t--global--spacer--xs);
+      border-top: var(--pf-t--global--border--width--regular) solid
+        var(--pf-t--global--border--color--default);
+    }
+
+    // Close only competes for attention where it applies.
+    .lr-c-multi-edit__resource-action.pf-m-on-hover {
       opacity: 0;
     }
 
-    &:hover .lr-c-multi-edit__resource-remove,
-    &.pf-m-current .lr-c-multi-edit__resource-remove,
-    .lr-c-multi-edit__resource-remove:focus-visible {
+    &:hover .lr-c-multi-edit__resource-action.pf-m-on-hover,
+    &.pf-m-current .lr-c-multi-edit__resource-action.pf-m-on-hover,
+    .lr-c-multi-edit__resource-action.pf-m-on-hover:focus-visible {
       opacity: 1;
     }
   }
 
-  &__resource-select {
+  &__resource-main {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -108,29 +121,49 @@
     color: inherit;
     font: inherit;
     text-align: left;
-    cursor: pointer;
   }
 
-  &__resource-title {
+  button.lr-c-multi-edit__resource-main {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: var(--pf-t--global--border--width--strong) solid
+        var(--pf-t--global--border--color--clicked);
+      outline-offset: -2px;
+    }
+  }
+
+  // Each line keeps to one line, cut off with an ellipsis; the row's tooltip
+  // has the whole title.
+  &__resource-title,
+  &__resource-meta {
     display: flex;
     align-items: center;
     gap: var(--pf-t--global--spacer--xs);
+    min-width: 0;
+    white-space: nowrap;
+
+    > .pf-v6-c-label,
+    > .pf-v6-c-icon {
+      flex: none;
+    }
+  }
+
+  &__resource-title {
     font-weight: var(--pf-t--global--font--weight--body--bold);
-    overflow-wrap: anywhere;
+  }
+
+  &__resource-text,
+  &__resource-dir {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__resource-dir {
     color: var(--pf-t--global--text--color--subtle);
     font-family: var(--pf-t--global--font--family--mono);
     font-size: var(--pf-t--global--font--size--xs);
-    overflow-wrap: anywhere;
-  }
-
-  &__resource-badges {
-    display: flex;
-    align-items: center;
-    gap: var(--pf-t--global--spacer--xs);
-    margin-top: 2px;
   }
 
   &__resource-empty {
@@ -138,34 +171,19 @@
     color: var(--pf-t--global--text--color--subtle);
   }
 
-  // A resource that is not open (deleted, removed from the PR, restored) sits
-  // in the same list, in the order it happened, with its one action.
-  &__resource.pf-m-pending {
-    align-items: center;
-
-    &:hover {
-      background: none;
-    }
-  }
-
-  &__resource-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: var(--pf-t--global--spacer--sm) 0 var(--pf-t--global--spacer--sm)
-      var(--pf-t--global--spacer--md);
-  }
-
-  &__resource-title.pf-m-gone {
+  // Deleted, removed from the PR, or restored: not openable, so muted, with
+  // no hover and only the action responding.
+  &__resource.pf-m-pending &__resource-title {
     color: var(--pf-t--global--text--color--subtle);
+  }
+
+  &__resource-title.pf-m-gone &__resource-text {
     text-decoration: line-through;
   }
 
   &__resource-action {
     flex: none;
-    margin-inline: var(--pf-t--global--spacer--sm);
+    margin-inline: var(--pf-t--global--spacer--xs);
   }
 
   &__dirty-dot {

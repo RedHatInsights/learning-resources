@@ -1094,20 +1094,34 @@ describe('MultiEditWorkspace', () => {
     );
   });
 
-  it('lists open, deleted and restored resources in one column, in order', async () => {
+  it('groups the sidebar: renamed, then open, then deleted', async () => {
     renderWorkspace();
     await openPR({
-      resources: [atHead('alpha'), atHead('beta')],
+      resources: [
+        atHead('alpha'),
+        { ...atHead('delta'), renamedFrom: 'delta-old' },
+        atHead('beta'),
+      ],
       deleted: [atHead('gamma')],
     });
-    // What the PR opened with comes first, then what it already deletes.
     expect(sidebarOrder()).toEqual([
+      'delta title · Renamed from delta-old',
       'alpha title',
       'beta title',
       'gamma title · Deleted in PR',
     ]);
+    // A thin rule where each group starts.
+    expect(
+      within(sidebar())
+        .getAllByRole('listitem')
+        .map((li) => li.classList.contains('pf-m-group-start'))
+    ).toEqual([false, true, false, true]);
+    // Restore is an icon with a tooltip, not a text link.
+    expect(
+      screen.getByRole('button', { name: 'Restore gamma title' })
+    ).toHaveTextContent('');
 
-    // Each later change goes to the end, rather than to a separate section.
+    // A deletion joins the end of the bottom group.
     await waitFor(() => expect(mocked.listRepo).toHaveBeenCalled());
     fireEvent.click(
       screen.getByRole('button', { name: 'Actions for alpha title' })
@@ -1123,26 +1137,43 @@ describe('MultiEditWorkspace', () => {
     );
     await waitFor(() =>
       expect(sidebarOrder()).toEqual([
+        'delta title · Renamed from delta-old',
         'beta title',
         'gamma title · Deleted in PR',
         'alpha title · To delete',
       ])
     );
 
+    // Restoring keeps the row where it is.
     fireEvent.click(
       screen.getByRole('button', { name: 'Restore gamma title' })
     );
     expect(sidebarOrder()).toEqual([
+      'delta title · Renamed from delta-old',
       'beta title',
+      'gamma title · Restored on save',
       'alpha title · To delete',
+    ]);
+
+    // Undoing the deletion reopens it with the other open resources.
+    fireEvent.click(screen.getByRole('button', { name: 'Keep alpha title' }));
+    expect(sidebarOrder()).toEqual([
+      'delta title · Renamed from delta-old',
+      'beta title',
+      'alpha title',
       'gamma title · Restored on save',
     ]);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Keep alpha title' }));
+    // Changing its ID, even before saving, makes it a rename.
+    typeInto(combinedFor('alpha').replace('name: alpha', 'name: alpha-two'));
     expect(sidebarOrder()).toEqual([
+      'delta title · Renamed from delta-old',
+      'alpha title (unsaved)',
       'beta title',
       'gamma title · Restored on save',
-      'alpha title',
     ]);
+    expect(sidebarRow('alpha title (unsaved)')).toHaveTextContent(
+      'alpha → alpha-two'
+    );
   });
 });
