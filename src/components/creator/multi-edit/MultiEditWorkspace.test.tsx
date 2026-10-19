@@ -379,6 +379,11 @@ describe('MultiEditWorkspace', () => {
       await screen.findByRole('link', { name: 'PR #77' })
     ).toBeInTheDocument();
     expect(screen.getByText(/All changes saved at/)).toBeInTheDocument();
+    // The save says what it did and links straight to the new PR.
+    expect(screen.getByText('Pull request #77 created')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /View pull request on GitHub/ })
+    ).toHaveAttribute('href', 'https://github.com/o/r/pull/77');
 
     // The next save appends to the same PR, against the returned head.
     typeInto(combinedFor('alpha').replace('old.example', 'newer.example'));
@@ -396,6 +401,16 @@ describe('MultiEditWorkspace', () => {
       expect.objectContaining({ prNumber: 77, expectedHeadSha: 'head-1' })
     );
     expect(updateMeta.branchName).toBeUndefined();
+    expect(
+      await screen.findByText('Changes saved to pull request #77')
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Close Success alert/ })
+    );
+    expect(
+      screen.queryByRole('link', { name: /View pull request on GitHub/ })
+    ).not.toBeInTheDocument();
   });
 
   it('removes a resource by unchecking it in the picker', async () => {

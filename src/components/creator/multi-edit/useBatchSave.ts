@@ -2,6 +2,7 @@ import { Dispatch, useState } from 'react';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import {
   BatchPRMetadata,
+  BatchPRResponse,
   QuickstartsAPIError,
   submitBatchPR,
 } from '../../../utils/createQuickstartPR';
@@ -27,6 +28,8 @@ export function useBatchSave(
   const chrome = useChrome();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<SaveError | null>(null);
+  // The last successful save, so the workspace can link to the PR.
+  const [saved, setSaved] = useState<BatchPRResponse | null>(null);
 
   const save = async (details: SaveDetails): Promise<boolean> => {
     if (saving) return false;
@@ -47,6 +50,7 @@ export function useBatchSave(
 
     setSaving(true);
     setError(null);
+    setSaved(null);
     try {
       let commitMessage = details.commitMessage.trim();
       const user = await chrome.auth.getUser();
@@ -83,6 +87,7 @@ export function useBatchSave(
         deleted: snapshot.deleted.map((d) => d.name),
         restored: snapshot.restored.map((d) => d.name),
       });
+      setSaved(response);
       return true;
     } catch (err) {
       const message =
@@ -102,5 +107,12 @@ export function useBatchSave(
     }
   };
 
-  return { save, saving, error, clearError: () => setError(null) };
+  return {
+    save,
+    saving,
+    error,
+    clearError: () => setError(null),
+    saved,
+    clearSaved: () => setSaved(null),
+  };
 }

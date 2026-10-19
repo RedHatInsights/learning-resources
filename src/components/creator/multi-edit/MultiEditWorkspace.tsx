@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import {
   Alert,
+  AlertActionCloseButton,
   AlertActionLink,
   Badge,
   Button,
@@ -34,6 +35,7 @@ import PlusCircleIcon from '@patternfly/react-icons/dist/dynamic/icons/plus-circ
 import ListIcon from '@patternfly/react-icons/dist/dynamic/icons/list-icon';
 import CubesIcon from '@patternfly/react-icons/dist/dynamic/icons/cubes-icon';
 import EllipsisVIcon from '@patternfly/react-icons/dist/dynamic/icons/ellipsis-v-icon';
+import ExternalLinkAltIcon from '@patternfly/react-icons/dist/dynamic/icons/external-link-alt-icon';
 import { detectKindFromSpec } from '../hydrateFromFiles';
 import { metaForKind } from '../meta';
 import { FilterMap } from '../../../utils/filtersInterface';
@@ -96,7 +98,10 @@ const MultiEditWorkspace = ({
   state,
   dispatch,
 }: MultiEditWorkspaceProps) => {
-  const { save, saving, error, clearError } = useBatchSave(state, dispatch);
+  const { save, saving, error, clearError, saved, clearSaved } = useBatchSave(
+    state,
+    dispatch
+  );
   const [isPickerOpen, setPickerOpen] = useState(false);
   const [isNewOpen, setNewOpen] = useState(false);
   const [isOpenPROpen, setOpenPROpen] = useState(false);
@@ -314,6 +319,32 @@ const MultiEditWorkspace = ({
           but are not resources this PR deletes, so they cannot be edited or
           restored here.
         </Alert>
+      )}
+
+      {saved && (
+        <Alert
+          variant="success"
+          isInline
+          title={
+            saved.status === 'created'
+              ? `Pull request #${saved.prNumber} created`
+              : `Changes saved to pull request #${saved.prNumber}`
+          }
+          actionClose={<AlertActionCloseButton onClose={clearSaved} />}
+          actionLinks={
+            <AlertActionLink
+              component="a"
+              href={saved.prUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              icon={<ExternalLinkAltIcon />}
+              iconPosition="end"
+            >
+              View pull request on GitHub
+            </AlertActionLink>
+          }
+          className="pf-v6-u-mb-sm"
+        />
       )}
 
       {error && !isReviewOpen && (
@@ -617,6 +648,7 @@ const MultiEditWorkspace = ({
         onClose={() => setOpenPROpen(false)}
         onLoad={(workspace) => {
           clearError();
+          clearSaved();
           setSavedAt(null);
           dispatch({ type: 'loadPR', workspace });
         }}
