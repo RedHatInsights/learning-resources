@@ -56,19 +56,49 @@
     background: var(--pf-t--global--background--color--secondary--default);
   }
 
-  &__sidebar-search {
-    margin: var(--pf-t--global--spacer--sm);
+  // The search input is full width, so the header pads it rather than the
+  // input taking a margin and spilling past the column.
+  &__sidebar-header {
+    flex: none;
+    padding: var(--pf-t--global--spacer--sm);
+    border-bottom: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
   }
 
   &__resource-list {
     flex: 1;
     overflow-y: auto;
-    // A thin scrollbar with its own space, so it never sits on the actions.
+    // A styled scrollbar is a classic one: always shown while the list
+    // overflows, a fixed width, and in its own gutter beside the actions
+    // rather than an overlay that widens over them on hover.
     scrollbar-gutter: stable;
-    scrollbar-width: thin;
     list-style: none;
     margin: 0;
     padding: var(--pf-t--global--spacer--xs) 0;
+
+    &::-webkit-scrollbar {
+      width: var(--pf-t--global--spacer--sm);
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: var(--pf-t--global--border--radius--pill);
+      background: var(--pf-t--global--border--color--default);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--pf-t--global--border--color--hover);
+    }
+
+    // Firefox has no scrollbar pseudo-elements; Chrome ignores them once
+    // these are set, so only Firefox gets them.
+    @supports not selector(::-webkit-scrollbar) {
+      scrollbar-width: thin;
+      scrollbar-color: var(--pf-t--global--border--color--default) transparent;
+    }
   }
 
   // Rows that open a resource show it on hover; the open one is marked more
@@ -181,9 +211,11 @@
     text-decoration: line-through;
   }
 
+  // Keeps the action clear of the scrollbar gutter.
   &__resource-action {
     flex: none;
-    margin-inline: var(--pf-t--global--spacer--xs);
+    margin-inline: var(--pf-t--global--spacer--xs)
+      var(--pf-t--global--spacer--sm);
   }
 
   &__dirty-dot {

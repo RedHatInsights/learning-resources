@@ -314,14 +314,15 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   return (
     <nav className="lr-c-multi-edit__sidebar" aria-label="Resources">
       {entries.length >= SEARCH_THRESHOLD && (
-        <SearchInput
-          className="lr-c-multi-edit__sidebar-search"
-          placeholder="Filter resources"
-          value={search}
-          onChange={(_e, value) => setSearch(value)}
-          onClear={() => setSearch('')}
-          aria-label="Filter resources"
-        />
+        <div className="lr-c-multi-edit__sidebar-header">
+          <SearchInput
+            placeholder="Filter resources"
+            value={search}
+            onChange={(_e, value) => setSearch(value)}
+            onClear={() => setSearch('')}
+            aria-label="Filter resources"
+          />
+        </div>
       )}
       <ul className="lr-c-multi-edit__resource-list">
         {shown.map((e, i) => {
