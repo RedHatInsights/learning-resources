@@ -334,10 +334,12 @@ describe('MultiEditWorkspace', () => {
     const create = within(dialog).getByRole('button', {
       name: 'Create pull request',
     });
+    const title = within(dialog).getByLabelText(/Pull request title/);
+    expect(title).toHaveValue('docs(quickstarts): update 2 learning resources');
+    expect(create).toBeEnabled();
+    fireEvent.change(title, { target: { value: ' ' } });
     expect(create).toBeDisabled();
-    fireEvent.change(within(dialog).getByLabelText(/Pull request title/), {
-      target: { value: 'Update docs URLs' },
-    });
+    fireEvent.change(title, { target: { value: 'Update docs URLs' } });
     fireEvent.click(create);
 
     await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));

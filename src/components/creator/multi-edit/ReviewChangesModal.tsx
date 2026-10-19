@@ -114,16 +114,18 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
         : null
     );
     const names = [...new Set(snapshot.changes.map((c) => c.resource))];
-    setPrBody(defaultPRBody(state, names));
-    setCommitMessage(
-      defaultCommitMessage(
-        names,
-        snapshot.renamed,
-        snapshot.reverted,
-        snapshot.deleted,
-        snapshot.restored
-      )
+    const message = defaultCommitMessage(
+      names,
+      snapshot.renamed,
+      snapshot.reverted,
+      snapshot.deleted,
+      snapshot.restored
     );
+    // A new PR is titled like its first commit, as the single-resource flow
+    // does, so it can be created without typing; either can be changed.
+    setPrTitle(message);
+    setPrBody(defaultPRBody(state, names));
+    setCommitMessage(message);
   }, [isOpen]);
 
   const selectedRemoval =
