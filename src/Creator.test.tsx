@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import Creator from './Creator';
 import {
@@ -18,12 +18,23 @@ jest.mock(
   })
 );
 
+// Holds state of its own, as the real wizard holds the PR it continues.
+const MockWizard = ({ resetCreator }: { resetCreator: () => void }) => {
+  const [resumed, setResumed] = useState(false);
+  return (
+    <>
+      <button onClick={resetCreator}>Reset single creator</button>
+      <button onClick={() => setResumed(true)}>
+        {resumed ? 'Continuing PR' : 'Continue PR'}
+      </button>
+    </>
+  );
+};
+
 jest.mock('./components/creator/CreatorWizard', () => ({
   __esModule: true,
   EMPTY_TASK: {},
-  default: ({ resetCreator }: { resetCreator: () => void }) => (
-    <button onClick={resetCreator}>Reset single creator</button>
-  ),
+  default: (props: { resetCreator: () => void }) => <MockWizard {...props} />,
 }));
 
 jest.mock('./components/creator/CreatorPreview', () => ({
@@ -82,6 +93,33 @@ describe('Creator modes', () => {
     expect(screen.getByTestId('workspace')).toHaveTextContent(
       'fresh:metadata:'
     );
+  });
+
+  it('keeps the single-resource PR across a trip to batch mode', () => {
+    render(<Creator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue PR' }));
+    switchTo(/^Edit multiple resources/);
+    switchTo(/^Single resource/);
+    expect(
+      screen.getByRole('button', { name: 'Continuing PR' })
+    ).toBeInTheDocument();
+  });
+
+  it('warns before leaving with batch work, in either mode', () => {
+    const unload = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    render(<Creator />);
+    expect(unload()).toBe(false);
+
+    switchTo(/^Edit multiple resources/);
+    fireEvent.click(screen.getByRole('button', { name: 'Create fresh' }));
+    expect(unload()).toBe(true);
+
+    switchTo(/^Single resource/);
+    expect(unload()).toBe(true);
   });
 
   it('resetting the single-resource creator leaves batch work alone', () => {

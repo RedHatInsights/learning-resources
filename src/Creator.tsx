@@ -1,6 +1,7 @@
 import React, {
   Dispatch,
   Suspense,
+  useEffect,
   useMemo,
   useReducer,
   useState,
@@ -329,7 +330,7 @@ const CreatorInternal = ({
         )}
       </PageSection>
 
-      {isMulti ? (
+      {isMulti && (
         <PageSection hasBodyWrapper={false} isFilled>
           <MultiEditWorkspace
             filterMap={filterMap}
@@ -338,50 +339,55 @@ const CreatorInternal = ({
             dispatch={dispatchWorkspace}
           />
         </PageSection>
-      ) : (
-        <PageSection
-          hasBodyWrapper={false}
-          isFilled
-          padding={{ default: 'noPadding' }}
-        >
-          <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
-            <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
-              <CreatorWizard
-                onChangeTags={setTags}
-                onChangeKind={setKind}
-                onChangeQuickStartSpec={(spec) => {
-                  updateSpec(() => spec);
-                }}
-                onChangeMetadataTags={updateMetadataTags}
-                onChangeMetadataName={
-                  showGitService ? updateMetadataName : undefined
-                }
-                filterData={filterData}
-                onChangeBundles={setBundles}
-                onChangeCurrentStage={setCurrentStage}
-                resetCreator={resetCreator}
-                files={files}
+      )}
+      {/*
+        Hidden rather than unmounted in batch mode: the wizard holds the open
+        PR it continues, its step and its tab, and losing the PR would make
+        the next save open a second one.
+      */}
+      <PageSection
+        hasBodyWrapper={false}
+        isFilled
+        padding={{ default: 'noPadding' }}
+        className={isMulti ? 'pf-v6-u-display-none' : undefined}
+      >
+        <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
+          <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
+            <CreatorWizard
+              onChangeTags={setTags}
+              onChangeKind={setKind}
+              onChangeQuickStartSpec={(spec) => {
+                updateSpec(() => spec);
+              }}
+              onChangeMetadataTags={updateMetadataTags}
+              onChangeMetadataName={
+                showGitService ? updateMetadataName : undefined
+              }
+              filterData={filterData}
+              onChangeBundles={setBundles}
+              onChangeCurrentStage={setCurrentStage}
+              resetCreator={resetCreator}
+              files={files}
+              quickStart={quickStart}
+              currentBundles={bundles}
+              currentTags={tags}
+              currentKind={rawKind}
+              onChangeKindDirect={setRawKind}
+            />
+          </GridItem>
+
+          {isDownloadStage ? (
+            <GridItem span={12} lg={6} className="pf-v6-u-pt-md-on-lg">
+              <CreatorPreview
+                kindMeta={selectedKind?.meta ?? null}
                 quickStart={quickStart}
-                currentBundles={bundles}
-                currentTags={tags}
-                currentKind={rawKind}
-                onChangeKindDirect={setRawKind}
+                currentStage={currentStage}
+                filterMap={filterMap}
               />
             </GridItem>
-
-            {isDownloadStage ? (
-              <GridItem span={12} lg={6} className="pf-v6-u-pt-md-on-lg">
-                <CreatorPreview
-                  kindMeta={selectedKind?.meta ?? null}
-                  quickStart={quickStart}
-                  currentStage={currentStage}
-                  filterMap={filterMap}
-                />
-              </GridItem>
-            ) : null}
-          </Grid>
-        </PageSection>
-      )}
+          ) : null}
+        </Grid>
+      </PageSection>
     </PageGroup>
   );
 };
@@ -397,6 +403,19 @@ const Creator = () => {
     undefined,
     emptyWorkspace
   );
+
+  // Batch edits live only in this tab, in either mode, so leaving would lose
+  // them.
+  const hasPending = pendingCount(workspace) > 0;
+  useEffect(() => {
+    if (!hasPending) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasPending]);
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

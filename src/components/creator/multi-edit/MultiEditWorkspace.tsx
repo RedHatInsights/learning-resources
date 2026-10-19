@@ -180,17 +180,6 @@ const MultiEditWorkspace = ({
     return kind ? metaForKind(kind) : null;
   }, [active?.buffer]);
 
-  // Unsaved edits live only in this tab, so leaving would lose them.
-  useEffect(() => {
-    if (pending === 0) return;
-    const warn = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [pending > 0]);
-
   const openReview = () => {
     if (pending === 0 || saving) return;
     clearError();
