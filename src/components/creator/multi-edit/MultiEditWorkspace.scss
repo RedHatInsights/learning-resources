@@ -138,40 +138,34 @@
     color: var(--pf-t--global--text--color--subtle);
   }
 
-  &__removals {
-    flex: none;
-    max-height: 40%;
-    display: flex;
-    flex-direction: column;
-    border-top: var(--pf-t--global--border--width--regular) solid
-      var(--pf-t--global--border--color--default);
+  // A resource that is not open (deleted, removed from the PR, restored) sits
+  // in the same list, in the order it happened, with its one action.
+  &__resource.pf-m-pending {
+    align-items: center;
 
-    .lr-c-multi-edit__resource-list {
-      flex: initial;
+    &:hover {
+      background: none;
     }
   }
 
-  &__removals-title {
-    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md) 0;
-    color: var(--pf-t--global--text--color--subtle);
-    font-size: var(--pf-t--global--font--size--xs);
-    font-weight: var(--pf-t--global--font--weight--body--bold);
-    text-transform: uppercase;
-  }
-
-  &__removal {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--pf-t--global--spacer--sm);
-    padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
-  }
-
-  &__removal-name {
+  &__resource-info {
+    flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--pf-t--global--spacer--sm) 0 var(--pf-t--global--spacer--sm)
+      var(--pf-t--global--spacer--md);
+  }
+
+  &__resource-title.pf-m-gone {
     color: var(--pf-t--global--text--color--subtle);
     text-decoration: line-through;
-    overflow-wrap: anywhere;
+  }
+
+  &__resource-action {
+    flex: none;
+    margin-inline: var(--pf-t--global--spacer--sm);
   }
 
   &__dirty-dot {
@@ -389,14 +383,10 @@
   }
 }
 
-.lr-c-multi-edit-new {
-  &__id {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--pf-t--global--spacer--sm);
-    overflow-wrap: anywhere;
-  }
+// New resource: the single-resource wizard's steps in a modal. Bounded so
+// the footer stays on screen and the steps scroll.
+.lr-c-multi-edit-new .pf-v6-c-wizard {
+  height: min(680px, 85vh);
 }
 
 .lr-c-multi-edit-review {

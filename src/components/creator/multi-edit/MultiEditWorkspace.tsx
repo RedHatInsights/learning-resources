@@ -37,6 +37,7 @@ import EllipsisVIcon from '@patternfly/react-icons/dist/dynamic/icons/ellipsis-v
 import { detectKindFromSpec } from '../hydrateFromFiles';
 import { metaForKind } from '../meta';
 import { FilterMap } from '../../../utils/filtersInterface';
+import { FilterData } from '../../../utils/FiltersCategoryInterface';
 import {
   RepoQuickstartEntry,
   listRepoQuickstarts,
@@ -83,6 +84,8 @@ function initialView(): View {
 
 type MultiEditWorkspaceProps = {
   filterMap: FilterMap;
+  /** The tag choices New resource offers, as the single-resource wizard does. */
+  filterData: FilterData;
   /** Owned by the Creator page so switching modes never drops the work. */
   state: WorkspaceState;
   dispatch: Dispatch<WorkspaceAction>;
@@ -90,6 +93,7 @@ type MultiEditWorkspaceProps = {
 
 const MultiEditWorkspace = ({
   filterMap,
+  filterData,
   state,
   dispatch,
 }: MultiEditWorkspaceProps) => {
@@ -615,6 +619,7 @@ const MultiEditWorkspace = ({
           const target = renameTarget(r);
           return target ? [r.name, target] : [r.name];
         })}
+        filterData={filterData}
       />
       <OpenPRModal
         isOpen={isOpenPROpen}

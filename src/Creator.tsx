@@ -333,6 +333,7 @@ const CreatorInternal = ({
         <PageSection hasBodyWrapper={false} isFilled>
           <MultiEditWorkspace
             filterMap={filterMap}
+            filterData={filterData}
             state={workspace}
             dispatch={dispatchWorkspace}
           />

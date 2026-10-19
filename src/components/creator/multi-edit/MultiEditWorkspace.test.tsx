@@ -18,6 +18,7 @@ import {
   submitBatchPR,
 } from '../../../utils/createQuickstartPR';
 import { ExtendedQuickstart } from '../../../utils/fetchQuickstarts';
+import { FilterData } from '../../../utils/FiltersCategoryInterface';
 
 const mockGetUser = jest.fn().mockResolvedValue({
   identity: {
@@ -140,6 +141,23 @@ const savedResponse = (headSha: string, status = 'created') => ({
   paths: [],
 });
 
+const filterData = {
+  categories: [
+    {
+      categoryId: 'use-case',
+      categoryName: 'Use case',
+      categoryData: [
+        {
+          group: '',
+          data: [
+            { id: 'automation', filterLabel: 'Automation', cardLabel: '' },
+          ],
+        },
+      ],
+    },
+  ],
+} as unknown as FilterData;
+
 /** The Creator page owns the workspace; mirror that here. */
 const Harness = () => {
   const [state, dispatch] = useReducer(
@@ -148,7 +166,12 @@ const Harness = () => {
     emptyWorkspace
   );
   return (
-    <MultiEditWorkspace filterMap={{}} state={state} dispatch={dispatch} />
+    <MultiEditWorkspace
+      filterMap={{}}
+      filterData={filterData}
+      state={state}
+      dispatch={dispatch}
+    />
   );
 };
 const renderWorkspace = () => render(<Harness />);
@@ -157,6 +180,27 @@ const editor = () => screen.getByTestId('mock-monaco-editor');
 const typeInto = (value: string) =>
   fireEvent.change(editor(), { target: { value } });
 const sidebar = () => screen.getByRole('navigation', { name: 'Resources' });
+/** A sidebar row, found by the title it shows. */
+const sidebarRow = (title: string) =>
+  within(sidebar())
+    .getAllByRole('listitem')
+    .find(
+      (li) =>
+        li.querySelector('.lr-c-multi-edit__resource-title')?.textContent ===
+        title
+    ) as HTMLElement;
+/** Each sidebar row's title and status, top to bottom. */
+const sidebarOrder = () =>
+  within(sidebar())
+    .getAllByRole('listitem')
+    .map((li) =>
+      [
+        li.querySelector('.lr-c-multi-edit__resource-title')?.textContent,
+        li.querySelector('.pf-v6-c-label')?.textContent,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    );
 const selectResource = (title: string) =>
   fireEvent.click(
     within(sidebar()).getByRole('button', { name: new RegExp(`^${title}`) })
@@ -206,6 +250,11 @@ const openReview = async () => {
 };
 
 describe('MultiEditWorkspace', () => {
+  beforeAll(() => {
+    // The wizard scrolls each step to the top; jsdom has no layout.
+    Element.prototype.scrollTo = jest.fn();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mocked.submit.mockReset();
@@ -401,85 +450,73 @@ describe('MultiEditWorkspace', () => {
     expect(within(sidebar()).getAllByRole('listitem')).toHaveLength(1);
   });
 
-  it('creates a new resource alongside edits in the same PR', async () => {
+  /** Opens New resource and moves past its content type step. */
+  const startNewResource = async (kind: string) => {
+    fireEvent.click(screen.getAllByRole('button', { name: 'New resource' })[0]);
+    const dialog = await screen.findByRole('dialog', { name: 'New resource' });
+    const next = within(dialog).getByRole('button', { name: 'Next' });
+    // A type has to be chosen before moving on.
+    expect(next).toBeDisabled();
+    fireEvent.click(within(dialog).getByLabelText(kind));
+    fireEvent.click(next);
+    await within(dialog).findByLabelText(/Resource title/);
+    return dialog;
+  };
+  const typeField = (dialog: HTMLElement, label: RegExp, value: string) => {
+    const field = within(dialog).getByLabelText(label);
+    fireEvent.change(field, { target: { value } });
+    fireEvent.blur(field);
+  };
+
+  it('creates a new resource with the single-resource wizard steps', async () => {
     mocked.submit.mockResolvedValueOnce(savedResponse('head-1'));
     renderWorkspace();
     await chooseResources('alpha');
     typeInto(combinedFor('alpha').replace('old.example', 'new.example'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'New resource' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New resource' });
-    const next = () =>
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-
-    // Step 1: a type has to be chosen before moving on.
-    next();
+    const dialog = await startNewResource('Documentation');
+    // The same details as the single-resource wizard, on one step.
     expect(
-      within(dialog).getByText('Select a content type.')
+      within(dialog).getByText(
+        'Share the details required to populate a card in the correct places.'
+      )
     ).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByLabelText('Documentation'));
-    next();
-
-    // Step 2: the ID follows the title until edited; Back keeps the values.
-    fireEvent.change(within(dialog).getByLabelText(/Resource title/), {
-      target: { value: 'Inventory API guide' },
-    });
-    expect(within(dialog).getByText('inventory-api-guide')).toBeInTheDocument();
-    next();
-    expect(
-      within(dialog).getByText('A description is required.')
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText('A URL is required.')).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText(/Resource description/), {
-      target: { value: 'How to call the Inventory API.' },
-    });
-    fireEvent.change(within(dialog).getByLabelText(/Endpoint URL/), {
-      target: { value: 'not a url' },
-    });
-    next();
-    expect(
-      within(dialog).getByText('Enter an http(s) URL.')
-    ).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText(/Endpoint URL/), {
-      target: { value: 'https://docs.example.com/api' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
-    fireEvent.click(within(dialog).getByLabelText('Quick start'));
-    next();
-    // The URL is kept but not asked for by a quick start; switch back.
-    expect(within(dialog).queryByLabelText(/Endpoint URL/)).toBeNull();
-    expect(within(dialog).getByLabelText(/Resource title/)).toHaveValue(
-      'Inventory API guide'
-    );
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
-    fireEvent.click(within(dialog).getByLabelText('Documentation'));
-    next();
-    expect(within(dialog).getByLabelText(/Endpoint URL/)).toHaveValue(
-      'https://docs.example.com/api'
-    );
-    next();
-
-    // Step 3: bundles, then the resource joins the workspace.
+    for (const label of [
+      /Associated bundle/,
+      /Resource tags/,
+      /Resource title/,
+      /Resource ID/,
+      /Resource description/,
+      /Endpoint URL/,
+    ]) {
+      expect(within(dialog).getAllByText(label).length).toBeGreaterThan(0);
+    }
     const add = within(dialog).getByRole('button', {
       name: 'Add to workspace',
     });
-    fireEvent.click(add);
-    expect(
-      within(dialog).getByText('Select at least one bundle.')
-    ).toBeInTheDocument();
+    expect(add).toBeDisabled();
+
+    typeField(dialog, /Resource title/, 'Inventory API guide');
+    typeField(dialog, /Resource description/, 'How to call the Inventory API.');
+    typeField(dialog, /Endpoint URL/, 'https://docs.example.com/api');
+    fireEvent.click(within(dialog).getByText('Select all that apply'));
+    fireEvent.click(await within(dialog).findByText('RHEL (insights)'));
     fireEvent.click(
-      within(dialog).getByRole('button', { name: /Associated bundle/ })
+      within(dialog).getByRole('button', { name: 'Select tags' })
     );
-    fireEvent.click(await screen.findByText('RHEL (insights)'));
+    fireEvent.click(await screen.findByText('Automation'));
+
+    await waitFor(() => expect(add).toBeEnabled());
     fireEvent.click(add);
 
     expect(
       await within(sidebar()).findByText('Inventory API guide')
     ).toBeInTheDocument();
     expect(within(sidebar()).getByText('New')).toBeInTheDocument();
-    expect((editor() as HTMLTextAreaElement).value).toContain(
-      'name: inventory-api-guide'
-    );
+    const yaml = (editor() as HTMLTextAreaElement).value;
+    expect(yaml).toContain('name: inventory-api-guide');
+    expect(yaml).toContain('kind: use-case');
+    expect(yaml).toContain('value: automation');
 
     const review = await openReview();
     expect(
@@ -503,7 +540,7 @@ describe('MultiEditWorkspace', () => {
     expect(created.files[0]).toEqual({
       name: 'metadata.yml',
       content:
-        'kind: QuickStarts\nname: inventory-api-guide\ntags:\n  - kind: bundle\n    value: insights\n',
+        'kind: QuickStarts\nname: inventory-api-guide\ntags:\n  - kind: bundle\n    value: insights\n  - kind: use-case\n    value: automation\n',
     });
     expect(created.files[1].name).toBe('inventory-api-guide.yml');
     expect(created.files[1].content).toContain(
@@ -516,40 +553,50 @@ describe('MultiEditWorkspace', () => {
     );
   });
 
-  it('rejects a new resource name that is taken', async () => {
+  it('keeps answers when going back and asks only what a type needs', async () => {
     renderWorkspace();
-    await chooseResources('alpha');
-    fireEvent.click(screen.getByRole('button', { name: 'New resource' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New resource' });
+    const dialog = await startNewResource('Documentation');
+    typeField(dialog, /Resource title/, 'Getting started');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }));
     fireEvent.click(within(dialog).getByLabelText('Quick start'));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-    // A title that generates a taken ID is caught while typing.
-    fireEvent.change(within(dialog).getByLabelText(/Resource title/), {
-      target: { value: 'Alpha' },
-    });
+
+    // A quick start has a duration instead of a URL, and a starter panel.
+    await within(dialog).findByText('Duration');
+    expect(within(dialog).queryByLabelText(/Endpoint URL/)).toBeNull();
+    expect(within(dialog).getByLabelText(/Resource title/)).toHaveValue(
+      'Getting started'
+    );
+    expect(dialog).toHaveTextContent('A starter panel and task are added');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'New resource' })
+      ).not.toBeInTheDocument()
+    );
+  });
+
+  it('rejects a new resource ID that is taken', async () => {
+    renderWorkspace();
+    await chooseResources('alpha');
+    const dialog = await startNewResource('Quick start');
+    // A title that generates a taken ID is caught on the title.
+    typeField(dialog, /Resource title/, 'Alpha');
     expect(
-      within(dialog).getByText(
-        'A resource with this ID is already in the workspace.'
+      await within(dialog).findByText(
+        'A resource with this ID is already in the workspace. Change the title or set an ID below.'
       )
     ).toBeInTheDocument();
-    fireEvent.click(
-      within(dialog).getByRole('button', { name: 'Edit resource ID' })
-    );
-    fireEvent.change(within(dialog).getByLabelText(/Resource ID/), {
-      target: { value: 'gamma' },
-    });
+    typeField(dialog, /Resource ID/, 'gamma');
     expect(
       await within(dialog).findByText(
         'A resource with this ID already exists in the repository.'
       )
     ).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText(/Resource description/), {
-      target: { value: 'Something' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     expect(
-      within(dialog).queryByRole('button', { name: 'Add to workspace' })
-    ).not.toBeInTheDocument();
+      within(dialog).getByRole('button', { name: 'Add to workspace' })
+    ).toBeDisabled();
   });
 
   it('blocks saving invalid YAML or an unusable name and says where', async () => {
@@ -939,9 +986,7 @@ describe('MultiEditWorkspace', () => {
     expect(within(betaRow).getByRole('checkbox')).toBeDisabled();
     fireEvent.click(within(picker).getByRole('button', { name: 'Cancel' }));
 
-    expect(
-      screen.getByRole('region', { name: 'To delete on next save' })
-    ).toHaveTextContent('beta title');
+    expect(sidebarOrder()).toEqual(['alpha title', 'beta title · To delete']);
     expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
 
     const review = await openReview();
@@ -963,9 +1008,9 @@ describe('MultiEditWorkspace', () => {
     expect(resources).toEqual([{ name: 'beta', delete: true, files: [] }]);
 
     // Once saved it is a deletion the PR makes, which can be restored.
-    expect(
-      await screen.findByRole('region', { name: 'Deleted in this PR' })
-    ).toHaveTextContent('beta title');
+    await waitFor(() =>
+      expect(sidebarRow('beta title')).toHaveTextContent('Deleted in PR')
+    );
     picker = await openPicker();
     expect(await findRow(picker, 'beta')).toHaveTextContent('Deleted in PR');
   });
@@ -1023,8 +1068,8 @@ describe('MultiEditWorkspace', () => {
     renderWorkspace();
     await openPR({ deleted: [atHead('gamma')] });
 
-    const deleted = screen.getByRole('region', { name: 'Deleted in this PR' });
-    expect(deleted).toHaveTextContent('gamma title');
+    const deleted = sidebarRow('gamma title');
+    expect(deleted).toHaveTextContent('Deleted in PR');
     expect(screen.getByText(/No unsaved changes/)).toBeInTheDocument();
 
     fireEvent.click(
@@ -1045,9 +1090,59 @@ describe('MultiEditWorkspace', () => {
       { name: 'gamma', revert: true, files: [] },
     ]);
     await waitFor(() =>
-      expect(
-        screen.queryByRole('region', { name: 'Deleted in this PR' })
-      ).not.toBeInTheDocument()
+      expect(screen.queryByText('Deleted in PR')).not.toBeInTheDocument()
     );
+  });
+
+  it('lists open, deleted and restored resources in one column, in order', async () => {
+    renderWorkspace();
+    await openPR({
+      resources: [atHead('alpha'), atHead('beta')],
+      deleted: [atHead('gamma')],
+    });
+    // What the PR opened with comes first, then what it already deletes.
+    expect(sidebarOrder()).toEqual([
+      'alpha title',
+      'beta title',
+      'gamma title · Deleted in PR',
+    ]);
+
+    // Each later change goes to the end, rather than to a separate section.
+    await waitFor(() => expect(mocked.listRepo).toHaveBeenCalled());
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for alpha title' })
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Delete resource…' })
+    );
+    const confirm = await screen.findByRole('dialog', {
+      name: /Delete resource\?/,
+    });
+    fireEvent.click(
+      within(confirm).getByRole('button', { name: 'Delete resource' })
+    );
+    await waitFor(() =>
+      expect(sidebarOrder()).toEqual([
+        'beta title',
+        'gamma title · Deleted in PR',
+        'alpha title · To delete',
+      ])
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Restore gamma title' })
+    );
+    expect(sidebarOrder()).toEqual([
+      'beta title',
+      'alpha title · To delete',
+      'gamma title · Restored on save',
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep alpha title' }));
+    expect(sidebarOrder()).toEqual([
+      'beta title',
+      'gamma title · Restored on save',
+      'alpha title',
+    ]);
   });
 });

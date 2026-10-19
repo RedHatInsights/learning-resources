@@ -8,7 +8,11 @@ export interface NewResourceDetails {
   description: string;
   /** External link, for every kind except quick starts. */
   url?: string;
+  /** Minutes, for kinds with a duration. */
+  durationMinutes?: number;
   bundles: string[];
+  /** Other tags by kind, as the single-resource tag selector returns them. */
+  tags?: Record<string, string[]>;
 }
 
 /** Directory names the repository and its seeder accept. */
@@ -37,9 +41,11 @@ export function scaffoldResource(details: NewResourceDetails): string {
   if (meta.fields.url) {
     spec.link = { href: details.url ?? '', text: 'View documentation' };
   }
+  if (meta.fields.duration) {
+    spec.durationMinutes = details.durationMinutes ?? 10;
+  }
   if (meta.hasTasks) {
     Object.assign(spec, {
-      durationMinutes: 10,
       introduction: 'Describe what the user will accomplish.',
       tasks: [
         {
@@ -54,6 +60,15 @@ export function scaffoldResource(details: NewResourceDetails): string {
     });
   }
 
+  // Bundles first and sorted, then the other tags, as the single-resource
+  // creator writes them.
+  const tags = [
+    ...details.bundles.toSorted().map((value) => ({ kind: 'bundle', value })),
+    ...Object.entries(details.tags ?? {}).flatMap(([kind, values]) =>
+      values.map((value) => ({ kind, value }))
+    ),
+  ];
+
   return YAML.stringify(
     {
       apiVersion: 'console.openshift.io/v1',
@@ -61,7 +76,7 @@ export function scaffoldResource(details: NewResourceDetails): string {
       metadata: {
         name: details.name,
         ...meta.extraMetadata,
-        tags: details.bundles.map((value) => ({ kind: 'bundle', value })),
+        tags,
       },
       spec,
     },
