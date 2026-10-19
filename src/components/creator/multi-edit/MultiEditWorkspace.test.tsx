@@ -316,7 +316,7 @@ describe('MultiEditWorkspace', () => {
     expect(editor()).toHaveValue(
       combinedFor('alpha').replace('old.example', 'new.example')
     );
-    expect(screen.getByText(/2 unsaved/)).toBeInTheDocument();
+    expect(screen.getByText(/2 edited/)).toBeInTheDocument();
 
     let dialog = await openReview();
     expect(
@@ -949,7 +949,7 @@ describe('MultiEditWorkspace', () => {
     );
 
     expect(within(sidebar()).getByText('beta title')).toBeInTheDocument();
-    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+    expect(screen.getByText(/1 removed from PR/)).toBeInTheDocument();
 
     const review = await openReview();
     expect(review).toHaveTextContent('1 resource removed from the PR');
@@ -1025,29 +1025,21 @@ describe('MultiEditWorkspace', () => {
         name: 'Actions for Beta',
       })
     );
+    // Staged at once, with no confirmation: Undo and the review are the
+    // checks.
     fireEvent.click(
-      await screen.findByRole('menuitem', { name: 'Delete resource…' })
+      await screen.findByRole('menuitem', { name: 'Delete resource' })
     );
-    const confirm = await screen.findByRole('dialog', {
-      name: /Delete resource\?/,
-    });
-    expect(confirm).toHaveTextContent('docs/quickstarts/beta/');
-    fireEvent.click(
-      within(confirm).getByRole('button', { name: 'Delete resource' })
-    );
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('dialog', { name: /Delete resource\?/ })
-      ).not.toBeInTheDocument()
+    await waitFor(async () =>
+      expect(await findRow(picker, 'beta')).toHaveTextContent('To delete')
     );
     expect(mocked.getRepo).toHaveBeenCalledWith('beta');
     const betaRow = await findRow(picker, 'beta');
-    expect(betaRow).toHaveTextContent('To delete');
     expect(within(betaRow).getByRole('checkbox')).toBeDisabled();
     fireEvent.click(within(picker).getByRole('button', { name: 'Cancel' }));
 
     expect(sidebarOrder()).toEqual(['alpha title', 'beta title · To delete']);
-    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+    expect(screen.getByText(/1 to delete/)).toBeInTheDocument();
 
     const review = await openReview();
     expect(review).toHaveTextContent('1 resource deleted');
@@ -1075,6 +1067,43 @@ describe('MultiEditWorkspace', () => {
     expect(await findRow(picker, 'beta')).toHaveTextContent('Deleted in PR');
   });
 
+  it('keeps the picker selection right when an open resource is deleted and undone', async () => {
+    renderWorkspace();
+    await chooseResources('alpha', 'beta');
+
+    const picker = await openPicker();
+    fireEvent.click(
+      within(await findRow(picker, 'alpha')).getByRole('button', {
+        name: 'Actions for Alpha',
+      })
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Delete resource' })
+    );
+    const alphaRow = await findRow(picker, 'alpha');
+    expect(alphaRow).toHaveTextContent('To delete');
+    // Deleting is not a change to what is open: nothing to add back.
+    expect(picker).not.toHaveTextContent('to add');
+    expect(
+      within(picker).getByRole('button', { name: 'Update workspace' })
+    ).toBeDisabled();
+
+    fireEvent.click(
+      within(alphaRow).getByRole('button', { name: 'Actions for Alpha' })
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Undo delete' })
+    );
+    // Undo brings it back open, so it is not marked to close.
+    expect(
+      within(await findRow(picker, 'alpha')).getByRole('checkbox')
+    ).toBeChecked();
+    expect(picker).not.toHaveTextContent('to close');
+    expect(
+      within(picker).getByRole('button', { name: 'Update workspace' })
+    ).toBeDisabled();
+  });
+
   it('brings back unsaved edits when a deletion is undone', async () => {
     renderWorkspace();
     await chooseResources('alpha', 'beta');
@@ -1085,14 +1114,7 @@ describe('MultiEditWorkspace', () => {
       screen.getByRole('button', { name: 'Actions for alpha title' })
     );
     fireEvent.click(
-      await screen.findByRole('menuitem', { name: 'Delete resource…' })
-    );
-    const confirm = await screen.findByRole('dialog', {
-      name: /Delete resource\?/,
-    });
-    expect(confirm).toHaveTextContent('unsaved edits are kept');
-    fireEvent.click(
-      within(confirm).getByRole('button', { name: 'Delete resource' })
+      await screen.findByRole('menuitem', { name: 'Delete resource' })
     );
     expect(mocked.getRepo).toHaveBeenCalledTimes(2);
     expect(
@@ -1119,7 +1141,7 @@ describe('MultiEditWorkspace', () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('menuitem', { name: 'Delete resource…' })
+      screen.queryByRole('menuitem', { name: 'Delete resource' })
     ).not.toBeInTheDocument();
   });
 
@@ -1135,7 +1157,7 @@ describe('MultiEditWorkspace', () => {
     fireEvent.click(
       within(deleted).getByRole('button', { name: 'Restore gamma title' })
     );
-    expect(screen.getByText(/1 unsaved/)).toBeInTheDocument();
+    expect(screen.getByText(/1 to restore/)).toBeInTheDocument();
 
     const review = await openReview();
     expect(review).toHaveTextContent('1 resource restored');
@@ -1187,13 +1209,7 @@ describe('MultiEditWorkspace', () => {
       screen.getByRole('button', { name: 'Actions for alpha title' })
     );
     fireEvent.click(
-      await screen.findByRole('menuitem', { name: 'Delete resource…' })
-    );
-    const confirm = await screen.findByRole('dialog', {
-      name: /Delete resource\?/,
-    });
-    fireEvent.click(
-      within(confirm).getByRole('button', { name: 'Delete resource' })
+      await screen.findByRole('menuitem', { name: 'Delete resource' })
     );
     await waitFor(() =>
       expect(sidebarOrder()).toEqual([

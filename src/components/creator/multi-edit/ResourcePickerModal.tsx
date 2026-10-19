@@ -29,11 +29,6 @@ import {
 } from '../../../utils/createQuickstartPR';
 import { readResource } from './readResource';
 import {
-  DeleteResourceMessage,
-  DeleteTarget,
-  useConfirmDelete,
-} from './DeleteResourceModal';
-import {
   QUICKSTARTS_DIR,
   WorkspaceState,
   isDirty,
@@ -56,7 +51,7 @@ type ResourcePickerModalProps = {
   catalogLoading: boolean;
   catalogError: boolean;
   onReloadCatalog: () => void;
-  /** Stages a deletion the author confirmed here. */
+  /** Stages a deletion, with the files of a resource that is not open. */
   onDelete: (
     name: string,
     snapshot?: WorkspaceResourceSnapshot,
@@ -193,14 +188,9 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  // Deleting is confirmed inside this dialog rather than in one stacked on
-  // top of it, which keeps the selection and stays visible to screen readers.
-  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
+  /** A resource being read so its deletion can be staged. */
+  const [deleting, setDeleting] = useState<string | null>(null);
   const existing = state.resources.map((r) => r.name);
-  const deletion = useConfirmDelete(deleting, state.pr, (snapshot, baseSha) => {
-    if (deleting) onDelete(deleting.name, snapshot, baseSha);
-    setDeleting(null);
-  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -302,12 +292,42 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
     finish();
   };
 
+  /**
+   * Deleting is staged at once: nothing reaches GitHub until the save, Undo
+   * is on the row and in the sidebar, and the review lists it. A resource
+   * that is not open is read first, so the review can show what goes.
+   */
+  const stageDelete = async (row: Row) => {
+    // A deleted resource is no longer one to open.
+    toggle(row.name, false);
+    if (row.isOpen) {
+      onDelete(row.name);
+      return;
+    }
+    setDeleting(row.name);
+    setError(null);
+    try {
+      const { resource, baseSha } = await readResource(row.name, state.pr);
+      onDelete(row.name, resource, baseSha);
+    } catch {
+      setError(`Could not load ${row.name} to delete it. Try again.`);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const undoDelete = (name: string) => {
+    // Undo brings an open resource back open, so it stays checked.
+    if (state.deletions.find((d) => d.name === name)?.closed) {
+      toggle(name, true);
+    }
+    onUndoDeletion(name);
+  };
+
   const actionsFor = (row: Row): IAction[] => {
     switch (row.status) {
       case 'toDelete':
-        return [
-          { title: 'Undo delete', onClick: () => onUndoDeletion(row.name) },
-        ];
+        return [{ title: 'Undo delete', onClick: () => undoDelete(row.name) }];
       case 'deleted':
         return [
           { title: 'Restore resource', onClick: () => onRestore(row.name) },
@@ -324,14 +344,9 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
       default:
         return [
           {
-            title: 'Delete resource…',
-            onClick: () =>
-              setDeleting({
-                name: row.name,
-                title: row.title,
-                isOpen: row.isOpen,
-                hasUnsavedEdits: row.isUnsaved,
-              }),
+            title: 'Delete resource',
+            isDanger: true,
+            onClick: () => stageDelete(row),
           },
         ];
     }
@@ -339,46 +354,7 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
 
   const source = state.pr ? `PR #${state.pr.number} branch` : 'main branch';
   const summary = applySummary(toAdd.length, toClose.length);
-  const busy = adding || deletion.loading;
-
-  if (isOpen && deleting) {
-    return (
-      <Modal
-        isOpen
-        onClose={busy ? undefined : () => setDeleting(null)}
-        width="900px"
-        id={PICKER_ID}
-        aria-label="Delete resource?"
-        className="learning-resources lr-c-multi-edit-picker"
-      >
-        <ModalHeader title="Delete resource?" titleIconVariant="warning" />
-        <ModalBody>
-          <DeleteResourceMessage
-            target={deleting}
-            pr={state.pr}
-            error={deletion.error}
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            variant="danger"
-            onClick={deletion.confirm}
-            isLoading={deletion.loading}
-            isDisabled={deletion.loading}
-          >
-            Delete resource
-          </Button>
-          <Button
-            variant="link"
-            onClick={() => setDeleting(null)}
-            isDisabled={deletion.loading}
-          >
-            Back to resources
-          </Button>
-        </ModalFooter>
-      </Modal>
-    );
-  }
+  const busy = adding || deleting !== null;
 
   return (
     <Modal
@@ -491,6 +467,12 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
                         dataLabel="Status"
                         className="lr-c-multi-edit-picker__status"
                       >
+                        {deleting === row.name && (
+                          <Spinner
+                            size="sm"
+                            aria-label={`Loading ${row.title} to delete it`}
+                          />
+                        )}
                         {row.isOpen && (
                           <Label
                             isCompact
@@ -556,7 +538,7 @@ const ResourcePickerModal: React.FC<ResourcePickerModalProps> = ({
         <Button
           variant="primary"
           onClick={handleApply}
-          isDisabled={!hasChanges || adding}
+          isDisabled={!hasChanges || busy}
           isLoading={adding}
         >
           Update workspace

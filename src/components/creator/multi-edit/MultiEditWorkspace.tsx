@@ -62,7 +62,6 @@ import NewResourceModal from './NewResourceModal';
 import OpenPRModal from './OpenPRModal';
 import ReviewChangesModal from './ReviewChangesModal';
 import RemoveResourcesModal from './RemoveResourcesModal';
-import DeleteResourceModal, { DeleteTarget } from './DeleteResourceModal';
 import { configureMonacoEnvironment } from './monaco';
 import './MultiEditWorkspace.scss';
 
@@ -103,7 +102,6 @@ const MultiEditWorkspace = ({
   const [isOpenPROpen, setOpenPROpen] = useState(false);
   const [isReviewOpen, setReviewOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [isActionsOpen, setActionsOpen] = useState(false);
   // The resources on main, which tells a published resource from one only
   // this PR added. Reloaded whenever the picker opens.
@@ -214,16 +212,6 @@ const MultiEditWorkspace = ({
     else setPendingRemoval(names);
   };
 
-  const requestDelete = (name: string, title: string) => {
-    const open = state.resources.find((r) => r.name === name);
-    setDeleteTarget({
-      name,
-      title,
-      isOpen: !!open,
-      hasUnsavedEdits: !!open && isDirty(open),
-    });
-  };
-
   const hasPendingWork =
     state.removals.length > 0 ||
     state.deletions.length > 0 ||
@@ -232,6 +220,18 @@ const MultiEditWorkspace = ({
     state.resources.length === 0 &&
     !hasPendingWork &&
     state.deleted.length === 0;
+
+  // What the next save does, kind by kind, so deletions are not hidden in
+  // one count.
+  const pendingParts = [
+    [state.resources.filter((r) => isDirty(r) && !r.isNew).length, 'edited'],
+    [state.resources.filter((r) => r.isNew).length, 'new'],
+    [state.removals.length, 'removed from PR'],
+    [state.deletions.length, 'to delete'],
+    [state.restorations.length, 'to restore'],
+  ]
+    .filter(([count]) => count)
+    .map(([count, what]) => `${count} ${what}`);
 
   const prStatus = state.pr ? (
     <a href={state.pr.url} target="_blank" rel="noopener noreferrer">
@@ -259,7 +259,7 @@ const MultiEditWorkspace = ({
               ? savedAt && state.pr
                 ? `All changes saved at ${savedAt.toLocaleTimeString()}`
                 : 'No unsaved changes'
-              : `${pending} unsaved`}
+              : pendingParts.join(' · ')}
           </span>
         </div>
         <div className="lr-c-multi-edit__actions">
@@ -460,13 +460,15 @@ const MultiEditWorkspace = ({
                       ...(!active.isNew && !isAddedByPR(active)
                         ? [
                             {
-                              label: 'Delete resource…',
+                              // Staged until the next save and undone from
+                              // the sidebar, so it needs no confirmation.
+                              label: 'Delete resource',
                               isDanger: true,
                               onClick: () =>
-                                requestDelete(
-                                  active.name,
-                                  resourceTitle(active)
-                                ),
+                                dispatch({
+                                  type: 'deleteResource',
+                                  name: active.name,
+                                }),
                             },
                           ]
                         : []),
@@ -644,22 +646,6 @@ const MultiEditWorkspace = ({
           setPendingRemoval([]);
         }}
         onCancel={() => setPendingRemoval([])}
-      />
-      <DeleteResourceModal
-        target={deleteTarget}
-        pr={state.pr}
-        onConfirm={(snapshot, baseSha) => {
-          if (deleteTarget) {
-            dispatch({
-              type: 'deleteResource',
-              name: deleteTarget.name,
-              snapshot,
-              baseSha,
-            });
-          }
-          setDeleteTarget(null);
-        }}
-        onCancel={() => setDeleteTarget(null)}
       />
       <span className="pf-v6-screen-reader" aria-live="polite">
         {saving ? 'Saving changes' : ''}
