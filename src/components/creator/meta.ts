@@ -23,7 +23,10 @@ const rawItemKindMeta = Object.freeze({
   },
   learningPath: {
     displayName: 'Learning path',
-    tagColor: 'teal',
+    // The quickstarts validator only accepts cyan here, as the existing
+    // learning paths use; PatternFly's type has teal instead, which fails the
+    // repository build.
+    tagColor: 'cyan' as string as QuickStartType['color'],
     fields: {
       url: true,
     },
