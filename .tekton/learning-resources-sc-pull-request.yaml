@@ -36,6 +36,12 @@ spec:
     value: "true"
   - name: prefetch-input
     value: '{"type": "npm", "path": "."}'
+  - name: build-args
+    value:
+    - "LABEL_COMPONENT=learning-resources-sc-hermetic"
+    - "LABEL_DESCRIPTION=Learning Resources Frontend SC - Hermetic Build"
+    - "LABEL_URL=https://github.com/RedHatInsights/learning-resources"
+    - "LABEL_SUMMARY=Learning Resources Frontend SC"
   - name: unit-tests-script
     value: |
       #!/bin/bash
