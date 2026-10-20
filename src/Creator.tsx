@@ -85,10 +85,8 @@ const CreatorInternal = ({
   const showGitService = useFlag(
     'platform.learning-resources.quickstarts.git-service'
   );
-  // Batch editing saves through the git-service batch API, so it needs both.
-  const showMultiEdit =
-    useFlag('platform.learning-resources.quickstarts.multi-edit') &&
-    showGitService;
+  // Batch editing saves through the git-service batch API.
+  const showMultiEdit = showGitService;
   const [rawKind, setRawKind] = useState<ItemKind | null>(null);
   const filterMap = useFilterMap({ data: filterData });
   const isMulti = showMultiEdit && mode === 'multi';
