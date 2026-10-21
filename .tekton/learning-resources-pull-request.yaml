@@ -92,7 +92,7 @@ spec:
     - name: url
       value: https://github.com/platex-rehor-bot/konflux-pipelines
     - name: revision
-      value: 71d181828ea1a2bffafe2e7830aa38b3b1b3b8e4
+      value: 71d1818eb1c6e3b5628279ae6fd9bf1a68d0fc17
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests-v2.yaml
   taskRunTemplate:
