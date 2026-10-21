@@ -101,12 +101,12 @@ spec:
     - pipelineTaskName: run-unit-tests
       podTemplate:
         securityContext:
-          fsGroup: 1000
+          fsGroup: 1005770000
     - pipelineTaskName: run-e2e-tests
       serviceAccountName: build-pipeline-learning-resources
       podTemplate:
         securityContext:
-          fsGroup: 1000
+          fsGroup: 1005770000
         hostAliases:
           - ip: "::1"
             hostnames:
