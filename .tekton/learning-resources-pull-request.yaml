@@ -11,7 +11,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "master"
-    pipelinesascode.tekton.dev/pipeline: https://raw.githubusercontent.com/platex-rehor-bot/konflux-pipelines/76c91b0f4245ace503cee7a449a4729060829dbd/pipelines/platform-ui/docker-build-run-all-tests-v2.yaml
+    pipelinesascode.tekton.dev/pipeline: https://raw.githubusercontent.com/platex-rehor-bot/konflux-pipelines/8515cd579168107c6c92a3376d5a149b442864a3/pipelines/platform-ui/docker-build-run-all-tests-v2.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: learning-resources
@@ -92,7 +92,7 @@ spec:
     - name: url
       value: https://github.com/platex-rehor-bot/konflux-pipelines
     - name: revision
-      value: 76c91b0f4245ace503cee7a449a4729060829dbd
+      value: 8515cd579168107c6c92a3376d5a149b442864a3
     - name: pathInRepo
       value: pipelines/platform-ui/docker-build-run-all-tests-v2.yaml
   taskRunTemplate:
