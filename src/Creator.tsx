@@ -24,6 +24,13 @@ import { ExtendedQuickstart } from './utils/fetchQuickstarts';
 import useFilterMap from './hooks/useFilterMap';
 import { useFlag } from '@unleash/proxy-client-react';
 
+function slugFromTitle(displayName: string): string {
+  return displayName
+    .toLowerCase()
+    .replaceAll(/\s/g, '-')
+    .replaceAll(/(^-+)|(-+$)/g, '');
+}
+
 function makeDemoQuickStart(
   kind: ItemKind | null,
   baseQuickStart: ExtendedQuickstart
@@ -56,7 +63,9 @@ const CreatorInternal = ({
   const [rawQuickStart, setRawQuickStart] = useState<ExtendedQuickstart>({
     apiVersion: 'console.openshift.io/v1',
     metadata: {
-      name: 'test-quickstart',
+      // Empty until a document supplies one (hydrate or the YAML editor).
+      // Until then the slug is derived from the title, see `effectiveName`.
+      name: '',
       tags: [],
     },
     spec: {
@@ -162,9 +171,24 @@ const CreatorInternal = ({
     setRawKind(newKind);
   };
 
+  // `metadata.name` is the resource's identity on disk: it names the content
+  // file and `docs/quickstarts/<name>/`. Once a document supplies one — loading
+  // a live doc, continuing an open PR, or typing it in the YAML editor — it
+  // wins, so retitling does not rename the directory of something that already
+  // exists on GitHub. A brand-new resource has no identity to preserve yet, so
+  // its slug keeps tracking the title until one is set.
+  const effectiveName = useMemo(
+    () =>
+      rawQuickStart.metadata.name?.trim() ||
+      slugFromTitle(rawQuickStart.spec.displayName),
+    [rawQuickStart.metadata.name, rawQuickStart.spec.displayName]
+  );
+
   const quickStart = useMemo(() => {
     const demo = makeDemoQuickStart(rawKind, rawQuickStart);
-    if (!showGitService) return demo;
+    if (!showGitService) {
+      return { ...demo, metadata: { ...demo.metadata, name: effectiveName } };
+    }
 
     const allTags = bundles.toSorted().map((bundle) => ({
       kind: 'bundle',
@@ -179,24 +203,17 @@ const CreatorInternal = ({
       ...demo,
       metadata: {
         ...demo.metadata,
+        name: effectiveName,
         tags: allTags,
       },
     };
-  }, [rawKind, rawQuickStart, bundles, tags, showGitService]);
+  }, [rawKind, rawQuickStart, bundles, tags, showGitService, effectiveName]);
 
   const files = useMemo(() => {
-    const effectiveName = quickStart.spec.displayName
-      .toLowerCase()
-      .replaceAll(/\s/g, '-')
-      .replaceAll(/(^-+)|(-+$)/g, '');
-
     const adjustedQuickstart = {
       apiVersion: quickStart.apiVersion || 'console.openshift.io/v1',
       kind: 'QuickStarts',
-      metadata: {
-        ...quickStart.metadata,
-        name: effectiveName,
-      },
+      metadata: quickStart.metadata,
       spec: {
         version: quickStart.spec.version ?? 0.1,
         ...quickStart.spec,
@@ -228,7 +245,7 @@ const CreatorInternal = ({
         content: YAML.stringify(adjustedQuickstart, { nullStr: '~' }),
       },
     ];
-  }, [quickStart, bundles, tags]);
+  }, [quickStart, bundles, tags, effectiveName]);
 
   return (
     <PageGroup>

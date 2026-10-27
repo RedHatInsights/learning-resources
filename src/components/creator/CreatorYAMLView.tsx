@@ -34,6 +34,8 @@ import {
   SelectList,
   SelectOption,
   Spinner,
+  ToggleGroup,
+  ToggleGroupItem,
   Tooltip,
 } from '@patternfly/react-core';
 import {
@@ -43,8 +45,11 @@ import {
   UploadIcon,
 } from '@patternfly/react-icons';
 import {
+  CreatorPREntry,
   RepoQuickstartEntry,
+  getCreatorPR,
   getRepoQuickstartContent,
+  listCreatorPRs,
   listRepoQuickstarts,
 } from '../../utils/createQuickstartPR';
 import Editor from '@monaco-editor/react';
@@ -58,6 +63,7 @@ import { ALL_KIND_ENTRIES, ItemKind } from './meta';
 import { FilterData } from '../../utils/FiltersCategoryInterface';
 import { useFlag } from '@unleash/proxy-client-react';
 import CreatePRModal from './CreatePRModal';
+import { quickstartYamlFromFiles } from './hydrateFromFiles';
 import './CreatorYAMLView.scss';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
 
@@ -426,6 +432,7 @@ export type CreatorYAMLViewProps = {
   onChangeBundles?: (newValue: string[]) => void;
   onChangeTags?: (tags: { [kind: string]: string[] }) => void;
   onChangeMetadataTags?: (tags: Array<{ kind: string; value: string }>) => void;
+  onChangeMetadataName?: (name: string) => void;
   onChangeKind?: (kind: ItemKind | null) => void;
   quickStart?: ExtendedQuickstart;
   currentBundles?: string[];
@@ -439,6 +446,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   onChangeBundles,
   onChangeTags,
   onChangeMetadataTags,
+  onChangeMetadataName,
   onChangeKind,
   quickStart,
   currentBundles,
@@ -446,7 +454,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   filterData,
   bundles: bundleOptions,
 }) => {
-  const { files } = useContext(CreatorWizardContext);
+  const { files, setResumePR } = useContext(CreatorWizardContext);
 
   const showCreatePR = useFlag(
     'platform.learning-resources.quickstarts.git-service'
@@ -461,6 +469,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     handleCreatePR,
     setPrResult,
     setPrError,
+    resumePR,
   } = useCreatePR(parsedName);
 
   const [prModalOpen, setPrModalOpen] = useState(false);
@@ -476,12 +485,17 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   };
 
   const [repoModalOpen, setRepoModalOpen] = useState(false);
+  const [repoLoadMode, setRepoLoadMode] = useState<'repo' | 'pr'>('repo');
   const [repoQuickstarts, setRepoQuickstarts] = useState<RepoQuickstartEntry[]>(
     []
   );
+  const [creatorPRs, setCreatorPRs] = useState<CreatorPREntry[]>([]);
   const [repoLoading, setRepoLoading] = useState(false);
   const [repoSearch, setRepoSearch] = useState('');
   const [repoError, setRepoError] = useState<string | null>(null);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const sourceRequest = useRef(0);
+  const listRequest = useRef(0);
 
   // On mount, serialize current state to YAML if we have data from the wizard.
   // This enables switching wizard → YAML without losing data.
@@ -550,7 +564,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       if (!parsed) {
         setParseError('Empty YAML content');
         setValidationWarnings([]);
-        return;
+        return false;
       }
 
       // Validate structure
@@ -629,15 +643,27 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       if (onChangeMetadataTags) {
         onChangeMetadataTags(metadata.tags || []);
       }
+      // The editor owns `metadata.name`, so it has to reach the parent too —
+      // otherwise the generated files keep re-slugging from the title and the
+      // PR directory ends up naming something the YAML does not. An empty
+      // string means the document has no name, which lets the title drive the
+      // slug again.
+      if (onChangeMetadataName) {
+        onChangeMetadataName(
+          typeof metadata.name === 'string' ? metadata.name : ''
+        );
+      }
       if (onChangeQuickStartSpec) {
         onChangeQuickStartSpec(quickstartObj.spec);
       }
+      return true;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Invalid YAML syntax';
       setParseError(errorMessage);
       setValidationWarnings([]);
       // Keep using the last valid quickstart state on error
+      return false;
     }
   };
 
@@ -660,6 +686,8 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   // up-to-date before the wizard tab mounts.
   useEffect(() => {
     return () => {
+      sourceRequest.current++;
+      listRequest.current++;
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
@@ -680,6 +708,8 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       )
     )
       return;
+    cancelPendingParse();
+    setResumePR(null);
     setYamlContent(DEFAULT_QUICKSTART_YAML);
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
   };
@@ -700,18 +730,26 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       return;
     }
 
+    cancelPendingParse();
+    setResumePR(null);
+    setSourceLoading(true);
+    const request = ++sourceRequest.current;
     const reader = new FileReader();
     reader.onload = (e) => {
+      if (request !== sourceRequest.current) return;
       const content = e.target?.result;
       if (typeof content === 'string') {
         setYamlContent(content);
         parseAndUpdateQuickstart(content);
       }
+      setSourceLoading(false);
     };
     reader.onerror = () => {
+      if (request !== sourceRequest.current) return;
       setParseError(
         `Failed to read file: ${reader.error?.message ?? 'unknown error'}`
       );
+      setSourceLoading(false);
     };
     reader.readAsText(file);
 
@@ -730,69 +768,79 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     });
   };
 
-  const handleOpenRepoModal = async () => {
-    setRepoModalOpen(true);
+  const loadRepoSources = async (mode: 'repo' | 'pr') => {
+    const request = ++listRequest.current;
     setRepoLoading(true);
     setRepoError(null);
     setRepoSearch('');
     try {
-      const entries = await listRepoQuickstarts();
-      setRepoQuickstarts(entries);
+      if (mode === 'pr') {
+        const prs = await listCreatorPRs();
+        if (request === listRequest.current) setCreatorPRs(prs);
+      } else {
+        const entries = await listRepoQuickstarts();
+        if (request === listRequest.current) setRepoQuickstarts(entries);
+      }
     } catch (err) {
-      setRepoError(
-        err instanceof Error ? err.message : 'Failed to load quickstarts'
-      );
+      if (request === listRequest.current) {
+        setRepoError(
+          err instanceof Error ? err.message : 'Failed to load sources'
+        );
+      }
     } finally {
-      setRepoLoading(false);
+      if (request === listRequest.current) setRepoLoading(false);
     }
   };
 
-  const handleLoadFromRepo = async (name: string) => {
+  const handleOpenRepoModal = () => {
+    setRepoModalOpen(true);
+    void loadRepoSources(repoLoadMode);
+  };
+
+  const handleRepoModeChange = async (next: 'repo' | 'pr') => {
+    if (next === repoLoadMode) return;
+    setRepoLoadMode(next);
+    await loadRepoSources(next);
+  };
+
+  const cancelPendingParse = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+  };
+
+  const handleLoadSource = async (
+    source: { name: string } | { number: number }
+  ) => {
+    const request = ++sourceRequest.current;
+    cancelPendingParse();
     setRepoModalOpen(false);
+    setResumePR(null);
+    setSourceLoading(true);
     try {
-      const content = await getRepoQuickstartContent(name);
-      const yamlFile = content.files.find(
-        (f) =>
-          (f.name.endsWith('.yml') || f.name.endsWith('.yaml')) &&
-          !f.name.startsWith('metadata.')
-      );
-      if (yamlFile) {
-        let finalContent = yamlFile.content;
-        try {
-          const parsed = YAML.parse(finalContent);
-          if (parsed) {
-            if (!parsed.metadata) parsed.metadata = {};
-
-            const metadataFile = content.files.find((f) =>
-              f.name.startsWith('metadata.')
-            );
-            if (metadataFile) {
-              const meta = YAML.parse(metadataFile.content);
-              if (Array.isArray(meta?.tags) && meta.tags.length > 0) {
-                parsed.metadata.tags = meta.tags;
-              }
-            }
-
-            if (!parsed.kind) {
-              parsed.kind = 'QuickStarts';
-            }
-
-            const { kind, metadata, spec, ...rest } = parsed;
-            finalContent = YAML.stringify(
-              { kind, metadata, spec, ...rest },
-              { lineWidth: 0, nullStr: '~' }
-            );
-          }
-        } catch {
-          // use raw content if parse fails
-        }
-        setYamlContent(finalContent);
-        parseAndUpdateQuickstart(finalContent);
+      const content =
+        'number' in source
+          ? await getCreatorPR(source.number)
+          : await getRepoQuickstartContent(source.name);
+      if (request !== sourceRequest.current) return;
+      const finalContent = quickstartYamlFromFiles(content.files);
+      setYamlContent(finalContent);
+      if (parseAndUpdateQuickstart(finalContent) && 'number' in content) {
+        setResumePR({
+          number: content.number,
+          branchName: content.branchName,
+          slug: content.slug,
+        });
       }
     } catch (err) {
-      setParseError(
-        err instanceof Error ? err.message : 'Failed to load quickstart'
-      );
+      if (request === sourceRequest.current) {
+        setParseError(
+          err instanceof Error ? err.message : 'Failed to load source'
+        );
+      }
+    } finally {
+      if (request === sourceRequest.current) setSourceLoading(false);
     }
   };
 
@@ -800,6 +848,13 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     (qs) =>
       qs.name.toLowerCase().includes(repoSearch.toLowerCase()) ||
       qs.displayName.toLowerCase().includes(repoSearch.toLowerCase())
+  );
+
+  const filteredCreatorPRs = creatorPRs.filter(
+    (pr) =>
+      pr.title.toLowerCase().includes(repoSearch.toLowerCase()) ||
+      String(pr.number).includes(repoSearch.toLowerCase()) ||
+      (pr.slug ?? '').toLowerCase().includes(repoSearch.toLowerCase())
   );
 
   /**
@@ -890,6 +945,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
             variant="secondary"
             icon={<FileImportIcon />}
             onClick={handleLoadSample}
+            isDisabled={sourceLoading}
             size="sm"
           >
             Load Sample Template
@@ -900,6 +956,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
             variant="secondary"
             icon={<UploadIcon />}
             onClick={handleLoadFromFile}
+            isDisabled={sourceLoading}
             size="sm"
           >
             Load from File
@@ -937,6 +994,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
               variant="secondary"
               icon={<UploadIcon />}
               onClick={handleOpenRepoModal}
+              isDisabled={sourceLoading}
               size="sm"
             >
               Load from Repo
@@ -1027,9 +1085,9 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
                 icon={<CodeBranchIcon />}
                 onClick={handleOpenPRModal}
                 size="sm"
-                isDisabled={!canCreatePR || !canDownload}
+                isDisabled={!canCreatePR || !canDownload || sourceLoading}
               >
-                Create PR
+                {resumePR ? 'Update PR' : 'Create PR'}
               </Button>
             </Tooltip>
           </FlexItem>
@@ -1044,6 +1102,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           prLoading={prLoading}
           prResult={prResult}
           prError={prError}
+          isContinuePR={!!resumePR}
         />
       )}
       {showCreatePR && (
@@ -1055,8 +1114,33 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
         >
           <ModalHeader title="Load from Repository" />
           <ModalBody>
+            <ToggleGroup
+              aria-label="Load source type"
+              className="pf-v6-u-mb-md"
+            >
+              <ToggleGroupItem
+                text="From repository"
+                buttonId="yaml-load-repo"
+                isSelected={repoLoadMode === 'repo'}
+                onChange={(_e, selected) => {
+                  if (selected) void handleRepoModeChange('repo');
+                }}
+              />
+              <ToggleGroupItem
+                text="Continue open PR"
+                buttonId="yaml-load-pr"
+                isSelected={repoLoadMode === 'pr'}
+                onChange={(_e, selected) => {
+                  if (selected) void handleRepoModeChange('pr');
+                }}
+              />
+            </ToggleGroup>
             <SearchInput
-              placeholder="Search quickstarts..."
+              placeholder={
+                repoLoadMode === 'pr'
+                  ? 'Search open PRs...'
+                  : 'Search quickstarts...'
+              }
               value={repoSearch}
               onChange={(_event, value) => setRepoSearch(value)}
               onClear={() => setRepoSearch('')}
@@ -1068,7 +1152,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
                 {repoError}
               </Alert>
             )}
-            {!repoLoading && !repoError && (
+            {!repoLoading && !repoError && repoLoadMode === 'repo' && (
               <DataList aria-label="Repository quickstarts" isCompact>
                 {filteredRepoQuickstarts.map((qs) => (
                   <DataListItem key={qs.name}>
@@ -1079,7 +1163,9 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
                             <Button
                               variant="link"
                               isInline
-                              onClick={() => handleLoadFromRepo(qs.name)}
+                              onClick={() =>
+                                handleLoadSource({ name: qs.name })
+                              }
                             >
                               {qs.displayName || qs.name}
                             </Button>
@@ -1103,6 +1189,58 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
                   </DataListItem>
                 )}
               </DataList>
+            )}
+            {!repoLoading && !repoError && repoLoadMode === 'pr' && (
+              <>
+                {creatorPRs.length === 0 ? (
+                  <Alert
+                    variant="info"
+                    title="No open creator pull requests"
+                    isInline
+                  >
+                    Open pull requests submitted by the Quickstarts Creator
+                    appear here.
+                  </Alert>
+                ) : (
+                  <DataList aria-label="Open creator pull requests" isCompact>
+                    {filteredCreatorPRs.map((pr) => (
+                      <DataListItem key={pr.number}>
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell key="name">
+                                <Button
+                                  variant="link"
+                                  isInline
+                                  onClick={() =>
+                                    handleLoadSource({ number: pr.number })
+                                  }
+                                >
+                                  #{pr.number} {pr.title}
+                                  {pr.slug ? ` (${pr.slug})` : ''}
+                                </Button>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    ))}
+                    {filteredCreatorPRs.length === 0 && (
+                      <DataListItem key="empty">
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell key="empty-msg">
+                                No matching pull requests
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                  </DataList>
+                )}
+              </>
             )}
           </ModalBody>
           <ModalFooter>

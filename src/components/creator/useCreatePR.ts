@@ -7,8 +7,13 @@ import {
 } from '../../utils/createQuickstartPR';
 import { CreatorWizardContext } from './context';
 
+function prNumberFromUrl(url: string | undefined): number | null {
+  const match = url?.match(/\/pull\/(\d+)\/?$/);
+  return match ? Number(match[1]) : null;
+}
+
 export function useCreatePR(quickstartName: string | null) {
-  const { files } = useContext(CreatorWizardContext);
+  const { files, resumePR, setResumePR } = useContext(CreatorWizardContext);
   const chrome = useChrome();
 
   const [prLoading, setPrLoading] = useState(false);
@@ -21,12 +26,11 @@ export function useCreatePR(quickstartName: string | null) {
     quickstartName !== 'untitled-quickstart';
 
   const handleCreatePR = async () => {
-    if (!quickstartName || prLoading) return;
+    if (!canCreatePR || !quickstartName || prLoading) return;
     setPrLoading(true);
     setPrResult(null);
     setPrError(null);
     try {
-      const timestamp = Date.now();
       const safeName = quickstartName
         .toLowerCase()
         .replace(/[^a-z0-9._-]/g, '-')
@@ -38,16 +42,24 @@ export function useCreatePR(quickstartName: string | null) {
         return;
       }
 
+      // Keep the exact existing directory when resuming. The backend uses the
+      // submitted metadata to determine whether the quickstart moved.
+      const directoryName = resumePR?.slug || safeName;
+
       let isUpdate = false;
-      try {
-        const repoEntries = await listRepoQuickstarts();
-        isUpdate = repoEntries.some((e) => e.name === quickstartName);
-      } catch {
-        // If repo check fails, default to create
+      if (resumePR) {
+        isUpdate = true;
+      } else {
+        try {
+          const repoEntries = await listRepoQuickstarts();
+          isUpdate = repoEntries.some((e) => e.name === quickstartName);
+        } catch {
+          // If repo check fails, default to create
+        }
       }
 
       const prefix = isUpdate ? 'update' : 'create';
-      let commitMessage = `feat(quickstarts): ${prefix} ${quickstartName}`;
+      let commitMessage = `feat(quickstarts): ${prefix} ${directoryName}`;
       const user = await chrome.auth.getUser();
       const identity = user?.identity?.user;
       if (identity?.email) {
@@ -56,22 +68,49 @@ export function useCreatePR(quickstartName: string | null) {
           identity.email;
         commitMessage += `\n\nCo-authored-by: ${name} <${identity.email}>`;
       }
+
+      const branchName = resumePR
+        ? resumePR.branchName
+        : `qs-${prefix}-${safeName}-${Date.now()}`;
+
       const result = await createQuickstartPR(files, {
-        branchName: `qs-${prefix}-${safeName}-${timestamp}`,
+        branchName,
         commitMessage,
-        prTitle: `feat(quickstarts): ${prefix} ${quickstartName}`,
+        prTitle: `feat(quickstarts): ${prefix} ${directoryName}`,
         prBody: `${
           isUpdate ? 'Updating' : 'Adding new'
-        } quickstart via the Quickstarts Creator tool.\n\nDirectory: docs/quickstarts/${quickstartName}/`,
+        } quickstart via the Quickstarts Creator tool.\n\nDirectory: docs/quickstarts/${directoryName}/`,
         isUpdate,
-        directoryName: quickstartName,
+        directoryName,
         ...(isUpdate
-          ? { existingPath: `docs/quickstarts/${quickstartName}/` }
+          ? { existingPath: `docs/quickstarts/${directoryName}/` }
           : {}),
+        ...(resumePR ? { prNumber: resumePR.number } : {}),
       });
       setPrResult(result);
+      // The backend moves the directory when metadata.name changes. Remember
+      // the new slug so another edit prunes the directory from the last save.
+      if (resumePR && result.status === 'updated') {
+        setResumePR({ ...resumePR, slug: safeName });
+      }
+      // Adopt a newly opened PR so the next save in this session updates it
+      // instead of opening another timestamped one.
+      const createdNumber = prNumberFromUrl(result.prUrl);
+      if (!resumePR && result.status === 'created' && createdNumber) {
+        setResumePR({
+          number: createdNumber,
+          branchName: result.branchName,
+          slug: directoryName,
+        });
+      }
     } catch (err) {
-      setPrError(err instanceof Error ? err.message : 'Failed to create PR');
+      setPrError(
+        err instanceof Error
+          ? err.message
+          : resumePR
+          ? 'Failed to update PR'
+          : 'Failed to create PR'
+      );
     } finally {
       setPrLoading(false);
     }
@@ -85,5 +124,6 @@ export function useCreatePR(quickstartName: string | null) {
     handleCreatePR,
     setPrResult,
     setPrError,
+    resumePR,
   };
 }

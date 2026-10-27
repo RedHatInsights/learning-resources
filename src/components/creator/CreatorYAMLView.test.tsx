@@ -7,13 +7,15 @@ import {
   waitFor,
 } from '@testing-library/react';
 import CreatorYAMLView from './CreatorYAMLView';
-import { CreatorWizardContext } from './context';
+import { CreatorWizardContext, ResumePR } from './context';
 import { CreatorFiles } from './types';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
 import { ExtendedQuickstart } from '../../utils/fetchQuickstarts';
 import {
   createQuickstartPR,
+  getCreatorPR,
   getRepoQuickstartContent,
+  listCreatorPRs,
   listRepoQuickstarts,
 } from '../../utils/createQuickstartPR';
 
@@ -73,6 +75,15 @@ jest.mock('../../utils/createQuickstartPR', () => ({
   getRepoQuickstartContent: jest
     .fn()
     .mockResolvedValue({ name: '', files: [] }),
+  listCreatorPRs: jest.fn().mockResolvedValue([]),
+  getCreatorPR: jest.fn().mockResolvedValue({
+    number: 0,
+    title: '',
+    htmlUrl: '',
+    branchName: '',
+    slug: '',
+    files: [],
+  }),
 }));
 
 const mockedCreatePR = createQuickstartPR as jest.MockedFunction<
@@ -85,6 +96,12 @@ const mockedGetRepoQuickstartContent =
   getRepoQuickstartContent as jest.MockedFunction<
     typeof getRepoQuickstartContent
   >;
+const mockedListCreatorPRs = listCreatorPRs as jest.MockedFunction<
+  typeof listCreatorPRs
+>;
+const mockedGetCreatorPR = getCreatorPR as jest.MockedFunction<
+  typeof getCreatorPR
+>;
 
 const MOCK_FILES: CreatorFiles = [
   { name: 'metadata.yaml', content: 'kind: QuickStarts\nname: test\n' },
@@ -120,23 +137,38 @@ const MOCK_QUICKSTART: ExtendedQuickstart = {
 
 const renderWithContext = (
   ui: React.ReactElement,
-  files: CreatorFiles = MOCK_FILES
+  files: CreatorFiles = MOCK_FILES,
+  setResumePR: jest.Mock = jest.fn(),
+  initialPR: ResumePR | null = null
 ) => {
-  return render(
-    <CreatorWizardContext.Provider
-      value={{
-        files,
-        onChangeCurrentStage: jest.fn(),
-        resetCreator: jest.fn(),
-      }}
-    >
-      {ui}
-    </CreatorWizardContext.Provider>
-  );
+  const ContextProvider = ({ children }: { children: React.ReactNode }) => {
+    const [resumePR, setPR] = React.useState(initialPR);
+    return (
+      <CreatorWizardContext.Provider
+        value={{
+          files,
+          onChangeCurrentStage: jest.fn(),
+          resetCreator: jest.fn(),
+          resumePR,
+          setResumePR: (value) => {
+            setResumePR(value);
+            setPR(value);
+          },
+        }}
+      >
+        {children}
+      </CreatorWizardContext.Provider>
+    );
+  };
+  return {
+    setResumePR,
+    ...render(ui, { wrapper: ContextProvider }),
+  };
 };
 
 describe('CreatorYAMLView', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     jest.useFakeTimers();
   });
 
@@ -446,6 +478,40 @@ describe('CreatorYAMLView', () => {
         expect(onChangeSpec).toHaveBeenCalledWith(
           expect.objectContaining({ displayName: 'Test QS' })
         );
+      });
+    });
+
+    it('propagates metadata.name so the generated files match the editor', async () => {
+      const onChangeMetadataName = jest.fn();
+      renderWithContext(
+        <CreatorYAMLView onChangeMetadataName={onChangeMetadataName} />
+      );
+
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: {
+          value: `metadata:\n  name: renamed-doc\nspec:\n  displayName: Getting started with automation hub\n`,
+        },
+      });
+
+      await waitFor(() => {
+        expect(onChangeMetadataName).toHaveBeenCalledWith('renamed-doc');
+      });
+    });
+
+    it('reports an empty metadata.name so the title can drive the slug again', async () => {
+      const onChangeMetadataName = jest.fn();
+      renderWithContext(
+        <CreatorYAMLView onChangeMetadataName={onChangeMetadataName} />
+      );
+
+      const editor = screen.getByTestId('mock-monaco-editor');
+      fireEvent.change(editor, {
+        target: { value: `spec:\n  displayName: Brand new doc\n` },
+      });
+
+      await waitFor(() => {
+        expect(onChangeMetadataName).toHaveBeenCalledWith('');
       });
     });
 
@@ -795,6 +861,7 @@ spec:
       expect(metadata.commitMessage).toContain(
         'Co-authored-by: Test User <testuser@redhat.com>'
       );
+      await screen.findByText('https://github.com/org/repo/pull/99');
     });
 
     it('shows error alert with retry on failure', async () => {
@@ -987,6 +1054,203 @@ spec:
       const editorValue = (editor as HTMLTextAreaElement).value;
       expect(editorValue).toContain('displayName: Simple Content Access');
       expect(editorValue).toContain('value: subscriptions');
+    });
+
+    it('loads an open PR and submits updates to that same PR', async () => {
+      jest.useRealTimers();
+      const setResumePR = jest.fn();
+      mockedListRepoQuickstarts.mockResolvedValueOnce([]);
+      mockedListCreatorPRs.mockResolvedValueOnce([
+        {
+          number: 11,
+          title: 'feat(quickstarts): create demo',
+          htmlUrl: 'https://github.com/org/repo/pull/11',
+          branchName: 'qs-create-demo-1',
+          slug: 'demo',
+        },
+      ]);
+      mockedCreatePR.mockResolvedValueOnce({
+        prUrl: 'https://github.com/org/repo/pull/11',
+        branchName: 'qs-create-demo-1',
+        commitSha: 'updated-sha',
+        status: 'updated',
+      });
+      mockedGetCreatorPR.mockResolvedValueOnce({
+        number: 11,
+        title: 'feat(quickstarts): create demo',
+        htmlUrl: 'https://github.com/org/repo/pull/11',
+        branchName: 'qs-create-demo-1',
+        slug: 'demo',
+        files: [
+          { name: 'metadata.yml', content: 'kind: QuickStarts\n' },
+          {
+            name: 'demo.yml',
+            content:
+              'metadata:\n  name: demo\nspec:\n  displayName: Demo From PR\n',
+          },
+        ],
+      });
+
+      renderWithContext(<CreatorYAMLView />, MOCK_FILES, setResumePR);
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /load from repo/i })
+        );
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /continue open pr/i })
+        ).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: /continue open pr/i })
+        );
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', {
+            name: /#11 feat\(quickstarts\): create demo/,
+          })
+        ).toBeInTheDocument();
+      });
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /#11 feat\(quickstarts\): create demo/,
+        })
+      );
+
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+
+      expect(mockedGetCreatorPR).toHaveBeenCalledWith(11);
+      expect(setResumePR).toHaveBeenCalledWith({
+        number: 11,
+        branchName: 'qs-create-demo-1',
+        slug: 'demo',
+      });
+      const editor = screen.getByTestId('mock-monaco-editor');
+      expect((editor as HTMLTextAreaElement).value).toContain(
+        'displayName: Demo From PR'
+      );
+      expect(screen.getByRole('button', { name: 'Update PR' })).toBeEnabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Update PR' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+      expect(
+        await screen.findByText('PR updated successfully')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', {
+          name: 'https://github.com/org/repo/pull/11',
+        })
+      ).toHaveAttribute('href', 'https://github.com/org/repo/pull/11');
+      expect(mockedCreatePR).toHaveBeenCalledWith(
+        MOCK_FILES,
+        expect.objectContaining({
+          isUpdate: true,
+          prNumber: 11,
+          branchName: 'qs-create-demo-1',
+          existingPath: 'docs/quickstarts/demo/',
+        })
+      );
+    });
+
+    it('clears the resumed PR when loading a sample template', async () => {
+      const setResumePR = jest.fn();
+      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      renderWithContext(
+        <CreatorYAMLView quickStart={MOCK_QUICKSTART} />,
+        MOCK_FILES,
+        setResumePR,
+        { number: 11, branchName: 'qs-create-demo-1', slug: 'demo' }
+      );
+      expect(screen.getByRole('button', { name: 'Update PR' })).toBeEnabled();
+      fireEvent.click(
+        screen.getByRole('button', { name: /load sample template/i })
+      );
+      expect(setResumePR).toHaveBeenLastCalledWith(null);
+      expect(screen.getByRole('button', { name: 'Create PR' })).toBeEnabled();
+    });
+
+    it('clears the resumed PR when loading a local file', async () => {
+      jest.useRealTimers();
+      const setResumePR = jest.fn();
+      renderWithContext(
+        <CreatorYAMLView quickStart={MOCK_QUICKSTART} />,
+        MOCK_FILES,
+        setResumePR,
+        { number: 11, branchName: 'qs-create-demo-1', slug: 'demo' }
+      );
+      const file = new File(
+        ['metadata:\n  name: local-doc\nspec:\n  displayName: Local Doc\n'],
+        'local-doc.yaml',
+        { type: 'text/yaml' }
+      );
+      fireEvent.change(screen.getByTestId('yaml-file-input'), {
+        target: { files: [file] },
+      });
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Create PR' })).toBeEnabled();
+        expect(screen.getByTestId('mock-monaco-editor')).toHaveValue(
+          'metadata:\n  name: local-doc\nspec:\n  displayName: Local Doc\n'
+        );
+      });
+      expect(setResumePR).toHaveBeenLastCalledWith(null);
+    });
+
+    it('disables submission while loading a PR and rejects incomplete files', async () => {
+      jest.useRealTimers();
+      let resolvePR!: (value: Awaited<ReturnType<typeof getCreatorPR>>) => void;
+      mockedGetCreatorPR.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolvePR = resolve;
+        })
+      );
+      mockedListCreatorPRs.mockResolvedValueOnce([
+        {
+          number: 11,
+          title: 'Demo',
+          htmlUrl: 'https://github.com/org/repo/pull/11',
+          branchName: 'qs-create-demo-1',
+          slug: 'demo',
+        },
+      ]);
+      const setResumePR = jest.fn();
+      renderWithContext(
+        <CreatorYAMLView quickStart={MOCK_QUICKSTART} />,
+        MOCK_FILES,
+        setResumePR
+      );
+      fireEvent.click(screen.getByRole('button', { name: /load from repo/i }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: /continue open pr/i })
+      );
+      fireEvent.click(await screen.findByRole('button', { name: /#11 Demo/ }));
+      expect(screen.getByRole('button', { name: 'Create PR' })).toBeDisabled();
+      await act(async () =>
+        resolvePR({
+          number: 11,
+          title: 'Demo',
+          htmlUrl: 'https://github.com/org/repo/pull/11',
+          branchName: 'qs-create-demo-1',
+          slug: 'demo',
+          files: [{ name: 'metadata.yaml', content: 'name: demo\n' }],
+        })
+      );
+      expect(
+        await screen.findByText(/No quickstart YAML file found/)
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Create PR' })).toBeDisabled();
+      expect(setResumePR).toHaveBeenLastCalledWith(null);
     });
   });
 });

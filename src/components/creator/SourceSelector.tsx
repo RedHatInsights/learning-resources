@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Content,
@@ -9,74 +9,69 @@ import {
   DataListItemRow,
   SearchInput,
   Spinner,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@patternfly/react-core';
 import {
   UseFieldApiConfig,
   useFieldApi,
   useFormApi,
 } from '@data-driven-forms/react-form-renderer';
-import YAML from 'yaml';
 import {
+  CreatorPREntry,
   RepoQuickstartEntry,
+  getCreatorPR,
   getRepoQuickstartContent,
+  listCreatorPRs,
   listRepoQuickstarts,
 } from '../../utils/createQuickstartPR';
-import {
-  NAME_BUNDLES,
-  NAME_DESCRIPTION,
-  NAME_DURATION,
-  NAME_ICON,
-  NAME_KIND,
-  NAME_METADATA_NAME,
-  NAME_PANEL_INTRODUCTION,
-  NAME_PREREQUISITES,
-  NAME_TAGS,
-  NAME_TASKS_ARRAY,
-  NAME_TASK_TITLES,
-  NAME_TITLE,
-  NAME_URL,
-} from './steps/common';
-import { ALL_KIND_ENTRIES, ItemKind } from './meta';
+import { CreatorWizardContext } from './context';
+import { clearQuickstartFields, hydrateFromFiles } from './hydrateFromFiles';
 
 const SOURCE_SCRATCH = '__scratch__';
-
-const normalizeKindLabel = (value: string) =>
-  value.toLowerCase().replace(/\s+/g, '');
-
-function detectKindFromSpec(
-  spec: Record<string, unknown> | undefined
-): ItemKind | null {
-  const typeObj = spec?.type as Record<string, unknown> | undefined;
-  const typeText = typeObj?.text;
-  if (typeof typeText !== 'string') return null;
-  for (const [kind, meta] of ALL_KIND_ENTRIES) {
-    if (normalizeKindLabel(meta.displayName) === normalizeKindLabel(typeText)) {
-      return kind;
-    }
-  }
-  return null;
-}
+const SOURCE_MODE_REPO = 'repo';
+const SOURCE_MODE_PR = 'pr';
 
 const SourceSelector = (props: UseFieldApiConfig) => {
   const { input } = useFieldApi(props);
   const formApi = useFormApi();
+  const { resumePR, setResumePR } = useContext(CreatorWizardContext);
 
+  const [mode, setMode] = useState<
+    typeof SOURCE_MODE_REPO | typeof SOURCE_MODE_PR
+  >(resumePR ? SOURCE_MODE_PR : SOURCE_MODE_REPO);
   const [quickstarts, setQuickstarts] = useState<RepoQuickstartEntry[]>([]);
+  const [creatorPRs, setCreatorPRs] = useState<CreatorPREntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [loadingName, setLoadingName] = useState<string | null>(null);
+  const selectionRequest = useRef(0);
+
+  useEffect(
+    () => () => {
+      selectionRequest.current++;
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const entries = await listRepoQuickstarts();
-        if (!cancelled) setQuickstarts(entries);
+        if (mode === SOURCE_MODE_REPO) {
+          const entries = await listRepoQuickstarts();
+          if (!cancelled) setQuickstarts(entries);
+        } else {
+          const prs = await listCreatorPRs();
+          if (!cancelled) setCreatorPRs(prs);
+        }
       } catch (err) {
         if (!cancelled)
           setError(
-            err instanceof Error ? err.message : 'Failed to load quickstarts'
+            err instanceof Error ? err.message : 'Failed to load sources'
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -85,9 +80,9 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mode]);
 
-  const filtered = useMemo(() => {
+  const filteredQuickstarts = useMemo(() => {
     const needle = search.toLowerCase();
     return quickstarts.filter(
       (qs) =>
@@ -96,123 +91,98 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     );
   }, [quickstarts, search]);
 
-  const clearQuickstartFields = () => {
-    formApi.change(NAME_KIND, undefined);
-    formApi.change(NAME_METADATA_NAME, undefined);
-    formApi.change(NAME_TITLE, undefined);
-    formApi.change(NAME_DESCRIPTION, undefined);
-    formApi.change(NAME_DURATION, undefined);
-    formApi.change(NAME_URL, undefined);
-    formApi.change(NAME_BUNDLES, undefined);
-    formApi.change(NAME_TAGS, undefined);
-    formApi.change(NAME_PREREQUISITES, undefined);
-    formApi.change(NAME_PANEL_INTRODUCTION, undefined);
-    formApi.change(NAME_TASK_TITLES, undefined);
-    formApi.change(NAME_TASKS_ARRAY, undefined);
-    formApi.change(NAME_ICON, undefined);
-  };
+  const filteredPRs = useMemo(() => {
+    const needle = search.toLowerCase();
+    return creatorPRs.filter(
+      (pr) =>
+        pr.title.toLowerCase().includes(needle) ||
+        String(pr.number).includes(needle) ||
+        (pr.slug ?? '').toLowerCase().includes(needle)
+    );
+  }, [creatorPRs, search]);
 
   const handleSelectScratch = () => {
+    selectionRequest.current++;
+    setLoadingName(null);
+    setError(null);
     input.onChange(SOURCE_SCRATCH);
-    clearQuickstartFields();
+    clearQuickstartFields(formApi);
+    setResumePR(null);
   };
 
   const handleSelectRepo = async (name: string) => {
+    const request = ++selectionRequest.current;
     setLoadingName(name);
-    input.onChange(name);
+    input.onChange('');
     setError(null);
-    clearQuickstartFields();
+    clearQuickstartFields(formApi);
+    setResumePR(null);
     try {
       const content = await getRepoQuickstartContent(name);
-      const yamlFile = content.files.find(
-        (f) =>
-          (f.name.endsWith('.yml') || f.name.endsWith('.yaml')) &&
-          !f.name.startsWith('metadata.')
-      );
-      if (!yamlFile) {
-        setError(`No quickstart YAML file found in "${name}".`);
-        return;
+      if (request !== selectionRequest.current) return;
+      const hydrateError = hydrateFromFiles(content.files, formApi);
+      if (hydrateError) {
+        setError(hydrateError);
+      } else {
+        input.onChange(name);
       }
-
-      const parsed = YAML.parse(yamlFile.content);
-      if (!parsed) {
-        setError(`The quickstart YAML in "${name}" is empty or not valid.`);
-        return;
-      }
-
-      const spec = parsed.spec || {};
-      const metadata = parsed.metadata || {};
-
-      if (metadata.name) formApi.change(NAME_METADATA_NAME, metadata.name);
-
-      const detectedKind = detectKindFromSpec(spec);
-      if (detectedKind) {
-        formApi.change(NAME_KIND, detectedKind);
-      }
-
-      if (spec.displayName) formApi.change(NAME_TITLE, spec.displayName);
-      if (spec.description) formApi.change(NAME_DESCRIPTION, spec.description);
-      if (spec.icon !== undefined) formApi.change(NAME_ICON, spec.icon);
-      if (spec.durationMinutes !== undefined)
-        formApi.change(NAME_DURATION, spec.durationMinutes);
-      if (spec.link?.href) formApi.change(NAME_URL, spec.link.href);
-      if (spec.prerequisites)
-        formApi.change(NAME_PREREQUISITES, spec.prerequisites);
-      if (spec.introduction)
-        formApi.change(NAME_PANEL_INTRODUCTION, spec.introduction);
-
-      if (spec.tasks && Array.isArray(spec.tasks)) {
-        formApi.change(
-          NAME_TASK_TITLES,
-          spec.tasks.map((t: { title?: string }) => t.title || '')
-        );
-        formApi.change(
-          NAME_TASKS_ARRAY,
-          spec.tasks.map(
-            (t: {
-              description?: string;
-              review?: {
-                instructions?: string;
-                failedTaskHelp?: string;
-              };
-            }) => ({
-              description: t.description,
-              enable_work_check: !!t.review,
-              work_check_instructions: t.review?.instructions,
-              work_check_help: t.review?.failedTaskHelp,
-            })
-          )
-        );
-      }
-
-      const bundles: string[] = [];
-      const tagsByKind: { [kind: string]: string[] } = {};
-      const metadataFile = content.files.find((f) =>
-        f.name.startsWith('metadata.')
-      );
-      if (metadataFile) {
-        const meta = YAML.parse(metadataFile.content);
-        if (Array.isArray(meta?.tags)) {
-          meta.tags.forEach((tag: { kind?: string; value?: string }) => {
-            if (tag.kind === 'bundle' && tag.value) {
-              bundles.push(tag.value);
-            } else if (tag.kind && tag.value) {
-              if (!tagsByKind[tag.kind]) tagsByKind[tag.kind] = [];
-              tagsByKind[tag.kind].push(tag.value);
-            }
-          });
-        }
-      }
-      if (bundles.length > 0) formApi.change(NAME_BUNDLES, bundles);
-      if (Object.keys(tagsByKind).length > 0)
-        formApi.change(NAME_TAGS, tagsByKind);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to load quickstart'
-      );
+      if (request === selectionRequest.current) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to load quickstart'
+        );
+      }
     } finally {
-      setLoadingName(null);
+      if (request === selectionRequest.current) setLoadingName(null);
     }
+  };
+
+  const handleSelectPR = async (pr: CreatorPREntry) => {
+    const request = ++selectionRequest.current;
+    const key = `pr:${pr.number}`;
+    setLoadingName(key);
+    input.onChange('');
+    setError(null);
+    clearQuickstartFields(formApi);
+    setResumePR(null);
+    try {
+      const content = await getCreatorPR(pr.number);
+      if (request !== selectionRequest.current) return;
+      const hydrateError = hydrateFromFiles(content.files, formApi);
+      if (hydrateError) {
+        setError(hydrateError);
+        setResumePR(null);
+        return;
+      }
+      setResumePR({
+        number: content.number,
+        branchName: content.branchName,
+        slug: content.slug,
+      });
+      input.onChange(key);
+    } catch (err) {
+      if (request === selectionRequest.current) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to load pull request'
+        );
+      }
+    } finally {
+      if (request === selectionRequest.current) setLoadingName(null);
+    }
+  };
+
+  const handleModeChange = (
+    next: typeof SOURCE_MODE_REPO | typeof SOURCE_MODE_PR
+  ) => {
+    if (next === mode) return;
+    selectionRequest.current++;
+    setLoadingName(null);
+    setMode(next);
+    setSearch('');
+    setError(null);
+    input.onChange('');
+    clearQuickstartFields(formApi);
+    setResumePR(null);
   };
 
   const selected = input.value;
@@ -221,12 +191,37 @@ const SourceSelector = (props: UseFieldApiConfig) => {
     <div>
       <div className="pf-v6-c-form__group">
         <Content component="p">
-          Start from scratch or load an existing quickstart from the repository.
+          Start a new pull request from scratch or a live doc, or continue an
+          open creator PR (updates that PR instead of opening another).
         </Content>
+      </div>
+      <div className="pf-v6-c-form__group pf-v6-u-mb-md">
+        <ToggleGroup aria-label="Source type">
+          <ToggleGroupItem
+            text="From repository"
+            buttonId="source-mode-repo"
+            isSelected={mode === SOURCE_MODE_REPO}
+            onChange={(_event, selectedMode) => {
+              if (selectedMode) handleModeChange(SOURCE_MODE_REPO);
+            }}
+          />
+          <ToggleGroupItem
+            text="Continue open PR"
+            buttonId="source-mode-pr"
+            isSelected={mode === SOURCE_MODE_PR}
+            onChange={(_event, selectedMode) => {
+              if (selectedMode) handleModeChange(SOURCE_MODE_PR);
+            }}
+          />
+        </ToggleGroup>
       </div>
       <div className="pf-v6-c-form__group">
         <label className="pf-v6-c-form__label">
-          <span className="pf-v6-c-form__label-text">Select source</span>
+          <span className="pf-v6-c-form__label-text">
+            {mode === SOURCE_MODE_PR
+              ? 'Select an open pull request'
+              : 'Select source'}
+          </span>
           <span className="pf-v6-c-form__label-required" aria-hidden="true">
             {' '}
             *
@@ -234,7 +229,11 @@ const SourceSelector = (props: UseFieldApiConfig) => {
         </label>
         <div className="pf-v6-c-form__group-control">
           <SearchInput
-            placeholder="Search quickstarts..."
+            placeholder={
+              mode === SOURCE_MODE_PR
+                ? 'Search open PRs...'
+                : 'Search quickstarts...'
+            }
             value={search}
             onChange={(_event, value) => setSearch(value)}
             onClear={() => setSearch('')}
@@ -254,7 +253,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
             </Alert>
           )}
 
-          {!loading && !error && (
+          {!loading && !error && mode === SOURCE_MODE_REPO && (
             <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
               <DataList aria-label="Source selection" isCompact>
                 <DataListItem
@@ -285,7 +284,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
                     />
                   </DataListItemRow>
                 </DataListItem>
-                {filtered.map((qs) => (
+                {filteredQuickstarts.map((qs) => (
                   <DataListItem
                     key={qs.name}
                     aria-labelledby={`source-${qs.name}`}
@@ -318,7 +317,7 @@ const SourceSelector = (props: UseFieldApiConfig) => {
                     </DataListItemRow>
                   </DataListItem>
                 ))}
-                {filtered.length === 0 && quickstarts.length > 0 && (
+                {filteredQuickstarts.length === 0 && quickstarts.length > 0 && (
                   <DataListItem key="empty">
                     <DataListItemRow>
                       <DataListItemCells
@@ -332,6 +331,78 @@ const SourceSelector = (props: UseFieldApiConfig) => {
                   </DataListItem>
                 )}
               </DataList>
+            </div>
+          )}
+
+          {!loading && !error && mode === SOURCE_MODE_PR && (
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              {creatorPRs.length === 0 ? (
+                <Alert
+                  variant="info"
+                  title="No open creator pull requests"
+                  isInline
+                  className="pf-v6-u-mt-md"
+                >
+                  Open pull requests submitted by the Quickstarts Creator appear
+                  here.
+                </Alert>
+              ) : (
+                <DataList aria-label="Open creator pull requests" isCompact>
+                  {filteredPRs.map((pr) => {
+                    const key = `pr:${pr.number}`;
+                    return (
+                      <DataListItem
+                        key={pr.number}
+                        aria-labelledby={`source-pr-${pr.number}`}
+                        className={selected === key ? 'pf-m-selected' : ''}
+                      >
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell key="name">
+                                <button
+                                  id={`source-pr-${pr.number}`}
+                                  type="button"
+                                  className={`pf-v6-c-button pf-m-link pf-m-inline${
+                                    selected === key ? ' pf-m-current' : ''
+                                  }`}
+                                  onClick={() => handleSelectPR(pr)}
+                                  disabled={loadingName !== null}
+                                  style={{
+                                    fontWeight: selected === key ? 700 : 400,
+                                  }}
+                                >
+                                  #{pr.number} {pr.title}
+                                  {pr.slug ? ` (${pr.slug})` : ''}
+                                  {loadingName === key && (
+                                    <Spinner
+                                      size="sm"
+                                      className="pf-v6-u-ml-sm"
+                                    />
+                                  )}
+                                </button>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    );
+                  })}
+                  {filteredPRs.length === 0 && (
+                    <DataListItem key="empty">
+                      <DataListItemRow>
+                        <DataListItemCells
+                          dataListCells={[
+                            <DataListCell key="empty-msg">
+                              No matching pull requests
+                            </DataListCell>,
+                          ]}
+                        />
+                      </DataListItemRow>
+                    </DataListItem>
+                  )}
+                </DataList>
+              )}
             </div>
           )}
         </div>

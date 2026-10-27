@@ -3,7 +3,9 @@ import {
   PRFile,
   PRMetadata,
   createQuickstartPR,
+  getCreatorPR,
   getRepoQuickstartContent,
+  listCreatorPRs,
   listRepoQuickstarts,
 } from './createQuickstartPR';
 
@@ -139,6 +141,62 @@ describe('listRepoQuickstarts', () => {
     mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(listRepoQuickstarts()).rejects.toThrow('Network error');
+  });
+});
+
+describe('listCreatorPRs', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('GETs /api/quickstarts/v1/creator-prs and returns pullRequests array', async () => {
+    const mockPRs = [
+      {
+        number: 11,
+        title: 'feat(quickstarts): create demo',
+        htmlUrl: 'https://github.com/org/repo/pull/11',
+        branchName: 'qs-create-demo-1',
+        slug: 'demo',
+      },
+    ];
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { data: { pullRequests: mockPRs } },
+    });
+
+    const result = await listCreatorPRs();
+
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      '/api/quickstarts/v1/creator-prs'
+    );
+    expect(result).toEqual(mockPRs);
+  });
+});
+
+describe('getCreatorPR', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('GETs /api/quickstarts/v1/creator-prs/{number}', async () => {
+    const mockContent = {
+      number: 11,
+      title: 'feat(quickstarts): create demo',
+      htmlUrl: 'https://github.com/org/repo/pull/11',
+      branchName: 'qs-create-demo-1',
+      slug: 'demo',
+      files: [{ name: 'demo.yml', content: 'spec:\n  displayName: Demo\n' }],
+    };
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { data: mockContent },
+    });
+
+    const result = await getCreatorPR(11);
+
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      '/api/quickstarts/v1/creator-prs/11'
+    );
+    expect(result.slug).toBe('demo');
+    expect(result.files).toHaveLength(1);
   });
 });
 

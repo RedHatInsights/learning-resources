@@ -15,6 +15,7 @@ export interface PRMetadata {
   isUpdate: boolean;
   existingPath?: string;
   directoryName?: string;
+  prNumber?: number;
 }
 
 export interface PRResponse {
@@ -66,6 +67,40 @@ export const getRepoQuickstartContent = async (
 ): Promise<RepoQuickstartContent> => {
   const { data } = await axios.get<{ data: RepoQuickstartContent }>(
     `${API_BASE}/repo-quickstarts/${encodeURIComponent(name)}`
+  );
+  return data.data;
+};
+
+export interface CreatorPREntry {
+  number: number;
+  title: string;
+  htmlUrl: string;
+  updatedAt?: string;
+  branchName: string;
+  slug: string;
+}
+
+export interface CreatorPRContent {
+  number: number;
+  title: string;
+  htmlUrl: string;
+  branchName: string;
+  slug: string;
+  files: PRFile[];
+}
+
+export const listCreatorPRs = async (): Promise<CreatorPREntry[]> => {
+  const { data } = await axios.get<{
+    data: { pullRequests: CreatorPREntry[] };
+  }>(`${API_BASE}/creator-prs`);
+  return data.data?.pullRequests ?? [];
+};
+
+export const getCreatorPR = async (
+  number: number
+): Promise<CreatorPRContent> => {
+  const { data } = await axios.get<{ data: CreatorPRContent }>(
+    `${API_BASE}/creator-prs/${number}`
   );
   return data.data;
 };
