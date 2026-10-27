@@ -2,6 +2,9 @@ import axios from 'axios';
 
 export const API_BASE = '/api/quickstarts/v1';
 
+/** Branches Edit multiple resources creates; one PR can change many resources. */
+export const BATCH_BRANCH_PREFIX = 'qs-update-batch-';
+
 export interface PRFile {
   name: string;
   content: string;
@@ -53,6 +56,8 @@ export interface RepoQuickstartEntry {
 export interface RepoQuickstartContent {
   name: string;
   files: PRFile[];
+  /** Base-branch commit the files were read from. */
+  headSha?: string;
 }
 
 export const listRepoQuickstarts = async (): Promise<RepoQuickstartEntry[]> => {
@@ -99,8 +104,179 @@ export const listCreatorPRs = async (): Promise<CreatorPREntry[]> => {
 export const getCreatorPR = async (
   number: number
 ): Promise<CreatorPRContent> => {
-  const { data } = await axios.get<{ data: CreatorPRContent }>(
-    `${API_BASE}/creator-prs/${number}`
+  try {
+    const { data } = await axios.get<{ data: CreatorPRContent }>(
+      `${API_BASE}/creator-prs/${number}`
+    );
+    return data.data;
+  } catch (err) {
+    // A PR spanning several resources is refused with 409 and a message
+    // pointing at the multi-resource editor; surface it as-is.
+    throw toAPIError(err, `Failed to load pull request #${number}.`);
+  }
+};
+
+export interface ResourceFile {
+  name: string;
+  /** Repository-relative path, e.g. docs/quickstarts/foo/metadata.yml */
+  path: string;
+  content: string;
+}
+
+export interface WorkspaceResourceSnapshot {
+  /** Quickstart directory name under docs/quickstarts/. */
+  name: string;
+  /** Repository-relative directory path. */
+  path: string;
+  files: ResourceFile[];
+  /** The directory the PR moved this resource from, if it renamed it. */
+  renamedFrom?: string;
+}
+
+export interface CreatorPRWorkspace {
+  number: number;
+  title: string;
+  htmlUrl: string;
+  branchName: string;
+  headSha: string;
+  resources: WorkspaceResourceSnapshot[];
+  /**
+   * Resources the PR deletes, read where its branch started, so they can be
+   * reviewed and restored.
+   */
+  deleted: WorkspaceResourceSnapshot[];
+  /**
+   * Directories the PR touches that no longer exist at its head and could
+   * not be read as deleted resources or as the old side of a rename.
+   */
+  missing: string[];
+}
+
+export interface BatchPRMetadata {
+  /** Existing creator PR to append a commit to; omit to open a new PR. */
+  prNumber?: number;
+  /** PR head the edits were made against. Required with prNumber. */
+  expectedHeadSha?: string;
+  /** New branch for a first save. Reusing it retries a save whose PR failed. */
+  branchName?: string;
+  /** Base-branch commit the files were read from. */
+  baseSha?: string;
+  commitMessage: string;
+  prTitle?: string;
+  prBody?: string;
+  userEmail?: string;
+}
+
+export interface BatchPRResource {
+  name: string;
+  /**
+   * The resource does not exist yet; its directory is created and all of its
+   * files are sent. Without it, the directory must already exist.
+   */
+  create?: boolean;
+  /**
+   * Take the resource back out of the PR: its directory goes back to how it
+   * was where the branch started, or is deleted if the PR added it. Sends no
+   * files.
+   */
+  revert?: boolean;
+  /**
+   * Delete an existing resource: every file in its directory is removed by
+   * this save. Works on a new PR too. Sends no files.
+   */
+  delete?: boolean;
+  /**
+   * Move an existing resource from this directory to `name`. Sends both its
+   * metadata file and its content file, named for the new name; the old
+   * directory is deleted.
+   */
+  renameFrom?: string;
+  /** Changed files only; files that are not sent stay untouched. */
+  files: PRFile[];
+}
+
+export interface BatchPRResponse {
+  prUrl: string;
+  prNumber: number;
+  branchName: string;
+  headSha: string;
+  status: 'created' | 'updated';
+  paths: string[];
+}
+
+/** A rejected request with the status and message the API returned. */
+export class QuickstartsAPIError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message);
+    this.name = 'QuickstartsAPIError';
+  }
+}
+
+const toAPIError = (err: unknown, fallback: string): QuickstartsAPIError => {
+  const response = (
+    err as { response?: { status?: number; data?: { msg?: string } } }
+  )?.response;
+  return new QuickstartsAPIError(
+    response?.data?.msg || fallback,
+    response?.status
   );
-  return data.data;
+};
+
+export const getCreatorPRWorkspace = async (
+  number: number
+): Promise<CreatorPRWorkspace> => {
+  try {
+    const { data } = await axios.get<{ data: CreatorPRWorkspace }>(
+      `${API_BASE}/creator-prs/${number}/workspace`
+    );
+    return {
+      ...data.data,
+      resources: data.data.resources ?? [],
+      deleted: data.data.deleted ?? [],
+      missing: data.data.missing ?? [],
+    };
+  } catch (err) {
+    throw toAPIError(err, `Failed to load pull request #${number}.`);
+  }
+};
+
+export const getCreatorPRResource = async (
+  number: number,
+  name: string,
+  headSha?: string
+): Promise<{ headSha: string; resource: WorkspaceResourceSnapshot }> => {
+  try {
+    const { data } = await axios.get<{
+      data: { headSha: string; resource: WorkspaceResourceSnapshot };
+    }>(
+      `${API_BASE}/creator-prs/${number}/resources/${encodeURIComponent(name)}`,
+      headSha ? { params: { headSha } } : undefined
+    );
+    return data.data;
+  } catch (err) {
+    throw toAPIError(
+      err,
+      `Failed to load ${name} from pull request #${number}.`
+    );
+  }
+};
+
+export const submitBatchPR = async (
+  metadata: BatchPRMetadata,
+  resources: BatchPRResource[]
+): Promise<BatchPRResponse> => {
+  try {
+    const { data } = await axios.post<{ data: BatchPRResponse }>(
+      `${API_BASE}/pull-request/batch`,
+      { metadata, resources }
+    );
+    return data.data;
+  } catch (err) {
+    throw toAPIError(
+      err,
+      metadata.prNumber
+        ? `Failed to save changes to PR #${metadata.prNumber}.`
+        : 'Failed to create PR.'
+    );
+  }
 };

@@ -1,11 +1,21 @@
-import React, { Suspense, useMemo, useState } from 'react';
+import React, {
+  Dispatch,
+  Suspense,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react';
 import YAML from 'yaml';
 import {
+  Badge,
   Grid,
   GridItem,
   PageGroup,
   PageSection,
   Title,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@patternfly/react-core';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import CreatorWizard, { EMPTY_TASK } from './components/creator/CreatorWizard';
@@ -15,6 +25,14 @@ import {
   metaForKind,
 } from './components/creator/meta';
 import CreatorPreview from './components/creator/CreatorPreview';
+import MultiEditWorkspace from './components/creator/multi-edit/MultiEditWorkspace';
+import {
+  WorkspaceAction,
+  WorkspaceState,
+  emptyWorkspace,
+  pendingCount,
+  workspaceReducer,
+} from './components/creator/multi-edit/workspace';
 import './Creator.scss';
 import useSuspenseLoader, {
   UnwrappedLoader,
@@ -46,19 +64,34 @@ function makeDemoQuickStart(
   };
 }
 
+type CreatorMode = 'single' | 'multi';
+
 const CreatorInternal = ({
   resetCreator,
   filterLoader,
+  mode,
+  setMode,
+  workspace,
+  dispatchWorkspace,
 }: {
   resetCreator: () => void;
   filterLoader: UnwrappedLoader<typeof fetchFilters>;
+  mode: CreatorMode;
+  setMode: (mode: CreatorMode) => void;
+  workspace: WorkspaceState;
+  dispatchWorkspace: Dispatch<WorkspaceAction>;
 }) => {
   const { data: filterData } = filterLoader();
   const showGitService = useFlag(
     'platform.learning-resources.quickstarts.git-service'
   );
+  // Batch editing saves through the git-service batch API.
+  const showMultiEdit = showGitService;
   const [rawKind, setRawKind] = useState<ItemKind | null>(null);
   const filterMap = useFilterMap({ data: filterData });
+  const isMulti = showMultiEdit && mode === 'multi';
+  // Shown on the mode switch, so leaving the batch editor never hides work.
+  const unsavedInMulti = pendingCount(workspace);
 
   const [rawQuickStart, setRawQuickStart] = useState<ExtendedQuickstart>({
     apiVersion: 'console.openshift.io/v1',
@@ -251,7 +284,7 @@ const CreatorInternal = ({
     <PageGroup>
       <PageSection hasBodyWrapper={false} className="rc-header">
         <Title headingLevel="h1" size="2xl">
-          Add new learning resource
+          {isMulti ? 'Edit learning resources' : 'Add new learning resource'}
         </Title>
 
         <p>
@@ -264,12 +297,57 @@ const CreatorInternal = ({
             Learn more about Hybrid Cloud Console Learning Resources.
           </a>
         </p>
+
+        {showMultiEdit && (
+          <ToggleGroup aria-label="Creator mode" className="pf-v6-u-mt-md">
+            <ToggleGroupItem
+              text="Single resource"
+              buttonId="creator-mode-single"
+              isSelected={mode === 'single'}
+              onChange={() => setMode('single')}
+            />
+            <ToggleGroupItem
+              text={
+                <>
+                  Edit multiple resources
+                  {unsavedInMulti > 0 && (
+                    <Badge
+                      className="pf-v6-u-ml-sm"
+                      screenReaderText="unsaved resources"
+                    >
+                      {unsavedInMulti}
+                    </Badge>
+                  )}
+                </>
+              }
+              buttonId="creator-mode-multi"
+              isSelected={mode === 'multi'}
+              onChange={() => setMode('multi')}
+            />
+          </ToggleGroup>
+        )}
       </PageSection>
 
+      {isMulti && (
+        <PageSection hasBodyWrapper={false} isFilled>
+          <MultiEditWorkspace
+            filterMap={filterMap}
+            filterData={filterData}
+            state={workspace}
+            dispatch={dispatchWorkspace}
+          />
+        </PageSection>
+      )}
+      {/*
+        Hidden rather than unmounted in batch mode: the wizard holds the open
+        PR it continues, its step and its tab, and losing the PR would make
+        the next save open a second one.
+      */}
       <PageSection
         hasBodyWrapper={false}
         isFilled
         padding={{ default: 'noPadding' }}
+        className={isMulti ? 'pf-v6-u-display-none' : undefined}
       >
         <Grid hasGutter className="pf-v6-u-h-100 pf-v6-u-w-100">
           <GridItem span={12} lg={isDownloadStage ? 6 : 12}>
@@ -315,6 +393,27 @@ const CreatorInternal = ({
 const Creator = () => {
   const { loader } = useSuspenseLoader(fetchFilters);
   const [resetCount, setResetCount] = useState(0n);
+  // The batch workspace and mode live above the reset key: resetting the
+  // single-resource creator, or switching modes, must not drop batch work.
+  const [mode, setMode] = useState<CreatorMode>('single');
+  const [workspace, dispatchWorkspace] = useReducer(
+    workspaceReducer,
+    undefined,
+    emptyWorkspace
+  );
+
+  // Batch edits live only in this tab, in either mode, so leaving would lose
+  // them.
+  const hasPending = pendingCount(workspace) > 0;
+  useEffect(() => {
+    if (!hasPending) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasPending]);
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -322,6 +421,10 @@ const Creator = () => {
         filterLoader={loader}
         key={resetCount}
         resetCreator={() => setResetCount((old) => old + 1n)}
+        mode={mode}
+        setMode={setMode}
+        workspace={workspace}
+        dispatchWorkspace={dispatchWorkspace}
       />
     </Suspense>
   );

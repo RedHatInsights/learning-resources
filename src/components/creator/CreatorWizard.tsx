@@ -257,6 +257,7 @@ const FileDownload = () => {
     setPrResult,
     setPrError,
     resumePR,
+    renameFrom,
   } = useCreatePR(quickstartName);
 
   const [prModalOpen, setPrModalOpen] = useState(false);
@@ -359,6 +360,7 @@ const FileDownload = () => {
             prResult={prResult}
             prError={prError}
             isContinuePR={!!resumePR}
+            renameFrom={renameFrom}
           />
         )}
 
@@ -438,6 +440,7 @@ const CreatorWizard = ({
   );
   const [viewMode, setViewMode] = useState<ViewMode>('wizard');
   const [resumePR, setResumePR] = useState<ResumePR | null>(null);
+  const [loadedName, setLoadedName] = useState<string | null>(null);
   const schema = useMemo(
     () => makeSchema(chrome, filterData, showGitService),
     [chrome, filterData, showGitService]
@@ -484,6 +487,7 @@ const CreatorWizard = ({
 
   const handleResetCreator = () => {
     setResumePR(null);
+    setLoadedName(null);
     resetCreator();
   };
 
@@ -494,8 +498,10 @@ const CreatorWizard = ({
       resetCreator: handleResetCreator,
       resumePR,
       setResumePR,
+      loadedName,
+      setLoadedName,
     }),
-    [files, onChangeCurrentStage, resumePR, resetCreator]
+    [files, onChangeCurrentStage, resumePR, resetCreator, loadedName]
   );
 
   const componentMapper = {

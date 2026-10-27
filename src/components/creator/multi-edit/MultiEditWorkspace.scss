@@ -1,0 +1,659 @@
+.lr-c-multi-edit {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 290px);
+  min-height: 560px;
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pf-t--global--spacer--md);
+    padding-bottom: var(--pf-t--global--spacer--md);
+  }
+
+  &__summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-t--global--spacer--xs);
+  }
+
+  &__status {
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--sm);
+  }
+
+  &__empty {
+    margin: auto;
+  }
+
+  // Sidebar + stage share the remaining height; each scrolls on its own.
+  &__body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr);
+    border: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--medium);
+    overflow: hidden;
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    background: var(--pf-t--global--background--color--secondary--default);
+  }
+
+  // The search input is full width, so the header pads it rather than the
+  // input taking a margin and spilling past the column.
+  &__sidebar-header {
+    flex: none;
+    padding: var(--pf-t--global--spacer--sm);
+    border-bottom: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+  }
+
+  &__resource-list {
+    flex: 1;
+    overflow-y: auto;
+    // A styled scrollbar is a classic one: always shown while the list
+    // overflows, a fixed width, and in its own gutter beside the actions
+    // rather than an overlay that widens over them on hover.
+    scrollbar-gutter: stable;
+    list-style: none;
+    margin: 0;
+    padding: var(--pf-t--global--spacer--xs) 0;
+
+    &::-webkit-scrollbar {
+      width: var(--pf-t--global--spacer--sm);
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: var(--pf-t--global--border--radius--pill);
+      background: var(--pf-t--global--border--color--default);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--pf-t--global--border--color--hover);
+    }
+
+    // Firefox has no scrollbar pseudo-elements; Chrome ignores them once
+    // these are set, so only Firefox gets them.
+    @supports not selector(::-webkit-scrollbar) {
+      scrollbar-width: thin;
+      scrollbar-color: var(--pf-t--global--border--color--default) transparent;
+    }
+  }
+
+  // Rows that open a resource show it on hover; the open one is marked more
+  // strongly, so hovering and current never look alike.
+  &__resource {
+    display: flex;
+    align-items: center;
+    border-left: 3px solid transparent;
+
+    &:not(.pf-m-pending):hover {
+      border-left-color: var(--pf-t--global--border--color--hover);
+      background: var(--pf-t--global--background--color--action--plain--hover);
+    }
+
+    &.pf-m-current,
+    &.pf-m-current:hover {
+      border-left-color: var(--pf-t--global--border--color--clicked);
+      background: var(--pf-t--global--background--color--primary--default);
+    }
+
+    &.pf-m-group-start {
+      margin-top: var(--pf-t--global--spacer--xs);
+      padding-top: var(--pf-t--global--spacer--xs);
+      border-top: var(--pf-t--global--border--width--regular) solid
+        var(--pf-t--global--border--color--default);
+    }
+
+    // Close only competes for attention where it applies.
+    .lr-c-multi-edit__resource-action.pf-m-on-hover {
+      opacity: 0;
+    }
+
+    &:hover .lr-c-multi-edit__resource-action.pf-m-on-hover,
+    &.pf-m-current .lr-c-multi-edit__resource-action.pf-m-on-hover,
+    .lr-c-multi-edit__resource-action.pf-m-on-hover:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  &__resource-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--pf-t--global--spacer--sm) 0 var(--pf-t--global--spacer--sm)
+      var(--pf-t--global--spacer--md);
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  button.lr-c-multi-edit__resource-main {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: var(--pf-t--global--border--width--strong) solid
+        var(--pf-t--global--border--color--clicked);
+      outline-offset: -2px;
+    }
+  }
+
+  // Each line keeps to one line, cut off with an ellipsis; the row's tooltip
+  // has the whole title.
+  &__resource-title,
+  &__resource-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--xs);
+    min-width: 0;
+    white-space: nowrap;
+
+    > .pf-v6-c-label,
+    > .pf-v6-c-icon {
+      flex: none;
+    }
+  }
+
+  &__resource-title {
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+  }
+
+  &__resource-text,
+  &__resource-dir {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__resource-dir {
+    color: var(--pf-t--global--text--color--subtle);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--xs);
+  }
+
+  &__resource-empty {
+    padding: var(--pf-t--global--spacer--md);
+    color: var(--pf-t--global--text--color--subtle);
+  }
+
+  // Deleted, removed from the PR, or restored: not openable, so muted, with
+  // no hover and only the action responding.
+  &__resource.pf-m-pending &__resource-title {
+    color: var(--pf-t--global--text--color--subtle);
+  }
+
+  &__resource-title.pf-m-gone &__resource-text {
+    text-decoration: line-through;
+  }
+
+  // Keeps the action clear of the scrollbar gutter.
+  &__resource-action {
+    flex: none;
+    margin-inline: var(--pf-t--global--spacer--xs)
+      var(--pf-t--global--spacer--sm);
+  }
+
+  &__dirty-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--pf-t--global--color--status--warning--default);
+  }
+
+  // Sized as a container so the header can fit its actions to the stage's
+  // width, not the window's.
+  &__stage {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    container-type: inline-size;
+  }
+
+  // One row whatever the resource: the title and path cut off with an
+  // ellipsis instead of wrapping, so switching resources, editing or renaming
+  // never moves the actions or the editor below.
+  &__stage-header {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--md);
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    border-bottom: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+  }
+
+  &__stage-heading {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-t--global--spacer--xs);
+  }
+
+  &__stage-title {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--sm);
+    min-width: 0;
+    white-space: nowrap;
+
+    > .pf-v6-c-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    > .pf-v6-c-label {
+      flex: none;
+    }
+  }
+
+  &__path {
+    overflow: hidden;
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__stage-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--md);
+  }
+
+  // On a narrow stage the layout toggle keeps its icons and drops its words,
+  // leaving the title room; each button keeps its name for screen readers.
+  @container (max-width: 760px) {
+    &__stage-actions .pf-v6-c-toggle-group__text {
+      display: none;
+    }
+  }
+
+  &__panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+
+    &.pf-m-split {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+      .lr-c-multi-edit__preview {
+        border-left: var(--pf-t--global--border--width--regular) solid
+          var(--pf-t--global--border--color--default);
+      }
+    }
+
+    &.pf-m-preview .lr-c-multi-edit__editor-pane {
+      display: none;
+    }
+  }
+
+  &__editor-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--pf-t--global--spacer--sm) 0 0;
+  }
+
+  &__editor-pane > .pf-v6-c-alert {
+    margin-inline: var(--pf-t--global--spacer--md);
+  }
+
+  &__editor {
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__preview {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  &__pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pf-t--global--spacer--sm);
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  }
+
+  &__stage-select {
+    max-width: 320px;
+  }
+
+  &__preview-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 0 var(--pf-t--global--spacer--md) var(--pf-t--global--spacer--md);
+
+    // The quick start panel scrolls inside the preview, not the page.
+    .pf-v6-c-drawer {
+      height: 100%;
+    }
+  }
+
+  &__pre-wrap {
+    white-space: pre-wrap;
+  }
+
+  // Stack on narrow screens: the list becomes a short scroller on top.
+  @media (max-width: 991px) {
+    height: auto;
+
+    &__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__sidebar {
+      max-height: 220px;
+      border-right: 0;
+      border-bottom: var(--pf-t--global--border--width--regular) solid
+        var(--pf-t--global--border--color--default);
+    }
+
+    &__panes,
+    &__panes.pf-m-split {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 600px;
+    }
+  }
+}
+
+// Choose resources: a bounded, scrollable list so the dialog stays compact
+// and its search and footer stay reachable on short screens.
+.lr-c-multi-edit-picker {
+  max-height: 75vh;
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    margin-bottom: var(--pf-t--global--spacer--sm);
+  }
+
+  &__search {
+    flex: 1 1 280px;
+  }
+
+  &__count {
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  &__list {
+    max-height: min(440px, 45vh);
+    overflow-y: auto;
+    border: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+  }
+
+  &__title {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  &__id {
+    display: block;
+    color: var(--pf-t--global--text--color--subtle);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+    overflow-wrap: anywhere;
+  }
+
+  &__status {
+    white-space: nowrap;
+
+    .pf-v6-c-label + .pf-v6-c-label {
+      margin-left: var(--pf-t--global--spacer--xs);
+    }
+  }
+
+  &__footer {
+    flex-wrap: wrap;
+  }
+
+  &__summary {
+    margin-right: auto;
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  @media (max-width: 575px) {
+    &__status {
+      white-space: normal;
+    }
+  }
+}
+
+// New resource: the single-resource wizard's steps in a modal. Bounded so
+// the footer stays on screen and the steps scroll.
+.lr-c-multi-edit-new .pf-v6-c-wizard {
+  height: min(680px, 85vh);
+}
+
+.lr-c-multi-edit-review {
+  display: grid;
+  grid-template-columns: minmax(180px, 30%) minmax(0, 1fr);
+  gap: var(--pf-t--global--spacer--md);
+  height: 50vh;
+  min-height: 320px;
+
+  &__files {
+    min-height: 0;
+    overflow-y: auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    ul {
+      list-style: none;
+      margin: 0 0 var(--pf-t--global--spacer--sm);
+      padding: 0;
+    }
+  }
+
+  &__resource {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--xs);
+    padding: var(--pf-t--global--spacer--xs) 0;
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+    overflow-wrap: anywhere;
+  }
+
+  &__file {
+    display: block;
+    width: 100%;
+    padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--sm);
+    border: 0;
+    border-left: 3px solid transparent;
+    background: none;
+    color: inherit;
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--pf-t--global--background--color--primary--hover);
+    }
+
+    &.pf-m-current {
+      border-left-color: var(--pf-t--global--border--color--clicked);
+      background: var(--pf-t--global--background--color--secondary--default);
+    }
+  }
+
+  &__diff {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-t--global--spacer--xs);
+    border: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+    overflow: hidden;
+  }
+
+  &__diff-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--pf-t--global--spacer--sm);
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    border-bottom: var(--pf-t--global--border--width--regular) solid
+      var(--pf-t--global--border--color--default);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+  }
+
+  &__subtle {
+    color: var(--pf-t--global--text--color--subtle);
+    font-family: var(--pf-t--global--font--family--body);
+  }
+
+  &__diff-editor {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  &__move {
+    display: block;
+    padding-bottom: var(--pf-t--global--spacer--xs);
+    font-family: var(--pf-t--global--font--family--mono);
+    font-size: var(--pf-t--global--font--size--sm);
+    overflow-wrap: anywhere;
+  }
+
+  &__removal {
+    padding: var(--pf-t--global--spacer--md);
+  }
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 70vh;
+
+    &__files {
+      max-height: 160px;
+    }
+  }
+}
+
+.lr-c-unified-diff {
+  --lr-diff-add: color-mix(
+    in srgb,
+    var(--pf-t--global--color--status--success--default) 18%,
+    transparent
+  );
+  --lr-diff-del: color-mix(
+    in srgb,
+    var(--pf-t--global--color--status--danger--default) 18%,
+    transparent
+  );
+
+  font-family: var(--pf-t--global--font--family--mono);
+  font-size: var(--pf-t--global--font--size--sm);
+  line-height: 1.5;
+
+  &__line {
+    display: grid;
+    grid-template-columns: 4.5em 1.5em minmax(0, 1fr);
+  }
+
+  &__number {
+    padding: 0 var(--pf-t--global--spacer--sm);
+    color: var(--pf-t--global--text--color--subtle);
+    text-align: right;
+    user-select: none;
+  }
+
+  &__marker {
+    text-align: center;
+    user-select: none;
+  }
+
+  &__code {
+    padding-right: var(--pf-t--global--spacer--sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  &__line.pf-m-add {
+    background: var(--lr-diff-add);
+  }
+
+  &__line.pf-m-del {
+    background: var(--lr-diff-del);
+  }
+
+  &__gap {
+    background: var(--pf-t--global--background--color--secondary--default);
+  }
+
+  &__gap button {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
+    border: 0;
+    background: none;
+    color: var(--pf-t--global--text--color--link--default);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__empty {
+    padding: var(--pf-t--global--spacer--md);
+    color: var(--pf-t--global--text--color--subtle);
+  }
+}

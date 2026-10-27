@@ -13,7 +13,8 @@ function prNumberFromUrl(url: string | undefined): number | null {
 }
 
 export function useCreatePR(quickstartName: string | null) {
-  const { files, resumePR, setResumePR } = useContext(CreatorWizardContext);
+  const { files, resumePR, setResumePR, loadedName, setLoadedName } =
+    useContext(CreatorWizardContext);
   const chrome = useChrome();
 
   const [prLoading, setPrLoading] = useState(false);
@@ -24,6 +25,14 @@ export function useCreatePR(quickstartName: string | null) {
     files.length > 0 &&
     !!quickstartName &&
     quickstartName !== 'untitled-quickstart';
+
+  // The folder this edit started from. Submitting under another name moves
+  // (or, for a live doc, duplicates) the resource, so the author is told.
+  const originalName = resumePR?.slug || loadedName;
+  const renameFrom =
+    originalName && quickstartName && originalName !== quickstartName
+      ? originalName
+      : null;
 
   const handleCreatePR = async () => {
     if (!canCreatePR || !quickstartName || prLoading) return;
@@ -93,6 +102,7 @@ export function useCreatePR(quickstartName: string | null) {
       if (resumePR && result.status === 'updated') {
         setResumePR({ ...resumePR, slug: safeName });
       }
+      setLoadedName(resumePR ? safeName : directoryName);
       // Adopt a newly opened PR so the next save in this session updates it
       // instead of opening another timestamped one.
       const createdNumber = prNumberFromUrl(result.prUrl);
@@ -125,5 +135,6 @@ export function useCreatePR(quickstartName: string | null) {
     setPrResult,
     setPrError,
     resumePR,
+    renameFrom,
   };
 }

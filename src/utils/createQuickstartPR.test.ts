@@ -2,11 +2,15 @@ import axios from 'axios';
 import {
   PRFile,
   PRMetadata,
+  QuickstartsAPIError,
   createQuickstartPR,
   getCreatorPR,
+  getCreatorPRResource,
+  getCreatorPRWorkspace,
   getRepoQuickstartContent,
   listCreatorPRs,
   listRepoQuickstarts,
+  submitBatchPR,
 } from './createQuickstartPR';
 
 jest.mock('axios');
@@ -247,5 +251,111 @@ describe('getRepoQuickstartContent', () => {
     await expect(getRepoQuickstartContent('nonexistent')).rejects.toEqual(
       apiError
     );
+  });
+});
+
+describe('multi-resource API', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('POSTs changed files per resource to the batch route', async () => {
+    const response = {
+      prUrl: 'https://github.com/org/repo/pull/7',
+      prNumber: 7,
+      branchName: 'qs-update-batch-1',
+      headSha: 'def',
+      status: 'created',
+      paths: ['docs/quickstarts/a/a.yml'],
+    };
+    mockedAxios.post.mockResolvedValueOnce({ data: { data: response } });
+
+    const metadata = {
+      branchName: 'qs-update-batch-1',
+      commitMessage: 'docs: update links',
+      prTitle: 'Update links',
+    };
+    const resources = [
+      { name: 'a', files: [{ name: 'a.yml', content: 'a: 1\n' }] },
+    ];
+    await expect(submitBatchPR(metadata, resources)).resolves.toEqual(response);
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      '/api/quickstarts/v1/pull-request/batch',
+      { metadata, resources }
+    );
+  });
+
+  it('keeps the status and server message of a rejected save', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          msg: 'pull request #7 has new commits; reload it before saving',
+        },
+      },
+    });
+
+    const err = await submitBatchPR(
+      { prNumber: 7, expectedHeadSha: 'abc', commitMessage: 'x' },
+      [{ name: 'a', files: [{ name: 'a.yml', content: '' }] }]
+    ).catch((e) => e);
+    expect(err).toBeInstanceOf(QuickstartsAPIError);
+    expect(err.status).toBe(409);
+    expect(err.message).toContain('has new commits');
+  });
+
+  it('falls back to a readable message without a server body', async () => {
+    mockedAxios.post.mockRejectedValueOnce(new Error('Network Error'));
+    const err = await submitBatchPR(
+      { prNumber: 7, expectedHeadSha: 'abc', commitMessage: 'x' },
+      []
+    ).catch((e) => e);
+    expect(err.message).toBe('Failed to save changes to PR #7.');
+    expect(err.status).toBeUndefined();
+  });
+
+  it('loads a PR workspace and defaults missing lists', async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: {
+        data: {
+          number: 7,
+          title: 't',
+          htmlUrl: 'u',
+          branchName: 'b',
+          headSha: 'abc',
+        },
+      },
+    });
+    const ws = await getCreatorPRWorkspace(7);
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      '/api/quickstarts/v1/creator-prs/7/workspace'
+    );
+    expect(ws.resources).toEqual([]);
+    expect(ws.missing).toEqual([]);
+  });
+
+  it('pins a resource read to the loaded PR head', async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { data: { headSha: 'abc', resource: { name: 'a b' } } },
+    });
+    await getCreatorPRResource(7, 'a b', 'abc');
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      '/api/quickstarts/v1/creator-prs/7/resources/a%20b',
+      { params: { headSha: 'abc' } }
+    );
+  });
+
+  it('explains why a multi-resource PR cannot open in the single editor', async () => {
+    mockedAxios.get.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          msg: 'pull request changes more than one quickstart; open it with Edit multiple resources',
+        },
+      },
+    });
+    const err = await getCreatorPR(7).catch((e) => e);
+    expect(err.status).toBe(409);
+    expect(err.message).toContain('Edit multiple resources');
   });
 });
