@@ -10,7 +10,7 @@ import {
 import {
   WorkspacePR,
   WorkspaceResource,
-  isDirty,
+  hasUnsavedChanges,
   resourceTitle,
 } from './workspace';
 
@@ -48,7 +48,9 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
   onCancel,
 }) => {
   const fromPR = pr ? resources.filter((r) => inPR.includes(r.name)) : [];
-  const lost = resources.filter((r) => isDirty(r) && !inPR.includes(r.name));
+  const lost = resources.filter(
+    (r) => hasUnsavedChanges(r) && !inPR.includes(r.name)
+  );
   const created = lost.filter((r) => r.isNew);
   const edited = lost.filter((r) => !r.isNew);
   const count = resources.length;
@@ -93,10 +95,10 @@ const RemoveResourcesModal: React.FC<RemoveResourcesModalProps> = ({
             next save.
           </Content>
         )}
-        {fromPR.some(isDirty) && (
+        {fromPR.some(hasUnsavedChanges) && (
           <Content component="p">
             Closing only discards unsaved changes to{' '}
-            <strong>{names(fromPR.filter(isDirty))}</strong>.
+            <strong>{names(fromPR.filter(hasUnsavedChanges))}</strong>.
           </Content>
         )}
         {edited.length > 0 && (

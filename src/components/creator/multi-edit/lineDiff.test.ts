@@ -25,6 +25,24 @@ describe('diffLines', () => {
     ]);
   });
 
+  it('lists a replaced run as all removals, then all additions', () => {
+    const diff = diffLines('a\nb\nc\nd\n', 'a\nX\nY\nd\n');
+    expect(diff.map((l) => `${l.type}:${l.text}:${l.number}`)).toEqual([
+      'context:a:1',
+      'del:b:2',
+      'del:c:3',
+      'add:X:2',
+      'add:Y:3',
+      'context:d:4',
+    ]);
+  });
+
+  it('ignores a missing trailing newline', () => {
+    expect(diffLines('a\nb', 'a\nb\n').every((l) => l.type === 'context')).toBe(
+      true
+    );
+  });
+
   it('treats a new file as all additions', () => {
     expect(diffLines('', 'a\nb\n').map((l) => l.type)).toEqual(['add', 'add']);
   });

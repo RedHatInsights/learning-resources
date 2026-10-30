@@ -31,7 +31,7 @@ import { readResource } from './readResource';
 import {
   QUICKSTARTS_DIR,
   WorkspaceState,
-  isDirty,
+  hasUnsavedChanges,
   isInPR,
   resourceTitle,
 } from './workspace';
@@ -140,7 +140,7 @@ function buildRows(
       name,
       title,
       isOpen: !!r,
-      isUnsaved: !!r && isDirty(r),
+      isUnsaved: !!r && hasUnsavedChanges(r),
       status: statusOf(name),
       renamedTo: renamedTo.get(name),
       listed: listed.has(name),

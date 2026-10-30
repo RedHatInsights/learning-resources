@@ -1,7 +1,6 @@
 import {
   WorkspaceState,
   defaultPRBody,
-  dirtyResources,
   emptyWorkspace,
   pendingCount,
   previewForResource,
@@ -9,6 +8,7 @@ import {
   resourceProblem,
   resourceTitle,
   snapshotChanges,
+  unsavedResources,
   workspaceReducer,
 } from './workspace';
 import { scaffoldResource } from './scaffold';
@@ -158,9 +158,9 @@ describe('workspaceReducer', () => {
 
   it('discards back to the saved text', () => {
     let state = edit(withResources('alpha'), 'alpha', 'old', 'new');
-    expect(dirtyResources(state)).toHaveLength(1);
+    expect(unsavedResources(state)).toHaveLength(1);
     state = workspaceReducer(state, { type: 'discard', name: 'alpha' });
-    expect(dirtyResources(state)).toHaveLength(0);
+    expect(unsavedResources(state)).toHaveLength(0);
   });
 
   it('creates a new resource that is unsaved until the server takes it', () => {
@@ -183,7 +183,7 @@ describe('workspaceReducer', () => {
       path: 'docs/quickstarts/fresh',
     });
     expect(state.activeName).toBe('fresh');
-    expect(dirtyResources(state).map((r) => r.name)).toEqual(['fresh']);
+    expect(unsavedResources(state).map((r) => r.name)).toEqual(['fresh']);
 
     // A second create with the same name is ignored.
     state = workspaceReducer(state, {
@@ -212,7 +212,7 @@ describe('workspaceReducer', () => {
       sent: snap.sent,
       reverted: [],
     });
-    expect(dirtyResources(state).map((r) => r.name)).toEqual(['beta']);
+    expect(unsavedResources(state).map((r) => r.name)).toEqual(['beta']);
     expect(state.pr).toEqual({
       number: 5,
       url: 'https://github.com/o/r/pull/5',
@@ -326,7 +326,7 @@ describe('removing resources from a PR', () => {
         content: expect.objectContaining({ name: 'omega.yaml' }),
       })
     );
-    expect(dirtyResources(state)).toEqual([]);
+    expect(unsavedResources(state)).toEqual([]);
     expect(state.activeName).toBe('omega');
     expect(state.prResources).toEqual(['omega', 'beta']);
 

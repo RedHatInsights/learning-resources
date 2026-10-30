@@ -1,4 +1,4 @@
-import YAML, { Node, Pair, YAMLMap, isMap, isScalar } from 'yaml';
+import YAML, { LineCounter, Node, Pair, YAMLMap, isMap, isScalar } from 'yaml';
 
 /**
  * A resource on disk is two files: `metadata.yml` (kind, name, tags) and the
@@ -16,29 +16,41 @@ import YAML, { Node, Pair, YAMLMap, isMap, isScalar } from 'yaml';
 // such a resource can still be opened. Saving still validates strictly.
 const TOLERANT = { uniqueKeys: false } as const;
 
+// The yaml package keeps its own findPair internal, and map.get() returns the
+// value node, while the text surgery here needs the key's position too.
 const findPair = (map: YAMLMap, key: string): Pair<Node, Node> | undefined =>
   map.items.find((p) => isScalar(p.key) && p.key.value === key) as
     | Pair<Node, Node>
     | undefined;
 
-function lineAt(text: string, offset: number): number {
-  let line = 0;
-  for (let i = 0; i < offset && i < text.length; i++) {
-    if (text[i] === '\n') line++;
-  }
-  return line;
+/** A parsed document plus zero-based line/column lookups into its text. */
+interface Parsed {
+  text: string;
+  doc: YAML.Document.Parsed;
+  line: (offset: number) => number;
+  column: (offset: number) => number;
 }
 
-function columnOf(text: string, offset: number): number {
-  return offset - (text.lastIndexOf('\n', offset - 1) + 1);
+function parse(text: string): Parsed {
+  const counter = new LineCounter();
+  const doc = YAML.parseDocument(text, { ...TOLERANT, lineCounter: counter });
+  return {
+    text,
+    doc,
+    line: (offset) => counter.linePos(offset).line - 1,
+    column: (offset) => counter.linePos(offset).col - 1,
+  };
 }
 
 /** The whole lines a map entry spans, from its key to the end of its value. */
-function pairLines(text: string, pair: Pair<Node, Node>): [number, number] {
+function pairLines(
+  { text, line }: Parsed,
+  pair: Pair<Node, Node>
+): [number, number] {
   const start = pair.key.range?.[0] ?? 0;
   let end = pair.value?.range?.[1] ?? pair.key.range?.[1] ?? start;
   while (end > start && /\s/.test(text[end - 1])) end--;
-  return [lineAt(text, start), lineAt(text, Math.max(start, end - 1))];
+  return [line(start), line(Math.max(start, end - 1))];
 }
 
 const reindent = (lines: string[], from: number, to: number) =>
@@ -65,8 +77,10 @@ export function combineFiles(
   metadataText: string,
   contentText: string
 ): string | null {
-  const metaDoc = YAML.parseDocument(metadataText, TOLERANT);
-  const contentDoc = YAML.parseDocument(contentText, TOLERANT);
+  const meta = parse(metadataText);
+  const content = parse(contentText);
+  const metaDoc = meta.doc;
+  const contentDoc = content.doc;
   if (metaDoc.errors.length > 0 || contentDoc.errors.length > 0) return null;
 
   const metaRoot = blockMap(metaDoc);
@@ -77,8 +91,8 @@ export function combineFiles(
   const tagsPair = findPair(metaRoot, 'tags');
   let block = ['tags: []'];
   if (tagsPair) {
-    const [s, e] = pairLines(metadataText, tagsPair);
-    const column = columnOf(metadataText, tagsPair.key.range?.[0] ?? 0);
+    const [s, e] = pairLines(meta, tagsPair);
+    const column = meta.column(tagsPair.key.range?.[0] ?? 0);
     block = reindent(metadataText.split('\n').slice(s, e + 1), column, 0);
   }
 
@@ -87,8 +101,8 @@ export function combineFiles(
     Node,
     Node
   >;
-  const indent = columnOf(contentText, first.key.range?.[0] ?? 0);
-  const [, insertAfter] = pairLines(contentText, last);
+  const indent = content.column(first.key.range?.[0] ?? 0);
+  const [, insertAfter] = pairLines(content, last);
 
   const lines = contentText.split('\n');
   lines.splice(insertAfter + 1, 0, ...reindent(block, 0, indent));
@@ -140,7 +154,8 @@ export function splitCombined(
   savedMetadata: string,
   tagsInContent = false
 ): SplitResult {
-  const doc = YAML.parseDocument(combined, TOLERANT);
+  const parsed = parse(combined);
+  const { doc } = parsed;
   if (doc.errors.length > 0) return { error: doc.errors[0].message };
   const contentMeta = blockMap(doc, 'metadata');
   if (!contentMeta) {
@@ -152,15 +167,16 @@ export function splitCombined(
   let content = combined;
   const tagsPair = findPair(contentMeta, 'tags');
   if (tagsPair) {
-    const [s, e] = pairLines(combined, tagsPair);
-    const column = columnOf(combined, tagsPair.key.range?.[0] ?? 0);
+    const [s, e] = pairLines(parsed, tagsPair);
+    const column = parsed.column(tagsPair.key.range?.[0] ?? 0);
     block = reindent(lines.slice(s, e + 1), column, 0);
     content = [...lines.slice(0, s), ...lines.slice(e + 1)].join('\n');
   }
 
   if (tagsInContent) content = combined;
 
-  const metaDoc = YAML.parseDocument(savedMetadata, TOLERANT);
+  const meta = parse(savedMetadata);
+  const metaDoc = meta.doc;
   const metaRoot = blockMap(metaDoc);
   if (!metaRoot) return { error: 'The metadata file is not a block mapping.' };
   const tags = (YAML.parse(block.join('\n'), TOLERANT) as { tags?: unknown })
@@ -171,7 +187,7 @@ export function splitCombined(
   const metaLines = savedMetadata.split('\n');
   const existing = findPair(metaRoot, 'tags');
   if (existing) {
-    const [s, e] = pairLines(savedMetadata, existing);
+    const [s, e] = pairLines(meta, existing);
     metaLines.splice(s, e - s + 1, ...block);
   } else {
     // Keep the trailing newline after the appended block.
@@ -188,7 +204,8 @@ export function splitCombined(
  * block mapping it can safely edit.
  */
 export function setMetadataName(text: string, name: string): string | null {
-  const doc = YAML.parseDocument(text, TOLERANT);
+  const parsed = parse(text);
+  const { doc } = parsed;
   const root = doc.errors.length === 0 ? blockMap(doc) : null;
   if (!root) return null;
   const pair = findPair(root, 'name');
@@ -201,16 +218,16 @@ export function setMetadataName(text: string, name: string): string | null {
     const at = first.key.range?.[0] ?? 0;
     const lines = text.split('\n');
     lines.splice(
-      lineAt(text, at),
+      parsed.line(at),
       0,
-      `${' '.repeat(columnOf(text, at))}name: ${name}`
+      `${' '.repeat(parsed.column(at))}name: ${name}`
     );
     next = lines.join('\n');
   } else {
     return null;
   }
-  const parsed = YAML.parse(next, TOLERANT) as { name?: unknown } | null;
-  return parsed?.name === name ? next : null;
+  const result = YAML.parse(next, TOLERANT) as { name?: unknown } | null;
+  return result?.name === name ? next : null;
 }
 
 /** Parses an edited buffer the way the preview and identity checks need it. */

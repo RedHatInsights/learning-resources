@@ -14,7 +14,7 @@ import UndoIcon from '@patternfly/react-icons/dist/dynamic/icons/undo-icon';
 import {
   DeletedResource,
   WorkspaceResource,
-  isDirty,
+  hasUnsavedChanges,
   renameTarget,
   resourceProblem,
   resourceTitle,
@@ -60,7 +60,7 @@ type Entry =
 
 /** The resource ID a dirty buffer would move an open resource to. */
 const movesTo = (r: WorkspaceResource) => {
-  const target = isDirty(r) ? renameTarget(r) : null;
+  const target = hasUnsavedChanges(r) ? renameTarget(r) : null;
   return target && target !== r.name ? target : null;
 };
 
@@ -215,7 +215,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   // title, then the ID with its tags.
   const renderResource = (r: WorkspaceResource, groupStart: string) => {
     const title = resourceTitle(r);
-    const dirty = isDirty(r);
+    const dirty = hasUnsavedChanges(r);
     const problem = dirty ? resourceProblem(r, resources) : null;
     const target = movesTo(r);
     const isActive = r.name === activeName;

@@ -582,18 +582,18 @@ export function workspaceReducer(
   }
 }
 
-export const isDirty = (r: WorkspaceResource) =>
+export const hasUnsavedChanges = (r: WorkspaceResource) =>
   r.isNew || r.buffer !== r.baseline;
 
-export const dirtyResources = (state: WorkspaceState) =>
-  state.resources.filter(isDirty);
+export const unsavedResources = (state: WorkspaceState) =>
+  state.resources.filter(hasUnsavedChanges);
 
 /**
  * Everything the next save would commit: edited resources, removals from the
  * PR, deletions and restorations.
  */
 export const pendingCount = (state: WorkspaceState) =>
-  dirtyResources(state).length +
+  unsavedResources(state).length +
   state.removals.length +
   state.deletions.length +
   state.restorations.length;
@@ -752,7 +752,7 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
     problems: [],
   };
 
-  for (const r of dirtyResources(state)) {
+  for (const r of unsavedResources(state)) {
     const problem = resourceProblem(r, state.resources);
     const split = filesForResource(r);
     if (problem || split.error !== undefined) {

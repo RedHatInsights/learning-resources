@@ -48,7 +48,7 @@ import {
   WorkspaceAction,
   WorkspaceResource,
   WorkspaceState,
-  isDirty,
+  hasUnsavedChanges,
   isInPR,
   pendingCount,
   previewForResource,
@@ -211,7 +211,7 @@ const MultiEditWorkspace = ({
     const risky = state.resources.filter(
       (r) =>
         names.includes(r.name) &&
-        (isDirty(r) || (state.pr && isInPR(state, r.name)))
+        (hasUnsavedChanges(r) || (state.pr && isInPR(state, r.name)))
     );
     if (risky.length === 0) dispatch({ type: 'removeResources', names });
     else setPendingRemoval(names);
@@ -229,7 +229,10 @@ const MultiEditWorkspace = ({
   // What the next save does, kind by kind, so deletions are not hidden in
   // one count.
   const pendingParts = [
-    [state.resources.filter((r) => isDirty(r) && !r.isNew).length, 'edited'],
+    [
+      state.resources.filter((r) => hasUnsavedChanges(r) && !r.isNew).length,
+      'edited',
+    ],
     [state.resources.filter((r) => r.isNew).length, 'new'],
     [state.removals.length, 'removed from PR'],
     [state.deletions.length, 'to delete'],
@@ -447,7 +450,7 @@ const MultiEditWorkspace = ({
                         New
                       </Label>
                     ) : (
-                      isDirty(active) && (
+                      hasUnsavedChanges(active) && (
                         <Label color="orange" isCompact>
                           Unsaved
                         </Label>
