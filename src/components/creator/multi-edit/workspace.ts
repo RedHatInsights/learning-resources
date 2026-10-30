@@ -14,7 +14,13 @@ import {
   splitCombined,
   tagsAlreadyCombined,
 } from './combinedYaml';
-import { RESOURCE_NAME_PATTERN } from './scaffold';
+import {
+  RESOURCE_NAME_PATTERN,
+  ResourceIssue,
+  blockingIssues,
+  validateResource,
+  withoutExistingErrors,
+} from '../validateResource';
 
 export const QUICKSTARTS_DIR = 'docs/quickstarts';
 
@@ -648,11 +654,43 @@ function perResource<T>(derive: (r: WorkspaceResource) => T) {
   };
 }
 
-/** Returns the parse error for a text, or null when it is valid YAML. */
+/**
+ * Returns the parse error for a text, or null when it is valid YAML.
+ * Duplicate keys are allowed: the repository reads them, and real content
+ * has some, so they are only a warning in resourceIssues.
+ */
 export function yamlError(text: string): string | null {
-  const doc = YAML.parseDocument(text);
-  return doc.errors.length > 0 ? doc.errors[0].message : null;
+  const error = YAML.parseDocument(text).errors.find(
+    (e) => e.code !== 'DUPLICATE_KEY'
+  );
+  return error ? error.message : null;
 }
+
+// Issues per saved text, which stays the same across every keystroke.
+const savedIssues = new Map<string, ResourceIssue[]>();
+
+/**
+ * What the validator finds in a resource's buffer. Errors the saved file
+ * already had are downgraded to warnings, so an author is never blocked by
+ * a problem they did not cause.
+ */
+export const resourceIssues = perResource((r): ResourceIssue[] => {
+  const file = r.layout === 'metadata' ? 'metadata' : 'content';
+  const issues = validateResource(r.buffer, file);
+  if (r.isNew) return issues;
+  let saved = savedIssues.get(r.baseline);
+  if (!saved) {
+    if (savedIssues.size > 100) savedIssues.clear();
+    saved = validateResource(r.baseline, file);
+    savedIssues.set(r.baseline, saved);
+  }
+  return withoutExistingErrors(issues, saved);
+});
+
+export const formatIssue = (issue: ResourceIssue) =>
+  `Line ${issue.line}${issue.field ? `, ${issue.field}` : ''}: ${
+    issue.message
+  }`;
 
 /** The name a parsed buffer declares: metadata.name, or a metadata file's name. */
 function declaredName(r: WorkspaceResource, parsed: unknown): unknown {
@@ -662,9 +700,6 @@ function declaredName(r: WorkspaceResource, parsed: unknown): unknown {
   } | null;
   return r.layout === 'metadata' ? doc?.name : doc?.metadata?.name;
 }
-
-const nameField = (r: WorkspaceResource) =>
-  r.layout === 'metadata' ? 'name' : 'metadata.name';
 
 function declaredIn(r: WorkspaceResource, text: string): unknown {
   try {
@@ -692,28 +727,21 @@ export const renameTarget = perResource((r): string | null => {
 });
 
 /**
- * Problems that would make saving this resource fail or misbehave. Pass the
+ * Problems a rename would cause, beyond what resourceIssues reports about
+ * the document itself (including a missing or malformed name). Pass the
  * other open resources to also catch two of them claiming the same name.
  */
 export function resourceProblem(
   r: WorkspaceResource,
   resources: WorkspaceResource[] = []
 ): string | null {
-  let parsed: unknown;
-  try {
-    parsed = parseTolerant(r.buffer);
-  } catch (err) {
-    return (err as Error).message;
-  }
-  const name = declaredName(r, parsed);
-  if (name === loadedName(r)) return null;
-  if (typeof name !== 'string' || !name) {
-    return `${nameField(r)} is required; it names the resource's folder.`;
-  }
-  if (!RESOURCE_NAME_PATTERN.test(name)) {
-    return `${nameField(
-      r
-    )} "${name}" can only use lowercase letters, numbers and single dashes, because it is also the folder name.`;
+  const name = declaredIn(r, r.buffer);
+  if (
+    name === loadedName(r) ||
+    typeof name !== 'string' ||
+    !RESOURCE_NAME_PATTERN.test(name)
+  ) {
+    return null;
   }
   if (r.layout === 'metadata') {
     return `${r.path} has no content file, so it cannot be renamed here.`;
@@ -728,6 +756,15 @@ export function resourceProblem(
     return `Another open resource is already named "${name}".`;
   }
   return null;
+}
+
+/** The first thing that blocks saving a resource, for a one-line summary. */
+export function firstProblem(
+  r: WorkspaceResource,
+  resources: WorkspaceResource[] = []
+): string | null {
+  const [issue] = blockingIssues(resourceIssues(r));
+  return issue ? formatIssue(issue) : resourceProblem(r, resources);
 }
 
 export interface BatchSnapshot {
@@ -766,6 +803,16 @@ export function snapshotChanges(state: WorkspaceState): BatchSnapshot {
   };
 
   for (const r of unsavedResources(state)) {
+    const errors = blockingIssues(resourceIssues(r));
+    if (errors.length > 0) {
+      snapshot.problems.push(
+        ...errors.map((issue) => ({
+          resource: r.name,
+          message: formatIssue(issue),
+        }))
+      );
+      continue;
+    }
     const problem = resourceProblem(r, state.resources);
     const split = filesForResource(r);
     if (problem || split.error !== undefined) {

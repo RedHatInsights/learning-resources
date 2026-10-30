@@ -19,8 +19,6 @@ import {
   FlexItem,
   FormGroup,
   Label,
-  List,
-  ListItem,
   MenuToggle,
   MenuToggleElement,
   Modal,
@@ -53,7 +51,7 @@ import {
   listCreatorPRs,
   listRepoQuickstarts,
 } from '../../utils/createQuickstartPR';
-import Editor from '@monaco-editor/react';
+import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import YAML from 'yaml';
 import { QuickStartSpec } from '@patternfly/quickstarts';
 import { downloadFile } from '@redhat-cloud-services/frontend-components-utilities/helpers';
@@ -67,6 +65,14 @@ import CreatePRModal from './CreatePRModal';
 import { quickstartYamlFromFiles } from './hydrateFromFiles';
 import './CreatorYAMLView.scss';
 import { DEFAULT_QUICKSTART_YAML } from '../../data/quickstart-templates';
+import ResourceIssues from './ResourceIssues';
+import { revealLine, setIssueMarkers } from './issueMarkers';
+import {
+  ResourceIssue,
+  blockingIssues,
+  validateResource,
+  withoutExistingErrors,
+} from './validateResource';
 
 const PLACEHOLDER_YAML =
   '# YAML Quickstart Definition\n# Start typing or paste your YAML here\n';
@@ -96,111 +102,6 @@ function detectKind(
     }
   }
   return null;
-}
-
-type ValidationWarning = { field: string; message: string };
-
-const VALID_TAG_KINDS = new Set([
-  'bundle',
-  'content',
-  'use-case',
-  'product-families',
-]);
-
-const VALID_SPEC_FIELDS = new Set([
-  'displayName',
-  'description',
-  'icon',
-  'type',
-  'durationMinutes',
-  'link',
-  'prerequisites',
-  'introduction',
-  'tasks',
-  'version',
-]);
-
-/**
- * Validate parsed YAML against the QuickStart schema.
- * Returns an array of warnings (non-blocking).
- */
-function validateQuickstartYaml(
-  parsed: Record<string, unknown>
-): ValidationWarning[] {
-  const warnings: ValidationWarning[] = [];
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  const spec = parsed.spec as Record<string, unknown> | undefined;
-
-  if (!metadata?.name) {
-    warnings.push({
-      field: 'metadata.name',
-      message: 'Required — used as file name and identifier',
-    });
-  }
-
-  if (!spec?.displayName) {
-    warnings.push({
-      field: 'spec.displayName',
-      message: 'Required — title shown on the card',
-    });
-  }
-
-  if (!spec?.description) {
-    warnings.push({
-      field: 'spec.description',
-      message: 'Required — card description text',
-    });
-  }
-
-  // Validate tag kinds
-  if (metadata && Array.isArray(metadata.tags)) {
-    (metadata.tags as Array<{ kind?: string; value?: string }>).forEach(
-      (tag, i) => {
-        if (tag.kind && !VALID_TAG_KINDS.has(tag.kind)) {
-          warnings.push({
-            field: `metadata.tags[${i}].kind`,
-            message: `Unknown tag kind "${tag.kind}". Supported: ${[
-              ...VALID_TAG_KINDS,
-            ].join(', ')}`,
-          });
-        }
-        if (!tag.value) {
-          warnings.push({
-            field: `metadata.tags[${i}].value`,
-            message: 'Tag value is required',
-          });
-        }
-      }
-    );
-  }
-
-  // Validate spec fields
-  if (spec) {
-    Object.keys(spec).forEach((key) => {
-      if (!VALID_SPEC_FIELDS.has(key)) {
-        warnings.push({
-          field: `spec.${key}`,
-          message: `Unknown field — may be ignored`,
-        });
-      }
-    });
-  }
-
-  // Validate kind/type
-  const kind = detectKind(spec);
-  if (spec?.type && !kind) {
-    const typeObj = spec.type as Record<string, unknown>;
-    warnings.push({
-      field: 'spec.type.text',
-      message: `Unknown type "${
-        typeObj?.text
-      }". Supported: ${ALL_KIND_ENTRIES.map(([, m]) => m.displayName).join(
-        ', '
-      )}`,
-    });
-  }
-
-  return warnings;
 }
 
 /**
@@ -526,9 +427,26 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
 
   const [yamlContent, setYamlContent] = useState<string>(getInitialYaml);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [validationWarnings, setValidationWarnings] = useState<
-    ValidationWarning[]
-  >([]);
+  const [issues, setIssues] = useState<ResourceIssue[]>([]);
+  // The text a repo, PR or file load brought in. Errors it already had are
+  // only warnings, so loading a resource never blocks saving it.
+  const loadedYamlRef = useRef<string | null>(null);
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+
+  useEffect(() => {
+    setIssueMarkers(editorRef.current, monacoRef.current, issues);
+  }, [issues]);
+
+  const checkYaml = (content: string) => {
+    const found = validateResource(content, 'content');
+    const loaded = loadedYamlRef.current;
+    setIssues(
+      loaded === null
+        ? found
+        : withoutExistingErrors(found, validateResource(loaded, 'content'))
+    );
+  };
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -561,18 +479,15 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   };
 
   const parseAndUpdateQuickstart = (content: string) => {
+    checkYaml(content);
     try {
-      const parsed = YAML.parse(content);
+      // Duplicate keys are only a warning: the repository reads them.
+      const parsed = YAML.parse(content, { uniqueKeys: false });
 
       if (!parsed) {
         setParseError('Empty YAML content');
-        setValidationWarnings([]);
         return false;
       }
-
-      // Validate structure
-      const warnings = validateQuickstartYaml(parsed);
-      setValidationWarnings(warnings);
 
       // Extract metadata
       const metadata = parsed.metadata || {};
@@ -664,7 +579,6 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       const errorMessage =
         error instanceof Error ? error.message : 'Invalid YAML syntax';
       setParseError(errorMessage);
-      setValidationWarnings([]);
       // Keep using the last valid quickstart state on error
       return false;
     }
@@ -714,6 +628,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     cancelPendingParse();
     setResumePR(null);
     setLoadedName(null);
+    loadedYamlRef.current = null;
     setYamlContent(DEFAULT_QUICKSTART_YAML);
     parseAndUpdateQuickstart(DEFAULT_QUICKSTART_YAML);
   };
@@ -744,6 +659,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
       if (request !== sourceRequest.current) return;
       const content = e.target?.result;
       if (typeof content === 'string') {
+        loadedYamlRef.current = content;
         setYamlContent(content);
         parseAndUpdateQuickstart(content);
       }
@@ -834,6 +750,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           : await getRepoQuickstartContent(source.name);
       if (request !== sourceRequest.current) return;
       const finalContent = quickstartYamlFromFiles(content.files);
+      loadedYamlRef.current = finalContent;
       setYamlContent(finalContent);
       if (parseAndUpdateQuickstart(finalContent)) {
         setLoadedName(
@@ -919,6 +836,7 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
   const hasMetadataSelectors =
     (bundleOptions && bundleOptions.length > 0) || filterData;
 
+  const hasBlockingIssues = blockingIssues(issues).length > 0;
   const canDownload =
     isUserContent(yamlContent) && !parseError && files.length > 0;
 
@@ -934,21 +852,12 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           {parseError}. Showing previous valid state in preview.
         </Alert>
       )}
-      {validationWarnings.length > 0 && !parseError && (
-        <Alert
-          variant="info"
-          title="Schema Validation"
-          className="pf-v6-u-mb-md"
-          isInline
-        >
-          <List>
-            {validationWarnings.map((w, i) => (
-              <ListItem key={i}>
-                <strong>{w.field}</strong>: {w.message}
-              </ListItem>
-            ))}
-          </List>
-        </Alert>
+      {!parseError && (
+        <ResourceIssues
+          issues={issues}
+          blocks="creating a pull request"
+          onGoToLine={(line) => revealLine(editorRef.current, line)}
+        />
       )}
       <Flex
         spaceItems={{ default: 'spaceItemsSm' }}
@@ -1055,6 +964,11 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           value={yamlContent}
           onChange={handleEditorChange}
           beforeMount={configureMonacoEnvironment}
+          onMount={(editor, monaco) => {
+            editorRef.current = editor;
+            monacoRef.current = monaco;
+            setIssueMarkers(editor, monaco, issues);
+          }}
           options={{
             automaticLayout: true,
             minimap: { enabled: true },
@@ -1091,7 +1005,11 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
           </FlexItem>
           <FlexItem>
             <Tooltip
-              content="Submit quickstart YAML as a GitHub pull request"
+              content={
+                hasBlockingIssues
+                  ? 'Fix the problems listed above the editor first'
+                  : 'Submit quickstart YAML as a GitHub pull request'
+              }
               position="top"
             >
               <Button
@@ -1099,7 +1017,12 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
                 icon={<CodeBranchIcon />}
                 onClick={handleOpenPRModal}
                 size="sm"
-                isDisabled={!canCreatePR || !canDownload || sourceLoading}
+                isDisabled={
+                  !canCreatePR ||
+                  !canDownload ||
+                  hasBlockingIssues ||
+                  sourceLoading
+                }
               >
                 {resumePR ? 'Update PR' : 'Create PR'}
               </Button>

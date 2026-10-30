@@ -201,6 +201,10 @@ const ReviewChangesModal: React.FC<ReviewChangesModalProps> = ({
             title="Fix these problems before saving"
             className="pf-v6-u-mb-md"
           >
+            <Content component="p">
+              Nothing is saved until these are fixed. Problems in a
+              resource&apos;s YAML are also marked on their line in the editor.
+            </Content>
             <ul>
               {problems.map((p) => (
                 <li key={`${p.resource}:${p.message}`}>

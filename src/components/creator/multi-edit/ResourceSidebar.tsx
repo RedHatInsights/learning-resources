@@ -14,9 +14,9 @@ import UndoIcon from '@patternfly/react-icons/dist/dynamic/icons/undo-icon';
 import {
   DeletedResource,
   WorkspaceResource,
+  firstProblem,
   hasUnsavedChanges,
   renameTarget,
-  resourceProblem,
   resourceTitle,
 } from './workspace';
 
@@ -216,7 +216,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
   const renderResource = (r: WorkspaceResource, groupStart: string) => {
     const title = resourceTitle(r);
     const dirty = hasUnsavedChanges(r);
-    const problem = dirty ? resourceProblem(r, resources) : null;
+    const problem = dirty ? firstProblem(r, resources) : null;
     const target = movesTo(r);
     const isActive = r.name === activeName;
     return (

@@ -5,6 +5,7 @@ import {
   pendingCount,
   previewForResource,
   resourceFromSnapshot,
+  resourceIssues,
   resourceProblem,
   resourceTitle,
   snapshotChanges,
@@ -805,10 +806,15 @@ describe('snapshotChanges', () => {
     expect(snap.problems).toEqual([]);
     expect(snap.resources[0].files.map((f) => f.name)).toEqual(['alpha.yml']);
 
-    // Touching the broken file itself is caught before the server sees it.
+    // Touching that file saves too: the repository reads duplicate keys
+    // (last one wins), so they are only a warning.
     state = edit(state, 'alpha', 'value: insights', 'value: other');
-    expect(snapshotChanges(state).problems[0].message).toMatch(
-      /metadata\.yml: .*unique/
+    expect(snapshotChanges(state).problems).toEqual([]);
+    expect(resourceIssues(state.resources[0])).toContainEqual(
+      expect.objectContaining({
+        severity: 'warning',
+        message: expect.stringMatching(/unique.*only one of the values/),
+      })
     );
   });
 });

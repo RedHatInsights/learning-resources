@@ -621,7 +621,7 @@ describe('MultiEditWorkspace', () => {
     renderWorkspace();
     await chooseResources('alpha', 'beta');
     typeInto('spec: [unclosed');
-    expect(screen.getByText(/^YAML problem:/)).toBeInTheDocument();
+    expect(screen.getByText('Fix 1 problem before saving')).toBeInTheDocument();
     expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
     selectResource('beta title');
     typeInto(combinedFor('beta').replace('name: beta', 'name: Beta Two'));
@@ -637,6 +637,55 @@ describe('MultiEditWorkspace', () => {
       within(dialog).getByRole('button', { name: 'Create pull request' })
     ).toBeDisabled();
     expect(mocked.submit).not.toHaveBeenCalled();
+  });
+
+  it('checks the YAML against the repository rules as it is typed', async () => {
+    mocked.submit.mockResolvedValueOnce(savedResponse('head-1'));
+    renderWorkspace();
+    await chooseResources('alpha');
+
+    // A deleted title and a misspelled tag kind block saving, each with its
+    // line and the reason.
+    typeInto(
+      combinedFor('alpha')
+        .replace('  displayName: alpha title\n', '')
+        .replace('kind: bundle', 'kind: bundel')
+    );
+    expect(
+      screen.getByText('Fix 2 problems before saving')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Required; it is the title on the card/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"bundel" is not a tag kind.*fails the content deploy/)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Line 5' })).toBeInTheDocument();
+    expect(
+      within(sidebar()).getByLabelText('Has a problem')
+    ).toBeInTheDocument();
+
+    let dialog = await openReview();
+    expect(
+      within(dialog).getByText(/Line 5, metadata\.tags\[0\]\.kind/)
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'Create pull request' })
+    ).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    // The fixture has no spec.type, which the repository requires too. The
+    // saved file already lacked it, so it is a warning and saving goes ahead.
+    typeInto(combinedFor('alpha').replace('old.example', 'new.example'));
+    expect(screen.queryByText(/before saving/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/suggestions? \(not blocking\)/)
+    ).toBeInTheDocument();
+    dialog = await openReview();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create pull request' })
+    );
+    await waitFor(() => expect(mocked.submit).toHaveBeenCalledTimes(1));
   });
 
   it('renames a resource by its metadata.name, moving its folder', async () => {

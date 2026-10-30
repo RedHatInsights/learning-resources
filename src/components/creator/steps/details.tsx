@@ -1,4 +1,5 @@
 import { ItemKind, ItemMeta, isItemKind, metaForKind } from '../meta';
+import { RESOURCE_NAME_PATTERN } from '../validateResource';
 import {
   ConditionProp,
   Field,
@@ -114,7 +115,7 @@ export function makeDetailsStep({
             validate: [
               {
                 type: validatorTypes.PATTERN,
-                pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                pattern: RESOURCE_NAME_PATTERN,
                 message:
                   'Use lowercase letters, numbers and single hyphens, e.g. my-quick-start',
               },

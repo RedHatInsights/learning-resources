@@ -27,7 +27,7 @@ import {
   ToggleGroupItem,
   Tooltip,
 } from '@patternfly/react-core';
-import Editor, { OnMount } from '@monaco-editor/react';
+import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import CodeIcon from '@patternfly/react-icons/dist/dynamic/icons/code-icon';
 import ColumnsIcon from '@patternfly/react-icons/dist/dynamic/icons/columns-icon';
 import EyeIcon from '@patternfly/react-icons/dist/dynamic/icons/eye-icon';
@@ -38,6 +38,9 @@ import EllipsisVIcon from '@patternfly/react-icons/dist/dynamic/icons/ellipsis-v
 import ExternalLinkAltIcon from '@patternfly/react-icons/dist/dynamic/icons/external-link-alt-icon';
 import { detectKindFromSpec } from '../hydrateFromFiles';
 import { metaForKind } from '../meta';
+import ResourceIssues from '../ResourceIssues';
+import { revealLine, setIssueMarkers } from '../issueMarkers';
+import { ResourceIssue } from '../validateResource';
 import { FilterMap } from '../../../utils/filtersInterface';
 import { FilterData } from '../../../utils/FiltersCategoryInterface';
 import {
@@ -53,8 +56,8 @@ import {
   pendingCount,
   previewForResource,
   renameTarget,
+  resourceIssues,
   resourceTitle,
-  yamlError,
 } from './workspace';
 import { useBatchSave } from './useBatchSave';
 import ResourceSidebar from './ResourceSidebar';
@@ -68,6 +71,7 @@ import { configureMonacoEnvironment } from './monaco';
 import './MultiEditWorkspace.scss';
 
 type View = 'editor' | 'split' | 'preview';
+const NO_ISSUES: ResourceIssue[] = [];
 const VIEW_STORAGE_KEY = 'lr-creator-multi-edit-view';
 
 /** Split by default only where both panes get a usable width. */
@@ -175,10 +179,7 @@ const MultiEditWorkspace = ({
   const activeTarget = active && renameTarget(active);
   const activeMovesTo =
     activeTarget && activeTarget !== active?.name ? activeTarget : null;
-  const activeError = useMemo(
-    () => (active ? yamlError(active.buffer) : null),
-    [active?.buffer]
-  );
+  const activeIssues = active ? resourceIssues(active) : NO_ISSUES;
   const activeKind = useMemo(() => {
     const preview = active ? previewForResource(active) : null;
     const kind = preview?.quickStart
@@ -197,11 +198,23 @@ const MultiEditWorkspace = ({
   // Monaco binds the shortcut once; the ref keeps it pointing at fresh state.
   const openReviewRef = useRef(openReview);
   openReviewRef.current = openReview;
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
   const handleEditorMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () =>
       openReviewRef.current()
     );
+    setEditorReady(true);
   };
+
+  // The editor has switched to the active resource's model by the time
+  // this runs.
+  useEffect(() => {
+    setIssueMarkers(editorRef.current, monacoRef.current, activeIssues);
+  }, [activeIssues, editorReady]);
 
   const handleSave = async (details: Parameters<typeof save>[0]) => {
     const ok = await save(details);
@@ -581,15 +594,11 @@ const MultiEditWorkspace = ({
                         : 'This resource has no metadata file.'}
                     </Alert>
                   )}
-                  {activeError && (
-                    <Alert
-                      variant="danger"
-                      isInline
-                      isPlain
-                      title={`YAML problem: ${activeError}`}
-                      className="pf-v6-u-mb-sm"
-                    />
-                  )}
+                  <ResourceIssues
+                    issues={activeIssues}
+                    blocks="saving"
+                    onGoToLine={(line) => revealLine(editorRef.current, line)}
+                  />
                   <div className="lr-c-multi-edit__editor">
                     <Editor
                       height="100%"

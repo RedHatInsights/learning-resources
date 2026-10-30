@@ -15,9 +15,6 @@ export interface NewResourceDetails {
   tags?: Record<string, string[]>;
 }
 
-/** Directory names the repository and its seeder accept. */
-export const RESOURCE_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export const slugify = (title: string) =>
   title
     .toLowerCase()
