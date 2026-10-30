@@ -45,6 +45,7 @@ import {
   UploadIcon,
 } from '@patternfly/react-icons';
 import {
+  BATCH_BRANCH_PREFIX,
   CreatorPREntry,
   RepoQuickstartEntry,
   getCreatorPR,
@@ -779,7 +780,10 @@ const CreatorYAMLView: React.FC<CreatorYAMLViewProps> = ({
     setRepoSearch('');
     try {
       if (mode === 'pr') {
-        const prs = await listCreatorPRs();
+        // Batch PRs belong to Edit multiple resources, as in SourceSelector.
+        const prs = (await listCreatorPRs()).filter(
+          (pr) => !pr.branchName.startsWith(BATCH_BRANCH_PREFIX)
+        );
         if (request === listRequest.current) setCreatorPRs(prs);
       } else {
         const entries = await listRepoQuickstarts();

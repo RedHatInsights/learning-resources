@@ -1,4 +1,4 @@
-import { Dispatch, useState } from 'react';
+import { Dispatch, useRef, useState } from 'react';
 import { useChrome } from '@redhat-cloud-services/frontend-components/useChrome';
 import {
   BatchPRMetadata,
@@ -30,9 +30,12 @@ export function useBatchSave(
   const [error, setError] = useState<SaveError | null>(null);
   // The last successful save, so the workspace can link to the PR.
   const [saved, setSaved] = useState<BatchPRResponse | null>(null);
+  // `saving` only updates on the next render; this also stops a second click
+  // in the same tick from sending the batch twice.
+  const inFlight = useRef(false);
 
   const save = async (details: SaveDetails): Promise<boolean> => {
-    if (saving) return false;
+    if (inFlight.current) return false;
 
     // Capture the exact text being sent now, so edits made while the request
     // is in flight stay dirty instead of being marked saved.
@@ -48,6 +51,7 @@ export function useBatchSave(
       return false;
     }
 
+    inFlight.current = true;
     setSaving(true);
     setError(null);
     setSaved(null);
@@ -95,7 +99,8 @@ export function useBatchSave(
       setError({
         message,
         // A name collision is also a 409, but reloading the PR will not help;
-        // its message says what to do instead.
+        // its message says what to do instead. The backend has no error code
+        // for it yet, so this matches the git service's wording.
         isConflict:
           err instanceof QuickstartsAPIError &&
           err.status === 409 &&
@@ -103,6 +108,7 @@ export function useBatchSave(
       });
       return false;
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };

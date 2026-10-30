@@ -162,6 +162,12 @@ const MultiEditWorkspace = ({
     isInPR(state, r.name) &&
     catalog !== null &&
     !catalog.some((e) => e.name === r.name);
+  // Until the catalog loads, a resource in the PR may be one it added, which
+  // must never be offered for deletion.
+  const canDelete = (r: WorkspaceResource) =>
+    !r.isNew &&
+    !isAddedByPR(r) &&
+    (catalog !== null || r.renamedFrom !== undefined || !isInPR(state, r.name));
 
   const pending = pendingCount(state);
   const active =
@@ -479,7 +485,13 @@ const MultiEditWorkspace = ({
                   </Button>
                   <ResourceActions
                     isOpen={isActionsOpen}
-                    onOpenChange={setActionsOpen}
+                    onOpenChange={(open) => {
+                      setActionsOpen(open);
+                      // A failed first load is retried when it matters.
+                      if (open && catalog === null && !catalogLoading) {
+                        loadCatalog();
+                      }
+                    }}
                     title={resourceTitle(active)}
                     items={[
                       {
@@ -498,7 +510,7 @@ const MultiEditWorkspace = ({
                             },
                           ]
                         : []),
-                      ...(!active.isNew && !isAddedByPR(active)
+                      ...(canDelete(active)
                         ? [
                             {
                               // Staged until the next save and undone from

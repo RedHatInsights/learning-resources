@@ -87,6 +87,22 @@ describe('combineFiles / splitCombined', () => {
     );
   });
 
+  it('saves a tag edit that only changes formatting', () => {
+    const combined = combineFiles(metadata, content) as string;
+    const edited = combined.replace(
+      '    value: inventory\n',
+      '    value: "inventory" # owned by inventory\n'
+    );
+    const split = splitCombined(edited, metadata);
+    expect(split.content).toBe(content);
+    expect(split.metadata).toBe(
+      metadata.replace(
+        '  value: inventory\n',
+        '  value: "inventory" # owned by inventory\n'
+      )
+    );
+  });
+
   it('writes an empty tag list when the tags are deleted', () => {
     const combined = combineFiles(metadata, content) as string;
     const withoutTags = combined.replace(/ {2}tags:\n(?: {2}[- ] .*\n)+/, '');
@@ -224,5 +240,12 @@ describe('setMetadataName', () => {
   it('refuses files it cannot edit safely', () => {
     expect(setMetadataName('- a\n- b\n', 'x')).toBeNull();
     expect(setMetadataName('name: [', 'x')).toBeNull();
+  });
+
+  it('returns null instead of throwing for empty or block-scalar names', () => {
+    expect(setMetadataName('kind: QuickStarts\nname:\n', 'bar')).toBeNull();
+    expect(
+      setMetadataName('name: >-\n  foo\nkind: QuickStarts\n', 'bar')
+    ).toBeNull();
   });
 });

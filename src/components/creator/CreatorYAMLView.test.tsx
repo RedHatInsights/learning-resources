@@ -70,6 +70,8 @@ jest.mock('@monaco-editor/react', () => {
 });
 
 jest.mock('../../utils/createQuickstartPR', () => ({
+  BATCH_BRANCH_PREFIX: jest.requireActual('../../utils/createQuickstartPR')
+    .BATCH_BRANCH_PREFIX,
   createQuickstartPR: jest.fn(),
   listRepoQuickstarts: jest.fn().mockResolvedValue([]),
   getRepoQuickstartContent: jest
@@ -1210,6 +1212,38 @@ spec:
         );
       });
       expect(setResumePR).toHaveBeenLastCalledWith(null);
+    });
+
+    it('leaves batch PRs to Edit multiple resources', async () => {
+      jest.useRealTimers();
+      mockedListCreatorPRs.mockResolvedValueOnce([
+        {
+          number: 11,
+          title: 'Demo',
+          htmlUrl: 'https://github.com/org/repo/pull/11',
+          branchName: 'qs-create-demo-1',
+          slug: 'demo',
+        },
+        {
+          number: 12,
+          title: 'Batch',
+          htmlUrl: 'https://github.com/org/repo/pull/12',
+          branchName: 'qs-update-batch-1-abcde',
+          slug: '',
+        },
+      ]);
+      renderWithContext(
+        <CreatorYAMLView quickStart={MOCK_QUICKSTART} />,
+        MOCK_FILES
+      );
+      fireEvent.click(screen.getByRole('button', { name: /load from repo/i }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: /continue open pr/i })
+      );
+      expect(
+        await screen.findByRole('button', { name: /#11 Demo/ })
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /#12 Batch/ })).toBeNull();
     });
 
     it('disables submission while loading a PR and rejects incomplete files', async () => {

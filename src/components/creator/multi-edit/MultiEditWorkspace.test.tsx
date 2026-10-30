@@ -1,5 +1,6 @@
 import React, { useReducer } from 'react';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -1160,6 +1161,34 @@ describe('MultiEditWorkspace', () => {
     expect(
       screen.queryByRole('menuitem', { name: 'Delete resource' })
     ).not.toBeInTheDocument();
+  });
+
+  it('holds back Delete while the catalog is unknown and retries loading it', async () => {
+    let retried!: (list: unknown) => void;
+    mocked.listRepo
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockReturnValueOnce(new Promise((resolve) => (retried = resolve)));
+    renderWorkspace();
+    await openPR({ resources: [atHead('alpha'), atHead('fresh')] });
+    selectResource('fresh title');
+    await waitFor(() => expect(mocked.listRepo).toHaveBeenCalledTimes(1));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for fresh title' })
+    );
+    expect(
+      await screen.findByRole('menuitem', { name: 'Remove changes from PR…' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Delete resource' })
+    ).not.toBeInTheDocument();
+    // Opening the menu retried the catalog; fresh is not on main.
+    expect(mocked.listRepo).toHaveBeenCalledTimes(2);
+    await act(async () => retried([{ name: 'alpha', displayName: 'Alpha' }]));
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'Remove from PR (undo addition)…',
+      })
+    ).toBeInTheDocument();
   });
 
   it('reopens a PR that only deletes and restores a resource', async () => {

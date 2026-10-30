@@ -1,4 +1,12 @@
-import YAML, { LineCounter, Node, Pair, YAMLMap, isMap, isScalar } from 'yaml';
+import YAML, {
+  LineCounter,
+  Node,
+  Pair,
+  Scalar,
+  YAMLMap,
+  isMap,
+  isScalar,
+} from 'yaml';
 
 /**
  * A resource on disk is two files: `metadata.yml` (kind, name, tags) and the
@@ -147,7 +155,8 @@ export type SplitResult =
  * `metadata.tags` lines move into the metadata file (replacing its tags), and
  * the rest is the content file, byte for byte. With `tagsInContent` the
  * content file keeps its tags too (see tagsAlreadyCombined). The metadata
- * file is returned untouched while its tags mean the same as the buffer's.
+ * file is returned untouched while its tags block reads the same as the
+ * buffer's.
  */
 export function splitCombined(
   combined: string,
@@ -181,14 +190,21 @@ export function splitCombined(
   if (!metaRoot) return { error: 'The metadata file is not a block mapping.' };
   const tags = (YAML.parse(block.join('\n'), TOLERANT) as { tags?: unknown })
     ?.tags;
-  if (sameValue(tags ?? [], metaDoc.toJS().tags ?? [])) {
-    return { metadata: savedMetadata, content };
-  }
+  const sameTags = sameValue(tags ?? [], metaDoc.toJS().tags ?? []);
   const metaLines = savedMetadata.split('\n');
   const existing = findPair(metaRoot, 'tags');
   if (existing) {
     const [s, e] = pairLines(meta, existing);
+    const column = meta.column(existing.key.range?.[0] ?? 0);
+    const current = reindent(metaLines.slice(s, e + 1), column, 0);
+    // Same tags written differently (a comment, quoting) is still an edit,
+    // unless the content file is where this buffer's tag text lives.
+    if (sameTags && (tagsInContent || sameValue(current, block))) {
+      return { metadata: savedMetadata, content };
+    }
     metaLines.splice(s, e - s + 1, ...block);
+  } else if (sameTags) {
+    return { metadata: savedMetadata, content };
   } else {
     // Keep the trailing newline after the appended block.
     const at = metaLines[metaLines.length - 1] === '' ? -1 : metaLines.length;
@@ -201,7 +217,8 @@ export function splitCombined(
 /**
  * Sets the top-level `name` of a metadata file, changing only that value so
  * the rest of the file keeps its bytes. Returns null when the file is not a
- * block mapping it can safely edit.
+ * block mapping it can safely edit, or the current name is empty or a block
+ * scalar.
  */
 export function setMetadataName(text: string, name: string): string | null {
   const parsed = parse(text);
@@ -210,8 +227,9 @@ export function setMetadataName(text: string, name: string): string | null {
   if (!root) return null;
   const pair = findPair(root, 'name');
   let next: string;
-  if (pair && isScalar(pair.value) && pair.value.range) {
-    const [start, end] = pair.value.range;
+  const value = pair?.value;
+  if (pair && isScalar(value) && value.range && isInlineName(value)) {
+    const [start, end] = value.range;
     next = text.slice(0, start) + name + text.slice(end);
   } else if (!pair && root.items.length > 0) {
     const first = root.items[0] as Pair<Node, Node>;
@@ -226,9 +244,21 @@ export function setMetadataName(text: string, name: string): string | null {
   } else {
     return null;
   }
-  const result = YAML.parse(next, TOLERANT) as { name?: unknown } | null;
-  return result?.name === name ? next : null;
+  // Anything the splice got wrong reads back as a different name, or not at
+  // all; the caller reports null instead of crashing the page.
+  try {
+    const result = YAML.parse(next, TOLERANT) as { name?: unknown } | null;
+    return result?.name === name ? next : null;
+  } catch {
+    return null;
+  }
 }
+
+/** A non-empty one-line name, which a splice can replace in place. */
+const isInlineName = (value: Scalar) =>
+  value.source !== '' &&
+  value.type !== Scalar.BLOCK_FOLDED &&
+  value.type !== Scalar.BLOCK_LITERAL;
 
 /** Parses an edited buffer the way the preview and identity checks need it. */
 export function parseTolerant(text: string): unknown {

@@ -635,6 +635,19 @@ export function filesForResource(
   };
 }
 
+/**
+ * Caches a derived value per resource object. The reducer replaces a resource
+ * whenever it changes, so the sidebar and review can call these on every
+ * render without re-parsing every buffer on each keystroke.
+ */
+function perResource<T>(derive: (r: WorkspaceResource) => T) {
+  const cache = new WeakMap<WorkspaceResource, T>();
+  return (r: WorkspaceResource): T => {
+    if (!cache.has(r)) cache.set(r, derive(r));
+    return cache.get(r) as T;
+  };
+}
+
 /** Returns the parse error for a text, or null when it is valid YAML. */
 export function yamlError(text: string): string | null {
   const doc = YAML.parseDocument(text);
@@ -672,11 +685,11 @@ const loadedName = (r: WorkspaceResource) =>
  * the directory keeps the few older resources whose directory never matched
  * editable without moving them.
  */
-export function renameTarget(r: WorkspaceResource): string | null {
+export const renameTarget = perResource((r): string | null => {
   const now = declaredIn(r, r.buffer);
   if (typeof now !== 'string' || !now) return null;
   return now === loadedName(r) ? null : now;
-}
+});
 
 /**
  * Problems that would make saving this resource fail or misbehave. Pass the
@@ -917,27 +930,20 @@ export function previewForResource(r: WorkspaceResource): PreviewResult {
   };
 }
 
-const titles = new WeakMap<WorkspaceResource, string>();
-
 /** The resource's display name, falling back to its directory. */
-export function resourceTitle(r: WorkspaceResource): string {
-  let title = titles.get(r);
-  if (title === undefined) {
-    try {
-      const parsed = parseTolerant(r.buffer) as {
-        spec?: { displayName?: unknown };
-      };
-      title =
-        typeof parsed?.spec?.displayName === 'string' && parsed.spec.displayName
-          ? parsed.spec.displayName
-          : r.name;
-    } catch {
-      title = r.name;
-    }
-    titles.set(r, title);
+export const resourceTitle = perResource((r) => {
+  try {
+    const parsed = parseTolerant(r.buffer) as {
+      spec?: { displayName?: unknown };
+    };
+    return typeof parsed?.spec?.displayName === 'string' &&
+      parsed.spec.displayName
+      ? parsed.spec.displayName
+      : r.name;
+  } catch {
+    return r.name;
   }
-  return title;
-}
+});
 
 export function defaultPRBody(state: WorkspaceState, names: string[]) {
   const dirs = state.resources
