@@ -19,6 +19,8 @@ export interface ResourceIssue {
   /** Where in the document, e.g. `spec.type.color`; empty for the whole file. */
   field: string;
   message: string;
+  /** More on why, shown with the editor's underline rather than the list. */
+  detail?: string;
   /** One-based line the issue points at. */
   line: number;
   /** The saved file already had this error, so it does not block saving. */
@@ -219,12 +221,13 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
       const guess = closestField(key, missing);
       if (guess && required[guess] !== undefined) {
         misspelled.add([...path, guess].join('.'));
-        add(
-          'error',
+        issues.push({
+          severity: 'error',
           field,
-          `Did you mean ${guess}? It is required (${required[guess]}), and under this name it is ignored.`,
-          pair.key
-        );
+          message: `Did you mean ${guess}? Required, so this name is ignored.`,
+          detail: `${guess} ${required[guess]}.`,
+          line: lineOf(pair.key),
+        });
       } else {
         add(
           'warning',
@@ -276,7 +279,9 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
         add('error', at, 'Each tag needs a kind and a value.', tag);
         return;
       }
-      checkFields(tag, [at], TAG_FIELDS, { kind: 'every tag needs one' });
+      checkFields(tag, [at], TAG_FIELDS, {
+        kind: 'is needed on every tag',
+      });
       const kind = tag.get('kind');
       if (kind === undefined && misspelled.has(`${at}.kind`)) {
         // Reported as a misspelling.
@@ -301,8 +306,8 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
 
   if (file === 'metadata') {
     checkFields(root, [], METADATA_FILE_FIELDS, {
-      kind: 'it must be QuickStarts',
-      name: "it is the resource's ID",
+      kind: 'must be QuickStarts',
+      name: "is the resource's ID",
     });
     if (value(['kind']) === undefined && isMisspelled(['kind'])) {
       // Reported as a misspelling.
@@ -334,8 +339,8 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
     add('warning', 'kind', 'Should stay QuickStarts.', node(['kind']));
   }
   checkFields(root, [], TOP_FIELDS, {
-    metadata: 'it holds the name and tags',
-    spec: 'it holds everything the card and panel show',
+    metadata: 'holds the name and tags',
+    spec: 'holds everything the card and panel show',
   });
 
   const metadata = node(['metadata']);
@@ -352,7 +357,7 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
     }
   } else {
     checkFields(metadata, ['metadata'], METADATA_FIELDS, {
-      name: "it is the resource's ID and names its folder",
+      name: "is the resource's ID and names its folder",
     });
     checkName(['metadata', 'name']);
     checkTags(['metadata', 'tags']);
@@ -393,8 +398,8 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
     return issues;
   }
   checkFields(spec, ['spec'], SPEC_FIELDS, {
-    displayName: 'it is the title on the card',
-    type: 'it sets the card label and color',
+    displayName: 'is the title on the card',
+    type: 'sets the card label and color',
   });
 
   const displayName = value(['spec', 'displayName']);
@@ -461,8 +466,8 @@ function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
     );
   } else {
     checkFields(type, ['spec', 'type'], TYPE_FIELDS, {
-      text: 'it is the label on the card',
-      color: 'it is the card color',
+      text: 'is the label on the card',
+      color: 'is the card color',
     });
     const typeText = value(['spec', 'type', 'text']);
     if (typeText === undefined && isMisspelled(['spec', 'type', 'text'])) {

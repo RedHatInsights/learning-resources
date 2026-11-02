@@ -654,6 +654,8 @@ describe('MultiEditWorkspace', () => {
     expect(
       screen.getByText('Fix 2 problems before saving')
     ).toBeInTheDocument();
+    // With the fixture's existing suggestions the list starts folded.
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
     expect(
       screen.getByText(/Required; it is the title on the card/)
     ).toBeInTheDocument();

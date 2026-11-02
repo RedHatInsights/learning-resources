@@ -13,48 +13,60 @@ const issue = (
   line,
 });
 
+const many = [
+  issue('warning', 1),
+  issue('error', 2),
+  ...[3, 4, 5].map((line) => issue('warning', line)),
+];
+
 describe('ResourceIssues', () => {
-  it('lists problems and suggestions the same way, folding long suggestions', () => {
+  it('counts problems and suggestions in one row, folding a long list', () => {
+    const { rerender } = render(
+      <ResourceIssues issues={many} blocks="saving" />
+    );
+    expect(screen.getByText('Fix 1 problem before saving')).toBeInTheDocument();
+    expect(
+      screen.getByText('4 suggestions (not blocking)')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
+    const items = screen.getAllByRole('listitem');
+    // Problems first, then suggestions.
+    expect(items[0]).toHaveTextContent('Problem: Line 2, field2: Message 2.');
+    expect(items[1]).toHaveTextContent('Suggestion: Line 1, field1');
+    expect(items).toHaveLength(5);
+
+    // The author's choice holds when the issues change, e.g. on another
+    // resource.
+    rerender(<ResourceIssues issues={[issue('error', 9)]} blocks="saving" />);
+    expect(screen.getByText('field9')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide details' }));
+    rerender(<ResourceIssues issues={many.slice(0, 2)} blocks="saving" />);
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Show details' })
+    ).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('lists a short list straight away, with lines that jump', () => {
     const onGoToLine = jest.fn();
     render(
       <ResourceIssues
-        issues={[
-          issue('error', 1),
-          ...[2, 3, 4, 5, 6].map((line) => issue('warning', line)),
-        ]}
+        issues={[issue('error', 2), issue('warning', 3)]}
         blocks="saving"
         onGoToLine={onGoToLine}
       />
     );
-
-    expect(screen.getByText('Fix 1 problem before saving')).toBeInTheDocument();
-    expect(
-      screen.getByText('5 suggestions (not blocking)')
-    ).toBeInTheDocument();
-    // Neither alert has a toggle, so their titles line up.
-    expect(
-      screen.queryByRole('button', { name: /suggestions/i })
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('field4')).toBeInTheDocument();
-    expect(screen.queryByText('field5')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Show 2 more' }));
-    expect(screen.getByText('field6')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show fewer' }));
-    expect(screen.queryByText('field6')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Line 1' }));
-    expect(onGoToLine).toHaveBeenCalledWith(1);
+    expect(screen.getByText('field3')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Line 2' }));
+    expect(onGoToLine).toHaveBeenCalledWith(2);
   });
 
-  it('shows a short list of suggestions in full', () => {
-    render(
-      <ResourceIssues
-        issues={[issue('warning', 2), issue('warning', 3)]}
-        blocks="saving"
-      />
+  it('renders nothing without issues', () => {
+    const { container } = render(
+      <ResourceIssues issues={[]} blocks="saving" />
     );
-    expect(screen.getByText('Line 3', { exact: false })).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });

@@ -21,9 +21,12 @@ export function setIssueMarkers(
           issue.severity === 'error'
             ? monaco.MarkerSeverity.Error
             : monaco.MarkerSeverity.Warning,
-        message: issue.field
-          ? `${issue.field}: ${issue.message}`
-          : issue.message,
+        message: [
+          issue.field ? `${issue.field}: ${issue.message}` : issue.message,
+          issue.detail,
+        ]
+          .filter(Boolean)
+          .join(' '),
         startLineNumber: issue.line,
         startColumn: model.getLineFirstNonWhitespaceColumn(issue.line) || 1,
         endLineNumber: issue.line,

@@ -297,6 +297,8 @@ describe('CreatorYAMLView', () => {
           screen.getByText('Fix 3 problems before creating a pull request')
         ).toBeInTheDocument();
       });
+      // Four issues start folded behind the summary.
+      fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
       expect(screen.getByText('metadata')).toBeInTheDocument();
       expect(screen.getByText('spec.displayName')).toBeInTheDocument();
       expect(screen.getByText('spec.type')).toBeInTheDocument();

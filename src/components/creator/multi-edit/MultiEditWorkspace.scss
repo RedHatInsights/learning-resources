@@ -332,6 +332,11 @@
     margin-inline: var(--pf-t--global--spacer--md);
   }
 
+  // Padded rather than inset, so its bottom rule spans the pane.
+  &__editor-pane > .lr-c-resource-issues {
+    padding-inline: var(--pf-t--global--spacer--md);
+  }
+
   &__editor {
     flex: 1;
     min-height: 0;

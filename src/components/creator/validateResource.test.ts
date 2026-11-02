@@ -154,7 +154,9 @@ describe('validateResource', () => {
         severity: 'error',
         field: 'spesc',
         line: 9,
-        message: expect.stringMatching(/^Did you mean spec\? It is required/),
+        message: expect.stringMatching(
+          /^Did you mean spec\? Required, so this name is ignored/
+        ),
       }),
     ]);
     expect(

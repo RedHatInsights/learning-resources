@@ -1,9 +1,49 @@
+// Sized like the editor's own text, with a rule below so the list reads as
+// a panel over the editor rather than running into it.
 .lr-c-resource-issues {
-  margin: 0;
-  padding-left: var(--pf-t--global--spacer--md);
-  list-style: disc;
+  margin-bottom: var(--pf-t--global--spacer--sm);
+  padding-bottom: var(--pf-t--global--spacer--xs);
+  border-bottom: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
+  font-size: var(--pf-t--global--font--size--sm);
+  line-height: 1.4;
 
-  code {
-    overflow-wrap: anywhere;
+  .pf-v6-c-button.pf-m-inline {
+    font-size: inherit;
+  }
+
+  &__summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--xs) var(--pf-t--global--spacer--md);
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pf-t--global--spacer--xs);
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+  }
+
+  // Capped and scrolling on its own, so a long list never squeezes the
+  // editor below it.
+  &__list {
+    max-height: min(20vh, 9rem);
+    overflow-y: auto;
+    margin: var(--pf-t--global--spacer--xs) 0 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      align-items: baseline;
+      gap: var(--pf-t--global--spacer--xs);
+      padding-block: 1px;
+    }
+
+    code {
+      overflow-wrap: anywhere;
+    }
   }
 }
