@@ -1,4 +1,4 @@
-import YAML, { LineCounter, Node, isMap, isScalar, isSeq } from 'yaml';
+import YAML, { LineCounter, Node, YAMLMap, isMap, isScalar, isSeq } from 'yaml';
 import { ALL_KIND_ENTRIES } from './meta';
 
 /**
@@ -71,6 +71,11 @@ const SPEC_FIELDS = [
   'type',
 ];
 const FLAGS = ['learningPath', 'otherResource', 'instructional'];
+const METADATA_FIELDS = ['name', 'tags', 'externalDocumentation', ...FLAGS];
+const METADATA_FILE_FIELDS = ['kind', 'name', 'tags'];
+const TAG_FIELDS = ['kind', 'value'];
+const TYPE_FIELDS = ['text', 'color'];
+const LINK_FIELDS = ['href', 'text'];
 
 const REPO_CHECK = 'The quickstarts repository check rejects the PR otherwise.';
 
@@ -80,10 +85,55 @@ const normalizeLabel = (value: string) =>
 const isText = (value: unknown): value is string =>
   typeof value === 'string' && value.trim() !== '';
 
-export function validateResource(
+/**
+ * Edit distance between two keys, ignoring case, where swapping two
+ * neighboring letters counts as one edit.
+ */
+const distance = (a: string, b: string) => {
+  const x = a.toLowerCase();
+  const y = b.toLowerCase();
+  const d = Array.from({ length: x.length + 1 }, (_, i) =>
+    Array.from({ length: y.length + 1 }, (_, j) =>
+      i === 0 ? j : j === 0 ? i : 0
+    )
+  );
+  for (let i = 1; i <= x.length; i++) {
+    for (let j = 1; j <= y.length; j++) {
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1)
+      );
+      if (i > 1 && j > 1 && x[i - 1] === y[j - 2] && x[i - 2] === y[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[x.length][y.length];
+};
+
+/** The field a key is probably a misspelling of, if one is close enough. */
+const closestField = (key: string, fields: string[]) => {
+  const limit = key.length <= 4 ? 1 : 2;
+  let best: string | undefined;
+  let bestDistance = limit + 1;
+  for (const field of fields) {
+    const d = distance(key, field);
+    if (d < bestDistance) {
+      best = field;
+      bestDistance = d;
+    }
+  }
+  return best;
+};
+
+/** Issues found in a buffer, in line order. */
+export const validateResource = (
   text: string,
   file: ResourceFile
-): ResourceIssue[] {
+): ResourceIssue[] => collectIssues(text, file).sort((a, b) => a.line - b.line);
+
+function collectIssues(text: string, file: ResourceFile): ResourceIssue[] {
   const counter = new LineCounter();
   const doc = YAML.parseDocument(text, { lineCounter: counter });
   const issues: ResourceIssue[] = [];
@@ -145,10 +195,55 @@ export function validateResource(
     return root;
   };
 
+  // Required fields typed under a misspelled name. Their own "missing" error
+  // is left out; the misspelling's error says what to rename.
+  const misspelled = new Set<string>();
+  const isMisspelled = (path: string[]) => misspelled.has(path.join('.'));
+
+  /**
+   * Flags keys a mapping does not use. A key close to a missing field gets a
+   * "did you mean" hint, and is an error when that field is required, since
+   * the file then fails as if the field were left out.
+   */
+  const checkFields = (
+    map: YAMLMap,
+    path: string[],
+    known: string[],
+    required: Record<string, string> = {}
+  ) => {
+    const missing = known.filter((field) => !map.has(field));
+    for (const pair of map.items) {
+      const key = isScalar(pair.key) ? pair.key.value : pair.key;
+      if (typeof key !== 'string' || known.includes(key)) continue;
+      const field = [...path, key].join('.');
+      const guess = closestField(key, missing);
+      if (guess && required[guess] !== undefined) {
+        misspelled.add([...path, guess].join('.'));
+        add(
+          'error',
+          field,
+          `Did you mean ${guess}? It is required (${required[guess]}), and under this name it is ignored.`,
+          pair.key
+        );
+      } else {
+        add(
+          'warning',
+          field,
+          `Unknown field; it is ignored.${
+            guess ? ` Did you mean ${guess}?` : ''
+          }`,
+          pair.key
+        );
+      }
+    }
+  };
+
   const checkName = (path: string[]) => {
     const field = path.join('.');
     const name = value(path);
-    if (name === null || name === undefined || name === '') {
+    if (name === undefined && isMisspelled(path)) {
+      return;
+    } else if (name === null || name === undefined || name === '') {
       add(
         'error',
         field,
@@ -181,8 +276,11 @@ export function validateResource(
         add('error', at, 'Each tag needs a kind and a value.', tag);
         return;
       }
+      checkFields(tag, [at], TAG_FIELDS, { kind: 'every tag needs one' });
       const kind = tag.get('kind');
-      if (!isText(kind)) {
+      if (kind === undefined && misspelled.has(`${at}.kind`)) {
+        // Reported as a misspelling.
+      } else if (!isText(kind)) {
         add('error', `${at}.kind`, 'Each tag needs a kind.', tag);
       } else if (!TAG_KINDS.includes(kind)) {
         add(
@@ -202,7 +300,13 @@ export function validateResource(
   };
 
   if (file === 'metadata') {
-    if (value(['kind']) !== 'QuickStarts') {
+    checkFields(root, [], METADATA_FILE_FIELDS, {
+      kind: 'it must be QuickStarts',
+      name: "it is the resource's ID",
+    });
+    if (value(['kind']) === undefined && isMisspelled(['kind'])) {
+      // Reported as a misspelling.
+    } else if (value(['kind']) !== 'QuickStarts') {
       add(
         'error',
         'kind',
@@ -229,23 +333,27 @@ export function validateResource(
   if (has(['kind']) && value(['kind']) !== 'QuickStarts') {
     add('warning', 'kind', 'Should stay QuickStarts.', node(['kind']));
   }
-  for (const pair of root.items) {
-    const key = isScalar(pair.key) ? pair.key.value : pair.key;
-    if (typeof key === 'string' && !TOP_FIELDS.includes(key)) {
-      add('warning', key, 'Unknown field; it is ignored.', pair.key);
-    }
-  }
+  checkFields(root, [], TOP_FIELDS, {
+    metadata: 'it holds the name and tags',
+    spec: 'it holds everything the card and panel show',
+  });
 
-  if (!isMap(node(['metadata']))) {
-    add(
-      'error',
-      'metadata',
-      has(['metadata'])
-        ? 'Must be a mapping with name and tags.'
-        : 'Missing; it holds the name and tags.',
-      near(['metadata'])
-    );
+  const metadata = node(['metadata']);
+  if (!isMap(metadata)) {
+    if (!isMisspelled(['metadata'])) {
+      add(
+        'error',
+        'metadata',
+        has(['metadata'])
+          ? 'Must be a mapping with name and tags.'
+          : 'Missing; it holds the name and tags.',
+        near(['metadata'])
+      );
+    }
   } else {
+    checkFields(metadata, ['metadata'], METADATA_FIELDS, {
+      name: "it is the resource's ID and names its folder",
+    });
     checkName(['metadata', 'name']);
     checkTags(['metadata', 'tags']);
     const external = value(['metadata', 'externalDocumentation']);
@@ -272,19 +380,27 @@ export function validateResource(
 
   const spec = node(['spec']);
   if (!isMap(spec)) {
-    add(
-      'error',
-      'spec',
-      has(['spec'])
-        ? 'Must be a mapping.'
-        : 'Missing; it holds everything the card and panel show.',
-      near(['spec'])
-    );
+    if (!isMisspelled(['spec'])) {
+      add(
+        'error',
+        'spec',
+        has(['spec'])
+          ? 'Must be a mapping.'
+          : 'Missing; it holds everything the card and panel show.',
+        near(['spec'])
+      );
+    }
     return issues;
   }
+  checkFields(spec, ['spec'], SPEC_FIELDS, {
+    displayName: 'it is the title on the card',
+    type: 'it sets the card label and color',
+  });
 
   const displayName = value(['spec', 'displayName']);
-  if (!isText(displayName)) {
+  if (displayName === undefined && isMisspelled(['spec', 'displayName'])) {
+    // Reported as a misspelling.
+  } else if (!isText(displayName)) {
     add(
       'error',
       'spec.displayName',
@@ -333,7 +449,10 @@ export function validateResource(
   }
 
   let kindMeta: (typeof ALL_KIND_ENTRIES)[number][1] | undefined;
-  if (!isMap(node(['spec', 'type']))) {
+  const type = node(['spec', 'type']);
+  if (!type && isMisspelled(['spec', 'type'])) {
+    // Reported as a misspelling.
+  } else if (!isMap(type)) {
     add(
       'error',
       'spec.type',
@@ -341,8 +460,14 @@ export function validateResource(
       near(['spec', 'type'])
     );
   } else {
+    checkFields(type, ['spec', 'type'], TYPE_FIELDS, {
+      text: 'it is the label on the card',
+      color: 'it is the card color',
+    });
     const typeText = value(['spec', 'type', 'text']);
-    if (!isText(typeText)) {
+    if (typeText === undefined && isMisspelled(['spec', 'type', 'text'])) {
+      // Reported as a misspelling.
+    } else if (!isText(typeText)) {
       add(
         'error',
         'spec.type.text',
@@ -366,7 +491,9 @@ export function validateResource(
       }
     }
     const color = value(['spec', 'type', 'color']);
-    if (typeof color !== 'string' || !TYPE_COLORS.includes(color)) {
+    if (color === undefined && isMisspelled(['spec', 'type', 'color'])) {
+      // Reported as a misspelling.
+    } else if (typeof color !== 'string' || !TYPE_COLORS.includes(color)) {
       add(
         'error',
         'spec.type.color',
@@ -390,7 +517,8 @@ export function validateResource(
         link
       );
     } else {
-      for (const key of ['href', 'text']) {
+      checkFields(link, ['spec', 'link'], LINK_FIELDS);
+      for (const key of LINK_FIELDS) {
         const linkValue = link.get(key);
         if (linkValue !== undefined && typeof linkValue !== 'string') {
           add(
@@ -437,13 +565,6 @@ export function validateResource(
           );
         }
       });
-    }
-  }
-
-  for (const pair of spec.items) {
-    const key = isScalar(pair.key) ? pair.key.value : pair.key;
-    if (typeof key === 'string' && !SPEC_FIELDS.includes(key)) {
-      add('warning', `spec.${key}`, 'Unknown field; it is ignored.', pair.key);
     }
   }
 

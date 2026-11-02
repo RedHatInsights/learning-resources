@@ -301,7 +301,6 @@ describe('CreatorYAMLView', () => {
       expect(screen.getByText('spec.displayName')).toBeInTheDocument();
       expect(screen.getByText('spec.type')).toBeInTheDocument();
       // A missing description only warns.
-      fireEvent.click(screen.getByRole('button', { name: 'Show suggestions' }));
       expect(screen.getByText('spec.description')).toBeInTheDocument();
     });
 
@@ -342,10 +341,7 @@ describe('CreatorYAMLView', () => {
         jest.advanceTimersByTime(200);
       });
 
-      fireEvent.click(
-        await screen.findByRole('button', { name: 'Show suggestions' })
-      );
-      expect(screen.getByText('spec.customField')).toBeInTheDocument();
+      expect(await screen.findByText('spec.customField')).toBeInTheDocument();
       expect(screen.getByText(/Unknown field/)).toBeInTheDocument();
     });
 

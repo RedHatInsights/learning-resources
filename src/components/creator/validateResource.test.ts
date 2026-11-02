@@ -144,10 +144,77 @@ describe('validateResource', () => {
     ]);
   });
 
+  it('turns a misspelled required field into one problem on its line', () => {
+    const issues = validateResource(
+      valid.replace('spec:', 'spesc:'),
+      'content'
+    );
+    expect(issues).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        field: 'spesc',
+        line: 9,
+        message: expect.stringMatching(/^Did you mean spec\? It is required/),
+      }),
+    ]);
+    expect(
+      fields(
+        errorsIn(
+          valid
+            .replace('displayName:', 'displayname:')
+            .replace('color:', 'colr:')
+            .replace('kind: bundle', 'knd: bundle')
+        )
+      )
+    ).toEqual(['metadata.tags[0].knd', 'spec.type.colr', 'spec.displayname']);
+  });
+
+  it('only hints at a misspelled optional field, since it may be left out', () => {
+    const issues = validateResource(
+      valid
+        .replace('  tags:', '  tagz:')
+        .replace('icon: ~', 'icons: ~')
+        .replace('  link:\n    href', '  link:\n    hre'),
+      'content'
+    );
+    expect(issues.map((i) => [i.severity, i.field, i.message])).toEqual([
+      [
+        'warning',
+        'metadata.tagz',
+        'Unknown field; it is ignored. Did you mean tags?',
+      ],
+      [
+        'warning',
+        'spec.icons',
+        'Unknown field; it is ignored. Did you mean icon?',
+      ],
+      [
+        'warning',
+        'spec.link.hre',
+        'Unknown field; it is ignored. Did you mean href?',
+      ],
+      ['warning', 'spec.link.href', 'Empty, so the card links nowhere.'],
+    ]);
+  });
+
+  it('gives no hint when nothing is close, or the field is already there', () => {
+    const issues = validateResource(
+      valid.replace('  icon: ~\n', '  icon: ~\n  icons: ~\n  review: {}\n'),
+      'content'
+    );
+    expect(issues.map((i) => i.message)).toEqual([
+      'Unknown field; it is ignored.',
+      'Unknown field; it is ignored.',
+    ]);
+  });
+
   it('checks metadata.yml on its own', () => {
     expect(
       fields(errorsIn('kind: HelpTopic\nname: a\ntags: []\n', 'metadata'))
     ).toEqual(['kind']);
+    expect(
+      errorsIn('kidn: QuickStarts\nname: a\ntags: []\n', 'metadata')
+    ).toEqual([expect.objectContaining({ field: 'kidn', line: 1 })]);
     expect(
       validateResource(
         'kind: QuickStarts\nname: a\ntags:\n- kind: bundle\n  value: x\n',
