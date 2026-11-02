@@ -1,4 +1,5 @@
 import { ItemKind, ItemMeta, isItemKind, metaForKind } from '../meta';
+import { RESOURCE_NAME_PATTERN } from '../validateResource';
 import {
   ConditionProp,
   Field,
@@ -13,6 +14,7 @@ import {
   NAME_DESCRIPTION,
   NAME_DURATION,
   NAME_KIND,
+  NAME_METADATA_NAME,
   NAME_TAGS,
   NAME_TITLE,
   NAME_URL,
@@ -49,11 +51,14 @@ export function makeDetailsStep({
   bundles,
   downloadStep,
   filterData,
+  showResourceId = false,
 }: {
   kind: ItemKind;
   bundles: Bundles;
   downloadStep: string;
   filterData: FilterData;
+  /** Only pull requests use the ID, so only show it when they are enabled. */
+  showResourceId?: boolean;
 }) {
   const meta = metaForKind(kind);
 
@@ -96,6 +101,28 @@ export function makeDetailsStep({
       isRequired: true,
       validate: [REQUIRED],
     },
+    ...(showResourceId
+      ? [
+          {
+            // Deliberately separate from the title: it names the folder in the
+            // repository, so retitling must never move the resource.
+            component: componentTypes.TEXT_FIELD,
+            name: NAME_METADATA_NAME,
+            label: 'Resource ID (metadata.name)',
+            placeholder: 'Generated from the title if left empty',
+            helperText:
+              'Names the folder docs/quickstarts/<id>/. Changing the title never changes it; changing it renames the resource.',
+            validate: [
+              {
+                type: validatorTypes.PATTERN,
+                pattern: RESOURCE_NAME_PATTERN,
+                message:
+                  'Use lowercase letters, numbers and single hyphens, e.g. my-quick-start',
+              },
+            ],
+          },
+        ]
+      : []),
     {
       component: componentTypes.TEXTAREA,
       name: NAME_DESCRIPTION,

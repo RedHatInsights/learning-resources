@@ -17,6 +17,8 @@ import {
 } from '../../utils/createQuickstartPR';
 
 jest.mock('../../utils/createQuickstartPR', () => ({
+  BATCH_BRANCH_PREFIX: jest.requireActual('../../utils/createQuickstartPR')
+    .BATCH_BRANCH_PREFIX,
   listRepoQuickstarts: jest.fn(),
   getRepoQuickstartContent: jest.fn(),
   listCreatorPRs: jest.fn(),
@@ -49,6 +51,8 @@ const renderSelector = (
         resetCreator: jest.fn(),
         resumePR,
         setResumePR,
+        loadedName: resumePR?.slug ?? null,
+        setLoadedName: jest.fn(),
       }}
     >
       <FormRenderer
@@ -133,6 +137,32 @@ describe('SourceSelector', () => {
         screen.getByRole('button', { name: 'Live Doc' })
       ).toBeInTheDocument();
     });
+  });
+
+  it('leaves batch PRs to Edit multiple resources', async () => {
+    mockedListCreatorPRs.mockResolvedValue([
+      {
+        number: 11,
+        title: 'feat(quickstarts): create demo',
+        htmlUrl: 'https://github.com/org/repo/pull/11',
+        branchName: 'qs-create-demo-1',
+        slug: 'demo',
+      },
+      {
+        number: 12,
+        title: 'docs(quickstarts): update 3 learning resources',
+        htmlUrl: 'https://github.com/org/repo/pull/12',
+        branchName: 'qs-update-batch-1-abcde',
+        slug: '',
+      },
+    ]);
+    renderSelector();
+    fireEvent.click(screen.getByRole('button', { name: /continue open pr/i }));
+
+    expect(
+      await screen.findByRole('button', { name: /#11 / })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /#12 / })).toBeNull();
   });
 
   it('loads an open PR and stores resume identity', async () => {

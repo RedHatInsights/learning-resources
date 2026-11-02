@@ -70,6 +70,8 @@ jest.mock('@monaco-editor/react', () => {
 });
 
 jest.mock('../../utils/createQuickstartPR', () => ({
+  BATCH_BRANCH_PREFIX: jest.requireActual('../../utils/createQuickstartPR')
+    .BATCH_BRANCH_PREFIX,
   createQuickstartPR: jest.fn(),
   listRepoQuickstarts: jest.fn().mockResolvedValue([]),
   getRepoQuickstartContent: jest
@@ -143,6 +145,9 @@ const renderWithContext = (
 ) => {
   const ContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [resumePR, setPR] = React.useState(initialPR);
+    const [loadedName, setLoadedName] = React.useState<string | null>(
+      initialPR?.slug ?? null
+    );
     return (
       <CreatorWizardContext.Provider
         value={{
@@ -154,6 +159,8 @@ const renderWithContext = (
             setResumePR(value);
             setPR(value);
           },
+          loadedName,
+          setLoadedName,
         }}
       >
         {children}
@@ -286,11 +293,17 @@ describe('CreatorYAMLView', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Schema Validation/i)).toBeInTheDocument();
+        expect(
+          screen.getByText('Fix 3 problems before creating a pull request')
+        ).toBeInTheDocument();
       });
-      expect(screen.getByText(/metadata\.name/)).toBeInTheDocument();
-      expect(screen.getByText(/spec\.displayName/)).toBeInTheDocument();
-      expect(screen.getByText(/spec\.description/)).toBeInTheDocument();
+      // Four issues start folded behind the summary.
+      fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
+      expect(screen.getByText('metadata')).toBeInTheDocument();
+      expect(screen.getByText('spec.displayName')).toBeInTheDocument();
+      expect(screen.getByText('spec.type')).toBeInTheDocument();
+      // A missing description only warns.
+      expect(screen.getByText('spec.description')).toBeInTheDocument();
     });
 
     it('shows warning for unknown tag kind', async () => {
@@ -309,7 +322,9 @@ describe('CreatorYAMLView', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Unknown tag kind/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/"invalid-kind" is not a tag kind/)
+        ).toBeInTheDocument();
       });
     });
 
@@ -328,10 +343,8 @@ describe('CreatorYAMLView', () => {
         jest.advanceTimersByTime(200);
       });
 
-      await waitFor(() => {
-        expect(screen.getByText(/spec\.customField/)).toBeInTheDocument();
-        expect(screen.getByText(/Unknown field/)).toBeInTheDocument();
-      });
+      expect(await screen.findByText('spec.customField')).toBeInTheDocument();
+      expect(screen.getByText(/Unknown field/)).toBeInTheDocument();
     });
 
     it('shows no warnings for valid YAML', async () => {
@@ -341,7 +354,7 @@ describe('CreatorYAMLView', () => {
       fireEvent.change(editor, {
         target: {
           value:
-            'metadata:\n  name: test\n  tags:\n    - kind: bundle\n      value: insights\nspec:\n  displayName: Test\n  description: Desc\n',
+            'metadata:\n  name: test\n  tags:\n    - kind: bundle\n      value: insights\nspec:\n  displayName: Test\n  description: Desc\n  type:\n    text: Quick start\n    color: green\n',
         },
       });
 
@@ -350,9 +363,8 @@ describe('CreatorYAMLView', () => {
       });
 
       await waitFor(() => {
-        expect(
-          screen.queryByText(/Schema Validation/i)
-        ).not.toBeInTheDocument();
+        expect(screen.queryByText(/before creating/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/suggestion/)).not.toBeInTheDocument();
       });
     });
   });
@@ -772,6 +784,25 @@ spec:
       expect(prBtn).toBeDisabled();
     });
 
+    it('disables Create PR while the YAML has a blocking problem', () => {
+      renderWithContext(<CreatorYAMLView />, MOCK_FILES);
+
+      fireEvent.change(screen.getByTestId('mock-monaco-editor'), {
+        target: {
+          value:
+            'metadata:\n  name: my-qs\n  tags:\n    - kind: bundel\n      value: insights\nspec:\n  displayName: My QS\n  description: Desc\n  type:\n    text: Quick start\n    color: green\n',
+        },
+      });
+      act(() => {
+        jest.advanceTimersByTime(200);
+      });
+
+      expect(
+        screen.getByText('Fix 1 problem before creating a pull request')
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create pr/i })).toBeDisabled();
+    });
+
     it('shows success alert with PR link on success', async () => {
       mockedCreatePR.mockResolvedValueOnce({
         prUrl: 'https://github.com/org/repo/pull/99',
@@ -786,7 +817,7 @@ spec:
       fireEvent.change(editor, {
         target: {
           value:
-            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n',
+            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n  type:\n    text: Quick start\n    color: green\n',
         },
       });
       act(() => {
@@ -830,7 +861,7 @@ spec:
       fireEvent.change(editor, {
         target: {
           value:
-            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n',
+            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n  type:\n    text: Quick start\n    color: green\n',
         },
       });
       act(() => {
@@ -873,7 +904,7 @@ spec:
       fireEvent.change(editor, {
         target: {
           value:
-            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n',
+            'metadata:\n  name: my-qs\nspec:\n  displayName: My QS\n  description: Desc\n  type:\n    text: Quick start\n    color: green\n',
         },
       });
       act(() => {
@@ -1205,6 +1236,38 @@ spec:
         );
       });
       expect(setResumePR).toHaveBeenLastCalledWith(null);
+    });
+
+    it('leaves batch PRs to Edit multiple resources', async () => {
+      jest.useRealTimers();
+      mockedListCreatorPRs.mockResolvedValueOnce([
+        {
+          number: 11,
+          title: 'Demo',
+          htmlUrl: 'https://github.com/org/repo/pull/11',
+          branchName: 'qs-create-demo-1',
+          slug: 'demo',
+        },
+        {
+          number: 12,
+          title: 'Batch',
+          htmlUrl: 'https://github.com/org/repo/pull/12',
+          branchName: 'qs-update-batch-1-abcde',
+          slug: '',
+        },
+      ]);
+      renderWithContext(
+        <CreatorYAMLView quickStart={MOCK_QUICKSTART} />,
+        MOCK_FILES
+      );
+      fireEvent.click(screen.getByRole('button', { name: /load from repo/i }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: /continue open pr/i })
+      );
+      expect(
+        await screen.findByRole('button', { name: /#11 Demo/ })
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /#12 Batch/ })).toBeNull();
     });
 
     it('disables submission while loading a PR and rejects incomplete files', async () => {

@@ -127,6 +127,7 @@ export function makeSchema(
           bundles,
           downloadStep: STEP_DOWNLOAD,
           filterData,
+          showResourceId: showGitService,
         })
       ),
       ...ALL_ITEM_KINDS.filter((kind) => metaForKind(kind).hasTasks).map(

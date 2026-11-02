@@ -12,6 +12,13 @@
     max-height: 70vh;
     overflow: hidden;
     margin-bottom: var(--pf-t--global--spacer--md);
+
+    // Monaco keeps its button tooltips inside the editor, so on the find
+    // widget at the top they land over the buttons and steal the pointer:
+    // they flicker and the buttons cannot be clicked. They are text only.
+    .workbench-hover-container {
+      pointer-events: none;
+    }
   }
 }
 
