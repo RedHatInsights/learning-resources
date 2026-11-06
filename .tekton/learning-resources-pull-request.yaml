@@ -1,5 +1,4 @@
-# Pilot: image-based E2E pipeline v2 (koordinuje RHCLOUD-52375)
-# Temporary fork reference — replace with upstream commit after shared pipeline merges.
+# Hermetic v3 pipeline from upstream konflux-pipelines.
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
@@ -90,11 +89,11 @@ spec:
     resolver: git
     params:
     - name: url
-      value: https://github.com/platex-rehor-bot/konflux-pipelines
+      value: https://github.com/RedHatInsights/konflux-pipelines
     - name: revision
-      value: 71d1818eb1c6e3b5628279ae6fd9bf1a68d0fc17
+      value: 62812d11df19abe420a6de113b5dbc782d07394a
     - name: pathInRepo
-      value: pipelines/platform-ui/docker-build-run-all-tests-v2.yaml
+      value: pipelines/platform-ui/docker-build-run-all-tests-v3.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-learning-resources
   taskRunSpecs:
