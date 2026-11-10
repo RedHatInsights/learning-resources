@@ -26,6 +26,8 @@ spec:
     value: quay.io/redhat-user-workloads/hcc-platex-services-tenant/learning-resources/learning-resources:{{revision}}
   - name: dockerfile
     value: build-tools/Dockerfile.hermetic
+  - name: target-stage
+    value: deploy
   - name: hermetic
     value: "true"
   - name: prefetch-input
