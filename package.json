@@ -20,6 +20,7 @@
     "static": "fec static",
     "test": "jest --passWithNoTests",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
     "verify": "npm-run-all build lint test",
     "postinstall": "ts-patch install",
     "storybook": "storybook dev -p 6006",

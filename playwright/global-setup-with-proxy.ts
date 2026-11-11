@@ -14,7 +14,7 @@ async function disableCookiePrompt(page: Page) {
   });
 }
 
-async function login(page: Page, user: string, password: string) {
+async function login(page: Page, user: string, password: string, appBaseURL: string) {
   // Fail in a friendly way if the proxy config is not set up correctly
   const lockdownCount = await page.locator('text=Lockdown').count();
   if (lockdownCount > 0) {
@@ -29,8 +29,15 @@ async function login(page: Page, user: string, password: string) {
   await page.getByLabel('Password').first().fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
 
-  // Wait for navigation to console (SSO redirect)
-  await page.waitForURL('https://console.stage.redhat.com/**', { timeout: 60000 });
+  // Wait for navigation back to the app origin after SSO redirect.
+  // Supports both direct staging (console.stage.redhat.com) and proxied
+  // execution (stage.foo.redhat.com:1337) by deriving the expected origin
+  // from the configured baseURL.
+  const expectedOrigin = new URL(appBaseURL).origin;
+  await page.waitForURL(
+    (url) => url.origin === expectedOrigin,
+    { timeout: 60000, waitUntil: 'domcontentloaded' },
+  );
 
   // Wait for the greeting to appear
   await page.getByText('Hi,').waitFor({ state: 'visible', timeout: 60000 });
@@ -69,8 +76,11 @@ async function globalSetup(config: FullConfig) {
     // Make sure the SSO prompt is loaded for login
     await page.waitForLoadState('load');
 
+    // Resolve baseURL once for both navigation and login origin check
+    const appBaseURL = baseURL as string || '/';
+
     // Perform login
-    await login(page, user, password);
+    await login(page, user, password, appBaseURL);
 
     // Save the authenticated state
     await context.storageState({ path: storageState as string });
